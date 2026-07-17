@@ -1,0 +1,3 @@
+# Use an OpenAI-compatible AI boundary
+
+AI roles will call an application-owned adapter constrained to broadly supported OpenAI-compatible chat, tool, structured-output, and embedding capabilities. OpenRouter is the initial gateway, but prompts, schemas, role configuration, and domain workflows will not depend directly on OpenRouter-specific APIs so the provider can be replaced without rewriting discovery. Only the application developer may configure models or routed providers; end users cannot choose or override them. The OpenRouter adapter enforces ZDR and denied data collection on every request but does not dynamically verify policy metadata, leaving compatible model selection to deployment configuration.
