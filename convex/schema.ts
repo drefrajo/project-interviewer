@@ -577,6 +577,8 @@ export default defineSchema({
     basedOnReviewVersionId: v.optional(v.string()),
     language,
     status: v.union(v.literal("editing"), v.literal("sent")),
+    // Optional preserves legacy structured drafts; all reads project one.
+    markdown: v.optional(v.string()),
     sections: v.array(briefSection),
     warnings: v.array(briefWarning),
     createdAt: v.number(),
@@ -597,6 +599,8 @@ export default defineSchema({
       v.literal("approved"),
       v.literal("invalidated"),
     ),
+    // Review Versions written after the Markdown migration freeze this text.
+    markdown: v.optional(v.string()),
     sections: v.array(briefSection),
     sentAt: v.number(),
     approval: v.optional(

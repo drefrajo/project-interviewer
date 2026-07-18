@@ -14,10 +14,8 @@ import {
   type AiRole,
 } from "../src/infrastructure/openai-compatible-adapter";
 import { AI_ROLE_PROMPTS } from "../src/infrastructure/ai-role-prompts";
-import {
-  detectActualContentTypeFromBytes,
-  localParser,
-} from "../src/local/local-material-adapters";
+import { detectActualContentTypeFromBytes } from "../src/application/material-content-type";
+import { localParser } from "../src/local/local-material-adapters";
 import {
   findSuspectedSecrets,
   publicSuspectedSecrets,

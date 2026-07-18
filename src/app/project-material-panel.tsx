@@ -16,7 +16,7 @@ import type {
   ContextPackRevision,
   ProjectMaterialView,
 } from "../domain/project-material";
-import { detectActualContentType } from "../local/local-material-adapters";
+import { detectActualContentType } from "../application/material-content-type";
 import type { RouteContext } from "./routes";
 import { useI18n } from "./i18n";
 
@@ -307,21 +307,21 @@ export const ProjectMaterialPanel = ({
   return (
     <section
       aria-labelledby="project-material-heading"
-      className="material-panel"
-      id="material"
+      className="border border-line bg-surface p-5 shadow-[0_1.5rem_4rem_rgb(19_34_29_/_7%)] sm:p-8"
     >
-      <div className="material-heading">
+      <div className="flex flex-col items-start justify-between gap-5 sm:flex-row">
         <div>
-          <p className="eyebrow">{t("evidenceFirst")}</p>
-          <h2 id="project-material-heading">{t("material")}</h2>
-          <p>{t("materialPanelIntro")}</p>
+          <p className="mb-2 text-xs font-extrabold tracking-[0.14em] text-forest uppercase">{t("evidenceFirst")}</p>
+          <h2 className="mb-2 font-display text-3xl font-extrabold tracking-tight text-ink" id="project-material-heading">{t("material")}</h2>
+          <p className="max-w-3xl text-sm leading-6 text-muted">{t("materialPanelIntro")}</p>
         </div>
-        {!readOnly ? <label className={`button primary file-button ${!materialFileStore ? "disabled" : ""}`}>
+        {!readOnly ? <label className={`relative inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-md bg-forest px-4 py-2 text-sm font-bold text-white hover:bg-[#0f3d2f] focus-within:outline focus-within:outline-3 focus-within:outline-offset-3 focus-within:outline-[#255dff] ${!materialFileStore ? "cursor-not-allowed opacity-50" : ""}`}>
           <FileUp aria-hidden="true" size={18} />
           {t("addMaterial")}
           <input
             accept=".pdf,.docx,.pptx,.xlsx,.csv,.txt,.md,.markdown,.png,.jpg,.jpeg,.webp"
             aria-label={t("addMaterial")}
+            className="absolute inset-0 size-full cursor-pointer opacity-0"
             disabled={!materialFileStore}
             multiple
             onChange={upload}
@@ -330,45 +330,51 @@ export const ProjectMaterialPanel = ({
         </label> : null}
       </div>
 
-      <p className="material-limits">{t("materialLimits")}</p>
-      <p className="provider-disclosure">
+      <p className="mt-5 text-sm leading-6 text-muted">{t("materialLimits")}</p>
+      <p className="mt-3 flex items-start gap-2 border-l-[3px] border-coral bg-[#fff1e7] p-3 text-sm leading-6 text-ink">
         <ShieldAlert aria-hidden="true" size={17} />
         {t("imageProviderDisclosure")}
       </p>
       {error ? (
-        <div className="inline-alert error" role="alert">
+        <div className="mt-4 flex items-center gap-2 border-l-4 border-[#c65033] bg-[#fff1e7] p-3 text-sm font-semibold text-[#852f21]" role="alert">
           <AlertTriangle aria-hidden="true" size={18} />
           {error}
         </div>
       ) : null}
 
-      <div aria-live="polite" className="material-list">
+      <div aria-live="polite" className="mt-5 grid gap-3">
         {uploadingFiles.map((name, index) => (
           <article
-            className="material-item"
+            className="border border-line bg-[#f8f8f4] p-4"
             key={`${name}-${index}`}
           >
-            <div className="material-item-heading">
-              <h3>{name}</h3>
-              <span className="operation-state">
+            <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+              <h3 className="font-display text-base font-bold text-ink">{name}</h3>
+              <span className="inline-flex items-center bg-[#eef1ec] px-2 py-1 text-[0.68rem] font-extrabold tracking-[0.05em] text-ink uppercase">
                 {t("uploadingMaterial")}
               </span>
             </div>
           </article>
         ))}
         {materials.map((material) => (
-          <article className="material-item" key={material.id}>
-            <div className="material-item-heading">
+          <article className="border border-line bg-[#f8f8f4] p-4" key={material.id}>
+            <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
               <div>
-                <h3>{material.name}</h3>
-                <p>
+                <h3 className="break-all font-display text-base font-bold text-ink">{material.name}</h3>
+                <p className="mt-1 text-xs text-muted">
                   {formatBytes(material.size)} ·{" "}
                   {material.uploaderKind === "freelancer"
                     ? t("uploadedByFreelancer")
                     : t("uploadedByClient")}
                 </p>
               </div>
-              <span className={`operation-state state-${material.state}`}>
+              <span className={`inline-flex items-center gap-1 px-2 py-1 text-[0.68rem] font-extrabold tracking-[0.05em] uppercase ${
+                material.state === "analyzed"
+                  ? "bg-[#e5f3df] text-forest"
+                  : ["failed", "unsupported"].includes(material.state)
+                    ? "bg-[#fff0ec] text-[#852f21]"
+                    : "bg-[#eef1ec] text-ink"
+              }`}>
                 {material.state === "analyzed" ? (
                   <CheckCircle2 aria-hidden="true" size={15} />
                 ) : null}
@@ -377,33 +383,33 @@ export const ProjectMaterialPanel = ({
             </div>
 
             {material.analysis ? (
-              <div className="analysis-result">
-                <div className="analysis-meta">
-                  <span>{material.analysis.primaryCategory}</span>
-                  <span>
+              <div className="mt-4 bg-[#f5f6f0] p-4">
+                <div className="mb-3 flex flex-wrap gap-2">
+                  <span className="border border-line bg-white px-2 py-1 text-[0.7rem] font-extrabold uppercase">{material.analysis.primaryCategory}</span>
+                  <span className="border border-line bg-white px-2 py-1 text-[0.7rem] font-extrabold uppercase">
                     {Math.round(material.analysis.confidence * 100)}%{" "}
                     {t("confidence")}
                   </span>
-                  <span>{material.analysis.language.toUpperCase()}</span>
+                  <span className="border border-line bg-white px-2 py-1 text-[0.7rem] font-extrabold uppercase">{material.analysis.language.toUpperCase()}</span>
                 </div>
-                <p>{material.analysis.summary}</p>
+                <p className="leading-6 text-ink">{material.analysis.summary}</p>
                 <div
                   aria-label={t("summarySources")}
-                  className="source-chips"
+                  className="mt-3 mb-3 flex flex-wrap gap-1.5"
                 >
                   {material.analysis.summarySources.map(
                     (locator, index) => (
-                      <span key={`${locator.label}-${index}`}>
+                      <span className="bg-[#e3ede8] px-2 py-1 text-[0.7rem] font-extrabold text-forest" key={`${locator.label}-${index}`}>
                         {locator.label}
                       </span>
                     ),
                   )}
                 </div>
                 {material.analysis.signals.length ? (
-                  <ul className="signal-list">
+                  <ul className="grid list-none gap-2 p-0">
                     {material.analysis.signals.map((signal) => (
-                      <li key={`${signal.locator.label}-${signal.text}`}>
-                        <span>{signal.locator.label}</span>
+                      <li className="grid gap-1 border-t border-line pt-2 text-sm leading-6 text-ink" key={`${signal.locator.label}-${signal.text}`}>
+                        <span className="text-[0.7rem] font-extrabold text-forest">{signal.locator.label}</span>
                         {signal.text}
                       </li>
                     ))}
@@ -413,12 +419,12 @@ export const ProjectMaterialPanel = ({
             ) : null}
 
             {material.suspectedSecrets.length ? (
-              <div className="secret-warning">
-                <ShieldAlert aria-hidden="true" />
+              <div className="mt-4 flex items-start gap-3 bg-[#fff7dc] p-4">
+                <ShieldAlert aria-hidden="true" className="mt-0.5 shrink-0 text-[#8d5a18]" />
                 <div>
-                  <strong>{t("suspectedSecrets")}</strong>
-                  <p>{t("secretMaskingExplanation")}</p>
-                  <ul>
+                  <strong className="text-ink">{t("suspectedSecrets")}</strong>
+                  <p className="mt-1 text-sm leading-6 text-ink">{t("secretMaskingExplanation")}</p>
+                  <ul className="mt-2 list-disc pl-5 text-sm leading-6 text-ink">
                     {material.suspectedSecrets.map((secret) => (
                       <li key={`${secret.locator.label}-${secret.maskedPreview}`}>
                         <code>{secret.maskedPreview}</code> ·{" "}
@@ -430,8 +436,9 @@ export const ProjectMaterialPanel = ({
                   material.canIncludeSuspectedSecrets &&
                   !readOnly ? (
                     <>
-                      <label className="check-row compact">
+                      <label className="mt-3 flex items-start gap-3 text-sm leading-6 text-ink">
                         <input
+                          className="mt-0.5 size-5 shrink-0"
                           checked={
                             overrideAcknowledged[material.id] === true
                           }
@@ -446,7 +453,7 @@ export const ProjectMaterialPanel = ({
                         <span>{t("secretOverrideDisclosure")}</span>
                       </label>
                       <button
-                        className="button ghost"
+                        className="mt-3 inline-flex min-h-11 items-center justify-center rounded-md border border-line bg-transparent px-4 py-2 text-sm font-bold text-ink hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
                         disabled={
                           !overrideAcknowledged[material.id] ||
                           secretOverridesInFlight[material.id]
@@ -467,10 +474,11 @@ export const ProjectMaterialPanel = ({
             ) : null}
 
             {material.state === "analyzed" && !readOnly ? (
-              <div className="feedback-form">
-                <label className="field">
+              <div className="mt-4 grid items-end gap-3 md:grid-cols-[minmax(12rem,2fr)_minmax(9rem,1fr)_auto]">
+                <label className="flex flex-col gap-1.5 text-sm font-bold text-ink">
                   <span>{t("analysisFeedback")}</span>
                   <input
+                    className="min-h-11 rounded-md border border-[#bec7c0] bg-white px-3 py-2 font-normal"
                     onChange={(event) =>
                       setFeedbackDrafts((current) => ({
                         ...current,
@@ -481,9 +489,10 @@ export const ProjectMaterialPanel = ({
                     value={feedbackDrafts[material.id] ?? ""}
                   />
                 </label>
-                <label className="field">
+                <label className="flex flex-col gap-1.5 text-sm font-bold text-ink">
                   <span>{t("feedbackSource")}</span>
                   <select
+                    className="min-h-11 rounded-md border border-[#bec7c0] bg-white px-3 py-2 font-normal"
                     onChange={(event) =>
                       setFeedbackLocatorIndexes((current) => ({
                         ...current,
@@ -505,7 +514,7 @@ export const ProjectMaterialPanel = ({
                   </select>
                 </label>
                 <button
-                  className="button ghost"
+                  className="inline-flex min-h-11 items-center justify-center rounded-md border border-line bg-transparent px-4 py-2 text-sm font-bold text-ink hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
                   disabled={!feedbackDrafts[material.id]?.trim()}
                   onClick={() => void addFeedback(material.id)}
                   type="button"
@@ -515,11 +524,11 @@ export const ProjectMaterialPanel = ({
               </div>
             ) : null}
 
-            {!readOnly ? <div className="material-actions">
+            {!readOnly ? <div className="mt-4 flex flex-wrap justify-end gap-2">
               {actor.kind === "freelancer" &&
               material.state === "analyzed" ? (
                 <button
-                  className="button ghost"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-line bg-transparent px-4 py-2 text-sm font-bold text-ink hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
                   disabled={reanalysisInFlight[material.id]}
                   onClick={() => void reanalyze(material.id)}
                   type="button"
@@ -530,7 +539,7 @@ export const ProjectMaterialPanel = ({
               ) : null}
               {material.retryAvailable ? (
                 <button
-                  className="button ghost"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-line bg-transparent px-4 py-2 text-sm font-bold text-ink hover:bg-white"
                   onClick={() => void retry(material.id)}
                   type="button"
                 >
@@ -539,7 +548,7 @@ export const ProjectMaterialPanel = ({
               ) : null}
               {material.canRemove ? (
                 <button
-                  className="button ghost danger"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-[#e9b29e] bg-transparent px-4 py-2 text-sm font-bold text-[#852f21] hover:bg-[#fff1e7]"
                   onClick={() => void remove(material.id)}
                   type="button"
                 >
@@ -551,15 +560,15 @@ export const ProjectMaterialPanel = ({
         ))}
       </div>
 
-      {!readOnly && ((!materials.length && !uploadingFiles.length) ||
+      {actor.kind === "client" && !readOnly && ((!materials.length && !uploadingFiles.length) ||
       (room.interviewReadiness === "waiting_for_material" &&
         materials.every(({ state }) =>
           ["analyzed", "unsupported", "failed"].includes(state),
         ))) ? (
-        <div className="no-material">
-          <p>{t("noMaterialYet")}</p>
+        <div className="mt-4 border border-dashed border-[#aeb8b1] p-5 text-center">
+          <p className="mb-3 text-sm text-muted">{t("noMaterialYet")}</p>
           <button
-            className="button ghost"
+            className="inline-flex min-h-11 items-center justify-center rounded-md border border-line bg-transparent px-4 py-2 text-sm font-bold text-ink hover:bg-[#f5f6f0]"
             onClick={() => void continueWithoutFiles()}
             type="button"
           >
@@ -569,16 +578,16 @@ export const ProjectMaterialPanel = ({
       ) : null}
 
       {contextPack ? (
-        <div className="context-pack-summary">
+        <div className="mt-4 flex flex-wrap items-baseline gap-x-4 gap-y-2 bg-[#e9efe9] p-4 text-sm text-ink">
           <strong>
             {t("contextPackRevision")} {contextPack.revision}
           </strong>
           <span>{contextPack.reason.replaceAll("_", " ")}</span>
           {contextPack.minimalContextWarning ? (
-            <p>{t("minimalContextWarning")}</p>
+            <p className="basis-full m-0">{t("minimalContextWarning")}</p>
           ) : null}
           {contextPack.feedback.map((feedback) => (
-            <p key={feedback.id}>
+            <p className="basis-full m-0" key={feedback.id}>
               <strong>{t("analysisFeedback")}:</strong>{" "}
               {feedback.explanation}
             </p>

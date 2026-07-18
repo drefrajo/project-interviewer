@@ -2649,6 +2649,11 @@ export const createProjectInterviewer = (
         actor: RoomActor,
         roomId: string,
       ): Promise<ContextPackRevision> {
+        if (actor.kind !== "client") {
+          throw new AuthorizationError(
+            "Only the Client may continue without Project Material.",
+          );
+        }
         const room = requireWritableRoomActor(actor, roomId);
         if (
           state.projectMaterials.some(

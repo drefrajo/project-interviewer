@@ -160,10 +160,6 @@ const createHarness = async (
       .catch(() => undefined);
   };
   for (const material of fixture.materials) await addAndProcess(material);
-  const currentRoom = await application.rooms.get(freelancer, room.id);
-  if (currentRoom.interviewReadiness !== "ready") {
-    await application.materials.continueWithoutFiles(freelancer, room.id);
-  }
   const client = (
     await application.clientAccess.resolveInvite(inviteToken, {
       deviceId: `${fixture.id}-device-a`,
@@ -174,6 +170,10 @@ const createHarness = async (
     interviewLanguage: fixture.language,
     acknowledgedDisclosure: true,
   });
+  const currentRoom = await application.rooms.get(freelancer, room.id);
+  if (currentRoom.interviewReadiness !== "ready") {
+    await application.materials.continueWithoutFiles(client, room.id);
+  }
   return {
     application,
     freelancer,

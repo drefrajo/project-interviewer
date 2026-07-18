@@ -23,6 +23,15 @@ export interface HostedRuntime {
   authClient: ProductionAuthClient;
 }
 
+const centeredPage =
+  "flex min-h-[calc(100vh-4.5rem)] items-center justify-center px-4 py-8 sm:px-8";
+const primaryButton =
+  "inline-flex min-h-11 items-center justify-center rounded-md bg-forest px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-[#0f3d2f] disabled:cursor-not-allowed disabled:opacity-60";
+const secondaryButton =
+  "inline-flex min-h-11 items-center justify-center rounded-md border border-line bg-transparent px-4 py-2 text-sm font-bold text-ink transition-colors hover:bg-[#f5f6f0] disabled:cursor-not-allowed disabled:opacity-60";
+const ghostButton =
+  "inline-flex min-h-9 items-center justify-center rounded-md px-3 py-1.5 text-sm font-bold text-forest transition-colors hover:bg-[#e3ede8] disabled:cursor-not-allowed disabled:opacity-60";
+
 export const createHostedRuntime = (configuration: {
   convexUrl: string;
   convexSiteUrl: string;
@@ -105,15 +114,19 @@ export const HostedApplicationRoot = ({
   );
   if (error) {
     return (
-      <main className="page centered" id="main-content">
-        <p role="alert">{error}</p>
+      <main className={centeredPage} id="main-content">
+        <p className="w-full max-w-xl border-l-4 border-coral bg-[#fff1e7] p-4 font-bold text-[#852f21]" role="alert">
+          {error}
+        </p>
       </main>
     );
   }
   if (!ready) {
     return (
-      <main className="page centered" id="main-content">
-        <p role="status">Opening your hosted workspace…</p>
+      <main className={centeredPage} id="main-content">
+        <p className="font-semibold text-muted" role="status">
+          Opening your hosted workspace…
+        </p>
       </main>
     );
   }
@@ -132,30 +145,43 @@ const HostedAuthenticationGate = ({
   if (inviteRoute) return children;
   if (session.isPending) {
     return (
-      <main className="page centered" id="main-content">
-        <p role="status">Checking your secure session…</p>
+      <main className={centeredPage} id="main-content">
+        <p className="font-semibold text-muted" role="status">
+          Checking your secure session…
+        </p>
       </main>
     );
   }
   if (!session.data) {
     return (
-      <main className="page centered" id="main-content">
-        <section className="panel narrow" aria-labelledby="hosted-sign-in">
-          <h1 id="hosted-sign-in">Sign in as Freelancer</h1>
-          <p>
+      <main className={centeredPage} id="main-content">
+        <section
+          aria-labelledby="hosted-sign-in"
+          className="w-full max-w-xl border border-line bg-surface p-6 shadow-[0_1.5rem_4rem_rgb(19_34_29_/_7%)] sm:p-8"
+        >
+          <p className="mb-2 text-xs font-extrabold tracking-[0.14em] text-forest uppercase">
+            Hosted workspace
+          </p>
+          <h1
+            className="mb-3 font-display text-3xl leading-tight font-extrabold tracking-tight text-ink sm:text-4xl"
+            id="hosted-sign-in"
+          >
+            Sign in as Freelancer
+          </h1>
+          <p className="mb-6 leading-7 text-muted">
             Use Google or GitHub to create the account. You can add independent
             passkeys after signing in.
           </p>
-          <div className="actions">
+          <div className="flex flex-wrap gap-3">
             <button
-              className="button primary"
+              className={primaryButton}
               onClick={() => void authClient.signIn.passkey()}
               type="button"
             >
               Continue with a passkey
             </button>
             <button
-              className="button primary"
+              className={primaryButton}
               onClick={() =>
                 void authClient.signIn.social({
                   provider: "google",
@@ -167,7 +193,7 @@ const HostedAuthenticationGate = ({
               Continue with Google
             </button>
             <button
-              className="button secondary"
+              className={secondaryButton}
               onClick={() =>
                 void authClient.signIn.social({
                   provider: "github",
@@ -255,15 +281,20 @@ const HostedAccountMethods = ({
   };
 
   return (
-    <aside className="panel" aria-label="Account sign-in methods">
-      <details>
-        <summary>Account and passkeys</summary>
-        <p>
+    <aside
+      aria-label="Account sign-in methods"
+      className="border-b border-line bg-surface px-4 py-3 sm:px-8 lg:px-16"
+    >
+      <details className="mx-auto max-w-7xl">
+        <summary className="cursor-pointer font-bold text-ink">
+          Account and passkeys
+        </summary>
+        <p className="mt-3 text-sm leading-6 text-muted">
           Add at least two passkeys before removing your final OAuth provider.
         </p>
-        <div className="actions">
+        <div className="mt-4 flex flex-wrap gap-3">
           <button
-            className="button secondary"
+            className={secondaryButton}
             onClick={async () => {
               const result = await authClient.passkey.addPasskey({
                 name: "Project Interviewer passkey",
@@ -281,7 +312,7 @@ const HostedAccountMethods = ({
           </button>
           {(["google", "github"] as const).map((provider) => (
             <button
-              className="button secondary"
+              className={secondaryButton}
               key={provider}
               onClick={() =>
                 void authClient.linkSocial({
@@ -295,12 +326,15 @@ const HostedAccountMethods = ({
             </button>
           ))}
         </div>
-        <ul>
+        <ul className="mt-4 grid gap-2">
           {accounts.map((account) => (
-            <li key={account.id}>
-              {account.providerId}
+            <li
+              className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-3 text-sm text-ink"
+              key={account.id}
+            >
+              <span>{account.providerId}</span>
               <button
-                className="button ghost"
+                className={ghostButton}
                 onClick={() =>
                   void remove({
                     kind: "oauth",
@@ -315,10 +349,13 @@ const HostedAccountMethods = ({
             </li>
           ))}
           {passkeys.map((passkey) => (
-            <li key={passkey.id}>
-              {passkey.name || "Passkey"}
+            <li
+              className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-3 text-sm text-ink"
+              key={passkey.id}
+            >
+              <span>{passkey.name || "Passkey"}</span>
               <button
-                className="button ghost"
+                className={ghostButton}
                 onClick={() =>
                   void remove({ kind: "passkey", id: passkey.id })
                 }
@@ -329,7 +366,11 @@ const HostedAccountMethods = ({
             </li>
           ))}
         </ul>
-        <p aria-live="polite">{status}</p>
+        {status ? (
+          <p aria-live="polite" className="mt-3 text-sm font-semibold text-forest">
+            {status}
+          </p>
+        ) : null}
       </details>
     </aside>
   );

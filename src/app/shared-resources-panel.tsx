@@ -170,41 +170,40 @@ export const SharedResourcesPanel = ({
   return (
     <section
       aria-labelledby="shared-resources-heading"
-      className="shared-resources-panel"
-      id="resources"
+      className="border border-line bg-surface p-5 shadow-[0_1.5rem_4rem_rgb(19_34_29_/_7%)] sm:p-6"
     >
-      <div className="section-heading">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="eyebrow">{copy.title}</p>
-          <h2 id="shared-resources-heading">
+          <p className="mb-2 text-xs font-extrabold tracking-[0.14em] text-forest uppercase">{copy.title}</p>
+          <h2 className="mb-2 flex items-center gap-2 font-display text-2xl font-extrabold tracking-tight text-ink" id="shared-resources-heading">
             <Link2 aria-hidden="true" size={22} /> {copy.title}
           </h2>
-          <p>{copy.intro}</p>
+          <p className="max-w-2xl text-sm leading-6 text-muted">{copy.intro}</p>
         </div>
       </div>
       {readOnly ? (
-        <p className="archived-notice" role="status">
+        <p className="my-4 border-l-[3px] border-coral bg-[#fff1e7] p-3 text-sm leading-6 text-ink" role="status">
           {copy.archived}
         </p>
       ) : null}
-      {error ? <p role="alert">{error}</p> : null}
-      <div aria-live="polite" className="shared-resource-list">
+      {error ? <p className="mt-4 font-bold text-[#852f21]" role="alert">{error}</p> : null}
+      <div aria-live="polite" className="my-4 grid gap-3">
         {resources.length ? (
           resources.map((resource, index) => (
-            <article className="shared-resource" key={resource.id}>
+            <article className="flex flex-col items-start justify-between gap-4 border border-line bg-[#f8f8f4] p-4 sm:flex-row" key={resource.id}>
               {editingId === resource.id ? (
-                <form onSubmit={(event) => update(event, resource.id)}>
+                <form className="w-full" onSubmit={(event) => update(event, resource.id)}>
                   <ResourceFields copy={copy} resource={resource} />
-                  <div className="form-actions">
+                  <div className="mt-4 flex flex-wrap justify-end gap-2">
                     <button
-                      className="button primary"
+                      className="inline-flex min-h-11 items-center justify-center rounded-md bg-forest px-4 py-2 text-sm font-bold text-white hover:bg-[#0f3d2f]"
                       disabled={busy}
                       type="submit"
                     >
                       {copy.save}
                     </button>
                     <button
-                      className="button ghost"
+                      className="inline-flex min-h-11 items-center justify-center rounded-md border border-line bg-transparent px-4 py-2 text-sm font-bold text-ink hover:bg-white"
                       onClick={() => setEditingId(undefined)}
                       type="button"
                     >
@@ -214,9 +213,10 @@ export const SharedResourcesPanel = ({
                 </form>
               ) : (
                 <>
-                  <div>
+                  <div className="min-w-0">
                     {resource.url ? (
                       <a
+                        className="inline-flex items-center gap-1 font-display font-bold text-forest hover:underline"
                         href={resource.url}
                         rel="noreferrer"
                         target="_blank"
@@ -225,21 +225,21 @@ export const SharedResourcesPanel = ({
                         <ExternalLink aria-hidden="true" size={15} />
                       </a>
                     ) : (
-                      <h3>{resource.label}</h3>
+                      <h3 className="mb-1 font-display text-lg font-bold text-ink">{resource.label}</h3>
                     )}
-                    {resource.note ? <p>{resource.note}</p> : null}
+                    {resource.note ? <p className="mt-1 text-sm leading-6 text-muted">{resource.note}</p> : null}
                     {resource.accountIdentifier ? (
-                      <code>{resource.accountIdentifier}</code>
+                      <code className="mt-2 inline-block rounded bg-white px-2 py-1 text-xs text-ink">{resource.accountIdentifier}</code>
                     ) : null}
                   </div>
                   {canManage ? (
                     <div
                       aria-label={`${copy.title}: ${resource.label}`}
-                      className="resource-actions"
+                      className="flex shrink-0 gap-1"
                     >
                       <button
                         aria-label={`${copy.up}: ${resource.label}`}
-                        className="icon-button"
+                        className="inline-flex size-9 items-center justify-center rounded-md border border-line bg-surface text-ink hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
                         disabled={busy || index === 0}
                         onClick={() => move(index, -1)}
                         type="button"
@@ -248,7 +248,7 @@ export const SharedResourcesPanel = ({
                       </button>
                       <button
                         aria-label={`${copy.down}: ${resource.label}`}
-                        className="icon-button"
+                        className="inline-flex size-9 items-center justify-center rounded-md border border-line bg-surface text-ink hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
                         disabled={
                           busy || index === resources.length - 1
                         }
@@ -259,7 +259,7 @@ export const SharedResourcesPanel = ({
                       </button>
                       <button
                         aria-label={`${copy.edit}: ${resource.label}`}
-                        className="icon-button"
+                        className="inline-flex size-9 items-center justify-center rounded-md border border-line bg-surface text-ink hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
                         disabled={busy}
                         onClick={() => setEditingId(resource.id)}
                         type="button"
@@ -268,7 +268,7 @@ export const SharedResourcesPanel = ({
                       </button>
                       <button
                         aria-label={`${copy.remove}: ${resource.label}`}
-                        className="icon-button danger"
+                        className="inline-flex size-9 items-center justify-center rounded-md border border-[#e9b29e] bg-surface text-[#852f21] hover:bg-[#fff1e7] disabled:cursor-not-allowed disabled:opacity-50"
                         disabled={busy}
                         onClick={() =>
                           perform(() =>
@@ -290,19 +290,19 @@ export const SharedResourcesPanel = ({
             </article>
           ))
         ) : (
-          <p>{copy.empty}</p>
+          <p className="border border-dashed border-[#aeb8b1] p-5 text-sm text-muted">{copy.empty}</p>
         )}
       </div>
       {canManage ? (
         <form
-          className="resource-form"
+          className="border-t border-line pt-5"
           key={createFormVersion}
           onSubmit={create}
         >
           <ResourceFields copy={copy} />
-          <p className="credential-warning">{copy.warning}</p>
+          <p className="my-4 border-l-[3px] border-coral bg-[#fff1e7] p-3 text-sm leading-6 text-ink">{copy.warning}</p>
           <button
-            className="button primary"
+            className="inline-flex min-h-11 items-center justify-center rounded-md bg-forest px-4 py-2 text-sm font-bold text-white hover:bg-[#0f3d2f] disabled:cursor-not-allowed disabled:opacity-60"
             disabled={busy}
             type="submit"
           >
@@ -321,31 +321,34 @@ const ResourceFields = ({
   copy: (typeof text)[keyof typeof text];
   resource?: SharedResource;
 }) => (
-  <div className="resource-fields">
-    <label className="field">
+  <div className="grid gap-3 sm:grid-cols-2">
+    <label className="flex flex-col gap-1.5 text-sm font-bold text-ink">
       <span>{copy.label}</span>
       <input
+        className="min-h-11 rounded-md border border-[#bec7c0] bg-white px-3 py-2 font-normal"
         defaultValue={resource?.label}
         name="label"
         required
       />
     </label>
-    <label className="field">
+    <label className="flex flex-col gap-1.5 text-sm font-bold text-ink">
       <span>{copy.url}</span>
       <input
+        className="min-h-11 rounded-md border border-[#bec7c0] bg-white px-3 py-2 font-normal"
         defaultValue={resource?.url}
         name="url"
         type="url"
       />
     </label>
-    <label className="field">
+    <label className="flex flex-col gap-1.5 text-sm font-bold text-ink">
       <span>{copy.note}</span>
-      <textarea defaultValue={resource?.note} name="note" rows={2} />
+      <textarea className="min-h-20 rounded-md border border-[#bec7c0] bg-white px-3 py-2 font-normal" defaultValue={resource?.note} name="note" rows={2} />
     </label>
-    <label className="field">
+    <label className="flex flex-col gap-1.5 text-sm font-bold text-ink">
       <span>{copy.account}</span>
       <input
         autoComplete="off"
+        className="min-h-11 rounded-md border border-[#bec7c0] bg-white px-3 py-2 font-normal"
         defaultValue={resource?.accountIdentifier}
         name="accountIdentifier"
       />

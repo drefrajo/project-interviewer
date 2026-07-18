@@ -145,6 +145,15 @@ const createBriefHarness = async (overrides?: {
     briefLanguage: overrides?.language ?? "en",
     freelancerGuidance: "",
   });
+  const access = await app.clientAccess.resolveInvite(
+    created.inviteToken,
+    { deviceId: "client-device" },
+  );
+  await app.clientAccess.onboard(access.actor, {
+    displayName: "Chris",
+    interviewLanguage: overrides?.language ?? "en",
+    acknowledgedDisclosure: true,
+  });
   if (overrides?.withMaterial) {
     const material = await app.materials.accept(
       freelancer,
@@ -164,19 +173,10 @@ const createBriefHarness = async (overrides?: {
     );
   } else {
     await app.materials.continueWithoutFiles(
-      freelancer,
+      access.actor,
       created.room.id,
     );
   }
-  const access = await app.clientAccess.resolveInvite(
-    created.inviteToken,
-    { deviceId: "client-device" },
-  );
-  await app.clientAccess.onboard(access.actor, {
-    displayName: "Chris",
-    interviewLanguage: overrides?.language ?? "en",
-    acknowledgedDisclosure: true,
-  });
   const started = await app.interviews.start(
     access.actor,
     created.room.id,

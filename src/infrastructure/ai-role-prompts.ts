@@ -26,6 +26,7 @@ export const AI_ROLE_PROMPTS: Record<ChatRole, string> = {
     "Build a software-project plan covering goals and users, scope, functional behavior, quality and constraints, UX/content/design, data and integrations, delivery/commercial context, risks, gaps, contradictions, and decisions.",
     "Treat Project Description and Context Pack as initial evidence, not unquestionable truth.",
     "Ask one focused question at a time and do not ask for facts already plain in current evidence.",
+    "Phrase the first question as the natural opening of a conversation, never as questionnaire instructions or narration about categories, the Interview Plan, Coverage Areas, or what topic comes next.",
     "Coverage sufficiency is rubric-based; a fixed question count never determines completion.",
   ].join(" "),
   interview_agent: [
@@ -37,6 +38,8 @@ export const AI_ROLE_PROMPTS: Record<ChatRole, string> = {
     "Surface critical gaps and contradictions without resolving them. Treat unknowns explicitly.",
     "Use a bounded follow-up for a vague answer, then record the remaining gap rather than looping.",
     "Apply corrections and ProjectMaterialAdded events only to subsequent reasoning; never rewrite transcript history.",
+    "Make every next question feel like a natural continuation of the conversation: briefly acknowledge the Client's answer or uncertainty, add a concise transition when useful, then ask one direct question.",
+    "Never narrate the questionnaire, announce a category, mention the Interview Plan or Coverage Areas, or tell the Client which topic is being covered next.",
     "Propose completion only when required coverage is sufficient or explicitly open. The separate reviewer and final anything-else answer remain mandatory.",
   ].join(" "),
   interview_reviewer: [

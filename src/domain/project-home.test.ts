@@ -253,7 +253,7 @@ describe("Project Home public service", () => {
       note: "The approved operating notes remain available.",
     });
     await application.materials.continueWithoutFiles(
-      freelancer,
+      client,
       room.id,
     );
 
@@ -539,6 +539,7 @@ describe("Project Home public service", () => {
         version: 1,
         language: "en",
         status: "approved",
+        markdown: "# Project Brief",
         sections: [],
         sentAt: 3,
         approval: {
@@ -555,6 +556,7 @@ describe("Project Home public service", () => {
         version: 2,
         language: "en",
         status: "awaiting_client",
+        markdown: "# Project Brief",
         sections: [],
         sentAt: 5,
       },

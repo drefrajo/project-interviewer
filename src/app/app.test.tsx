@@ -42,6 +42,31 @@ const createTestApplication = (
   return createProjectInterviewer(dependencies);
 };
 
+const onboardClientAndContinueWithoutMaterial = async (
+  application: ReturnType<typeof createTestApplication>,
+  input: {
+    inviteToken: string;
+    roomId: string;
+    deviceId?: string;
+    displayName?: string;
+  },
+) => {
+  const access = await application.clientAccess.resolveInvite(
+    input.inviteToken,
+    { deviceId: input.deviceId ?? "client-device" },
+  );
+  await application.clientAccess.onboard(access.actor, {
+    displayName: input.displayName ?? "Casey",
+    interviewLanguage: "en",
+    acknowledgedDisclosure: true,
+  });
+  await application.materials.continueWithoutFiles(
+    access.actor,
+    input.roomId,
+  );
+  return access;
+};
+
 describe("File-First Discovery application shell", () => {
   it("lets a Freelancer create and open a Project Room from the Workspace", async () => {
     const user = userEvent.setup();
@@ -73,12 +98,31 @@ describe("File-First Discovery application shell", () => {
       await screen.findByRole("heading", { name: "Alpine Portal" }),
     ).toBeInTheDocument();
     expect(screen.getByText(/test-invite-1/)).toBeInTheDocument();
+    const tabs = screen.getByRole("tablist", { name: /project room/i });
+    expect(within(tabs).getAllByRole("tab")).toHaveLength(4);
     expect(
-      screen.getByRole("navigation", { name: /project room/i }),
+      within(tabs).getByRole("tab", { name: /^overview$/i }),
+    ).toHaveAttribute("aria-selected", "true");
+    expect(
+      screen.getByRole("heading", { name: /shared resources/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/add project material here/i),
+      screen.queryByLabelText(/add project material/i),
+    ).not.toBeInTheDocument();
+
+    await user.click(
+      within(tabs).getByRole("tab", { name: /project material/i }),
+    );
+    expect(
+      await screen.findByLabelText(/add project material/i),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /continue without files/i }),
+    ).not.toBeInTheDocument();
+
+    await user.click(
+      within(tabs).getByRole("tab", { name: /^overview$/i }),
+    );
 
     await user.click(
       screen.getByRole("button", { name: /rotate invite link/i }),
@@ -252,6 +296,10 @@ describe("File-First Discovery application shell", () => {
       </MemoryRouter>,
     );
 
+    await user.click(
+      await screen.findByRole("tab", { name: /project material/i }),
+    );
+
     await user.upload(
       await screen.findByLabelText(/add project material/i),
       new File(["Portal launch target: October."], "Brief.txt", {
@@ -268,7 +316,7 @@ describe("File-First Discovery application shell", () => {
     expect(screen.getAllByText(/paragraph 1/i).length).toBeGreaterThan(0);
   });
 
-  it("runs the one-question Client interview from Project Home", async () => {
+  it("runs the Client interview as a conversation from Project Home", async () => {
     localStorage.setItem("project-interviewer.locale", "en");
     const user = userEvent.setup();
     const application = createTestApplication();
@@ -283,10 +331,12 @@ describe("File-First Discovery application shell", () => {
       briefLanguage: "en",
       freelancerGuidance: "",
     });
-    await application.materials.continueWithoutFiles(
-      freelancer,
-      created.room.id,
-    );
+    localStorage.setItem("project-interviewer.device-id", "browser-device");
+    await onboardClientAndContinueWithoutMaterial(application, {
+      inviteToken: created.inviteToken,
+      roomId: created.room.id,
+      deviceId: "browser-device",
+    });
     const routes = createRoutes(application, freelancer);
     const TestRoutes = () => useRoutes(routes);
     render(
@@ -294,17 +344,12 @@ describe("File-First Discovery application shell", () => {
         <TestRoutes />
       </MemoryRouter>,
     );
-    await user.type(
-      await screen.findByLabelText(/your display name/i),
-      "Casey",
-    );
-    await user.click(screen.getByRole("checkbox"));
     await user.click(
-      screen.getByRole("button", { name: /enter project room/i }),
+      await screen.findByRole("tab", { name: /discovery interview/i }),
     );
     await user.click(
       await screen.findByRole("button", {
-        name: /start discovery interview/i,
+        name: /start conversation/i,
       }),
     );
 
@@ -314,12 +359,12 @@ describe("File-First Discovery application shell", () => {
       }),
     ).toBeInTheDocument();
     await user.type(
-      screen.getByLabelText(/your answer/i),
+      screen.getByLabelText(/your reply/i),
       "Customers should submit service requests without calling support.",
     );
     await user.click(
       screen.getByRole("button", {
-        name: /save answer and continue/i,
+        name: /send reply/i,
       }),
     );
     expect(
@@ -327,18 +372,18 @@ describe("File-First Discovery application shell", () => {
         name: /what must the first useful release include/i,
       }),
     ).toBeInTheDocument();
+    const conversation = screen.getByRole("list", {
+      name: /discovery interview/i,
+    });
     expect(
-      screen.getByRole("heading", { name: /accepted answers/i }),
-    ).toBeInTheDocument();
+      within(conversation).getByRole("article", { name: /^you$/i }),
+    ).toHaveTextContent(
+      "Customers should submit service requests without calling support.",
+    );
     expect(
-      screen.getByRole("heading", { name: /^coverage$/i }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", {
-        name: /discovery findings/i,
-      }),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/client request:/i)).toBeInTheDocument();
+      screen.queryByRole("heading", { name: /^coverage$/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/discovery findings/i)).not.toBeInTheDocument();
   });
 
   it("shows the durable accepted answer while the next AI step is still running", async () => {
@@ -376,10 +421,12 @@ describe("File-First Discovery application shell", () => {
       briefLanguage: "en",
       freelancerGuidance: "",
     });
-    await application.materials.continueWithoutFiles(
-      freelancer,
-      created.room.id,
-    );
+    localStorage.setItem("project-interviewer.device-id", "browser-device");
+    await onboardClientAndContinueWithoutMaterial(application, {
+      inviteToken: created.inviteToken,
+      roomId: created.room.id,
+      deviceId: "browser-device",
+    });
     const routes = createRoutes(application, freelancer);
     const TestRoutes = () => useRoutes(routes);
     const user = userEvent.setup();
@@ -388,33 +435,28 @@ describe("File-First Discovery application shell", () => {
         <TestRoutes />
       </MemoryRouter>,
     );
-    await user.type(
-      await screen.findByLabelText(/your display name/i),
-      "Casey",
-    );
-    await user.click(screen.getByRole("checkbox"));
     await user.click(
-      screen.getByRole("button", { name: /enter project room/i }),
+      await screen.findByRole("tab", { name: /discovery interview/i }),
     );
     await user.click(
       await screen.findByRole("button", {
-        name: /start discovery interview/i,
+        name: /start conversation/i,
       }),
     );
 
     const answer =
       "Customers should submit service requests without calling support.";
-    await user.type(screen.getByLabelText(/your answer/i), answer);
+    await user.type(screen.getByLabelText(/your reply/i), answer);
     await user.click(
       screen.getByRole("button", {
-        name: /save answer and continue/i,
+        name: /send reply/i,
       }),
     );
 
     await vi.waitFor(() => expect(agentStarted).toHaveBeenCalledOnce());
     expect(await screen.findByText(answer)).toBeInTheDocument();
     expect(
-      screen.getByText(/evaluating the accepted answer/i),
+      screen.getByText(/considering that and preparing the next question/i),
     ).toBeInTheDocument();
 
     resolveAgent?.({
@@ -463,10 +505,6 @@ describe("File-First Discovery application shell", () => {
       briefLanguage: "en",
       freelancerGuidance: "",
     });
-    await application.materials.continueWithoutFiles(
-      freelancer,
-      created.room.id,
-    );
     const access = await application.clientAccess.resolveInvite(
       created.inviteToken,
       { deviceId: "client-device" },
@@ -476,6 +514,10 @@ describe("File-First Discovery application shell", () => {
       interviewLanguage: "en",
       acknowledgedDisclosure: true,
     });
+    await application.materials.continueWithoutFiles(
+      access.actor,
+      created.room.id,
+    );
     const started = await application.interviews.start(
       access.actor,
       created.room.id,
@@ -510,6 +552,9 @@ describe("File-First Discovery application shell", () => {
     );
 
     await user.click(
+      await screen.findByRole("tab", { name: /project brief/i }),
+    );
+    await user.click(
       await screen.findByRole("button", {
         name: /generate project brief/i,
       }),
@@ -517,65 +562,41 @@ describe("File-First Discovery application shell", () => {
     expect(
       await screen.findByRole("heading", { name: /brief draft/i }),
     ).toBeInTheDocument();
-    expect(
-      screen.getAllByRole("button", { name: /interview turn/i })[0],
-    ).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "DE" }));
-    expect(
-      screen.getByRole("option", { name: "Anforderung" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getAllByLabelText(/punkt bearbeiten/i)[0],
-    ).toBeInTheDocument();
-    expect(screen.queryByText("functional-requirements")).toBeNull();
-    await user.click(screen.getByRole("button", { name: "EN" }));
-    const summaryEditor = screen.getByLabelText(
-      /content for executive summary/i,
+    const markdownEditor = screen.getByLabelText(/project brief markdown/i);
+    const generatedMarkdown = (markdownEditor as HTMLTextAreaElement).value;
+    expect(generatedMarkdown).toContain("# Project Brief");
+    expect(generatedMarkdown).toContain("single sign-on");
+    const revisedMarkdown = generatedMarkdown.replace(
+      "The product must support single sign-on.",
+      "The product must support single sign-on for every staff member.",
     );
-    await user.clear(summaryEditor);
-    await user.click(
-      within(summaryEditor.closest("section")!).getByRole("button", {
-        name: /^save$/i,
-      }),
-    );
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      /section content is required/i,
-    );
-    const addInput = screen.getByLabelText(
-      /add freelancer-authored requirement/i,
-    );
-    await user.type(addInput, "A single rapid-submit requirement.");
-    const addForm = addInput.closest("form")!;
-    fireEvent.submit(addForm);
-    fireEvent.submit(addForm);
-    await vi.waitFor(async () => {
-      const brief = await application.briefs.get(
-        freelancer,
-        created.room.id,
-      );
-      expect(
-        brief.draft!.sections
-          .flatMap(({ items }) => items)
-          .filter(
-            ({ text }) =>
-              text === "A single rapid-submit requirement.",
-          ),
-      ).toHaveLength(1);
-      expect(addInput).toHaveValue("");
+    fireEvent.change(markdownEditor, {
+      target: { value: revisedMarkdown },
     });
-    const dirtyItem = screen.getAllByLabelText(/edit item/i)[0]!;
-    await user.clear(dirtyItem);
-    await user.type(dirtyItem, "Unsaved sibling item text.");
     await user.click(
-      screen.getAllByRole("button", {
-        name: /acknowledge open warning/i,
-      })[0]!,
+      screen.getByRole("button", { name: /save markdown/i }),
     );
-    expect(dirtyItem).toHaveValue("Unsaved sibling item text.");
-    for (const button of screen.queryAllByRole("button", {
-      name: /acknowledge open warning/i,
-    })) {
-      await user.click(button);
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      /markdown saved/i,
+    );
+    await user.click(
+      screen.getByRole("button", { name: /copy markdown/i }),
+    );
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      /markdown copied/i,
+    );
+    const preview = screen
+      .getByRole("heading", { name: /preview/i })
+      .parentElement!;
+    expect(
+      within(preview).getByText(/single sign-on for every staff member/i),
+    ).toBeInTheDocument();
+    while (
+      screen.queryAllByRole("button", { name: /^acknowledge$/i }).length
+    ) {
+      await user.click(
+        screen.getAllByRole("button", { name: /^acknowledge$/i })[0]!,
+      );
     }
     await user.click(
       screen.getByRole("button", { name: /send for client review/i }),
@@ -585,7 +606,9 @@ describe("File-First Discovery application shell", () => {
         name: /review version 1/i,
       }),
     ).toBeInTheDocument();
-    expect(screen.getAllByText(/^Proposed$/i)[0]).toBeInTheDocument();
+    expect(
+      screen.getByText(/single sign-on for every staff member/i),
+    ).toBeInTheDocument();
 
     rendered.unmount();
     localStorage.setItem(
@@ -597,22 +620,25 @@ describe("File-First Discovery application shell", () => {
         <TestRoutes />
       </MemoryRouter>,
     );
+    await user.click(
+      await screen.findByRole("tab", { name: /project brief/i }),
+    );
     expect(
       await screen.findByRole("heading", {
         name: /review version 1/i,
       }),
     ).toBeInTheDocument();
-    await user.click(
-      screen.getAllByRole("button", { name: /interview turn/i })[0]!,
-    );
     expect(
-      (await screen.findAllByText(/what should become better/i))
-        .length,
-    ).toBeGreaterThan(0);
-    await user.type(
-      screen.getByLabelText(/^change request$/i),
-      "Clarify who administers SSO.",
-    );
+      await screen.findByText(/single sign-on for every staff member/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/project-brief:section/i),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /approve this review version/i }),
+    ).toBeInTheDocument();
+    const changeRequestField = screen.getByLabelText(/^change request$/i);
+    await user.type(changeRequestField, "Clarify who administers SSO.");
     await user.click(
       screen.getByRole("button", { name: /save change request/i }),
     );
@@ -631,6 +657,25 @@ describe("File-First Discovery application shell", () => {
           }),
         ],
       }),
+    );
+    expect(changeRequestField).toHaveValue("Clarify who administers SSO.");
+    await user.clear(changeRequestField);
+    await user.type(
+      changeRequestField,
+      "Clarify who administers SSO and when access is revoked.",
+    );
+    await user.click(
+      screen.getByRole("button", { name: /save change request/i }),
+    );
+    await vi.waitFor(async () =>
+      expect(
+        (
+          await application.briefs.get(
+            access.actor,
+            created.room.id,
+          )
+        ).activeChangeRequest?.revisions,
+      ).toHaveLength(2),
     );
   });
 
@@ -733,9 +778,9 @@ describe("File-First Discovery application shell", () => {
         name: /move up: project handbook/i,
       }),
     );
-    const resourceList = document.querySelector<HTMLElement>(
-      ".shared-resource-list",
-    )!;
+    const resourceList = screen.getByRole("region", {
+      name: /shared resources/i,
+    });
     expect(
       within(resourceList)
         .getAllByRole("article")
@@ -855,8 +900,11 @@ describe("File-First Discovery application shell", () => {
         name: /restore archived room/i,
       }),
     );
+    const restoredRoom = await screen.findByRole("button", {
+      name: /open archived room/i,
+    });
     expect(
-      await screen.findByText("Setup", { selector: ".phase" }),
+      within(restoredRoom).getByText("Setup", { exact: true }),
     ).toBeInTheDocument();
 
     await user.click(
@@ -868,9 +916,7 @@ describe("File-First Discovery application shell", () => {
       await screen.findByRole("heading", { name: "Deleted room" }),
     ).toBeInTheDocument();
     expect(
-      screen.queryByText(/deleted room/i, {
-        selector: ".recently-deleted-list *",
-      }),
+      screen.queryByRole("region", { name: /recently deleted/i }),
     ).not.toBeInTheDocument();
   });
 
@@ -903,6 +949,7 @@ describe("File-First Discovery application shell", () => {
     });
     const routes = createRoutes(application, freelancer);
     const TestRoutes = () => useRoutes(routes);
+    const user = userEvent.setup();
     render(
       <MemoryRouter initialEntries={["/invite/test-invite-1"]}>
         <TestRoutes />
@@ -926,15 +973,20 @@ describe("File-First Discovery application shell", () => {
       ),
     ).toBeInTheDocument();
     expect(
+      screen.queryByRole("button", { name: /add shared resource/i }),
+    ).not.toBeInTheDocument();
+    const tabs = screen.getByRole("tablist", { name: /project room/i });
+    await user.click(
+      within(tabs).getByRole("tab", { name: /project material/i }),
+    );
+    expect(
       screen.queryByLabelText(/add project material/i),
     ).not.toBeInTheDocument();
+    await user.click(
+      within(tabs).getByRole("tab", { name: /discovery interview/i }),
+    );
     expect(
-      screen.queryByRole("button", {
-        name: /start discovery interview/i,
-      }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: /add shared resource/i }),
+      screen.queryByRole("button", { name: /start conversation/i }),
     ).not.toBeInTheDocument();
     await application.projectHome.lifecycle.delete(
       freelancer,

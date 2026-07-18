@@ -21,6 +21,24 @@ describe("developer-controlled AI role prompts", () => {
     expect(AI_ROLE_PROMPTS.interview_reviewer).toContain("read-only");
   });
 
+  it("requires a natural conversation without exposing the Interview Plan", () => {
+    expect(AI_ROLE_PROMPTS.interview_planner).toContain(
+      "natural opening of a conversation",
+    );
+    expect(AI_ROLE_PROMPTS.interview_planner).toContain(
+      "never as questionnaire instructions",
+    );
+    expect(AI_ROLE_PROMPTS.interview_agent).toContain(
+      "briefly acknowledge the Client's answer",
+    );
+    expect(AI_ROLE_PROMPTS.interview_agent).toContain(
+      "Never narrate the questionnaire",
+    );
+    expect(AI_ROLE_PROMPTS.interview_agent).toContain(
+      "mention the Interview Plan or Coverage Areas",
+    );
+  });
+
   it("forbids invented commitments and carries the default brief contract", () => {
     expect(AI_ROLE_PROMPTS.brief_generator).toContain(
       "Never invent price, deadline, architecture, legal commitment",

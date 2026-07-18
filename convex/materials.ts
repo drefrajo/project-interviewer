@@ -612,7 +612,25 @@ export const continueWithoutFiles = mutationGeneric({
     actor: actorValidator,
   },
   handler: async (context, args) => {
+    if (args.actor.kind !== "client") {
+      throw new Error("Only the Client may continue without Project Material.");
+    }
     await requireWritableRoomActor(context, args.roomId, args.actor);
+    const activeMaterials = await context.db
+      .query("projectMaterials")
+      .withIndex("by_room_active", (query) =>
+        query.eq("roomId", args.roomId),
+      )
+      .collect()
+      .then((materials) => materials.filter((material) => material.active));
+    if (
+      activeMaterials.some(
+        (material) =>
+          material.state === "accepted" || material.state === "processing",
+      )
+    ) {
+      throw new Error("Wait for current Project Material processing to finish.");
+    }
     return rebuildContextPack(context, {
       roomId: args.roomId,
       reason: "continued_without_material",

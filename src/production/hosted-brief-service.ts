@@ -22,6 +22,7 @@ export const createHostedBriefService = (
   transport: HostedConvexTransport,
 ): ProjectInterviewer["briefs"] => {
   type EditableBriefMutation =
+    | typeof references.briefs.updateMarkdown
     | typeof references.briefs.updateSection
     | typeof references.briefs.addItem
     | typeof references.briefs.updateItem
@@ -123,6 +124,8 @@ export const createHostedBriefService = (
           `brief_generation:${roomId}`,
       });
     },
+    updateMarkdown: (actor, roomId, input) =>
+      mutate(references.briefs.updateMarkdown, actor, roomId, input),
     updateSection: (actor, roomId, input) =>
       mutate(references.briefs.updateSection, actor, roomId, input),
     addItem: (actor, roomId, input) =>

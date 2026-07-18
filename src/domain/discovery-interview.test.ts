@@ -190,7 +190,6 @@ const createInterviewHarness = async (overrides?: {
     briefLanguage: "en",
     freelancerGuidance: "",
   });
-  await app.materials.continueWithoutFiles(freelancer, created.room.id);
   const access = await app.clientAccess.resolveInvite(created.inviteToken, {
     deviceId: "client-device-a",
   });
@@ -199,6 +198,7 @@ const createInterviewHarness = async (overrides?: {
     interviewLanguage: overrides?.language ?? "en",
     acknowledgedDisclosure: true,
   });
+  await app.materials.continueWithoutFiles(access.actor, created.room.id);
   return {
     app,
     freelancer,

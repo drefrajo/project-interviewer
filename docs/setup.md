@@ -1,19 +1,34 @@
-# Setup, local development, and hosted launch
+# Setup, environments, and hosted launch
 
-## Run everything locally
+## Run the complete application locally
 
-The default mode is a complete credential-free development application. It
-uses local deterministic AI adapters, `localStorage` for durable domain state,
-and IndexedDB for uploaded file bytes. Convex, OAuth, OpenRouter, and
-Cloudflare are not required.
+Every browser mode uses the same Convex-backed runtime. Local development is
+Vite on `http://localhost:5173` connected to a Convex development deployment;
+it exercises Better Auth, Invite Links, Convex File Storage, durable workflows,
+authorization, and configured OpenRouter models through the same interfaces as
+development and production.
+
+1. Install dependencies and select/create the Convex development deployment:
 
 ```sh
 bun install
+bunx convex dev
+```
+
+2. Configure that deployment from `.env.convex.example`. For local use, set
+   `SITE_URL=http://localhost:5173`, use the `CONVEX_SITE_URL` printed by
+   Convex, and provide development OAuth and OpenRouter credentials/models.
+
+3. Copy `.env.local.example` to `.env.local`, fill in the public deployment
+   URLs, then run Vite in another terminal:
+
+```sh
 bun run dev
 ```
 
-Open `http://localhost:5173`. A second tab shares the same project state.
-Clearing browser site data resets the local environment.
+Open `http://localhost:5173`. Project state and uploaded material live in the
+selected Convex deployment, not in browser application storage. Local browser
+storage is used only for device/session capabilities needed by Invite Links.
 
 Run all machine checks with:
 
@@ -21,41 +36,56 @@ Run all machine checks with:
 bun run verify
 ```
 
-This also writes the machine-readable launch report to
-`.scratch/file-first-discovery/evaluation-report.json` and the rendered
-phone/desktop report to
-`.scratch/file-first-discovery/accessibility-report.json`. The rendered check
-uses an installed Chrome, Edge, or Chromium without opening a network port.
-On systems where the browser is not in a standard location, set
-`BROWSER_EXECUTABLE_PATH` to its executable. See
-[launch-readiness.md](launch-readiness.md) for its thresholds and the separate
-human pilot gate.
+This writes the deterministic machine-readable launch report to
+`.scratch/file-first-discovery/evaluation-report.json`. Domain and adapter fakes
+remain test-only fixtures; they are not a second browser runtime.
 
-The production-shaped Convex functions and boundary contract tests also run
-without credentials. `bun run build` produces the static SPA in `dist/`.
+Run the configured deployment/browser gate separately against a running app.
+First capture an authenticated Freelancer session, then execute the gate:
 
-## Configure a hosted Convex backend
+```sh
+RUNTIME_BASE_URL=http://localhost:5173 bun run runtime:capture-session
+RUNTIME_BASE_URL=http://localhost:5173 bun run verify:runtime
+```
 
-1. Create or select a Convex project. From the repository, run:
+The session is saved by default under the ignored `.scratch/runtime/`
+directory. Set `RUNTIME_FREELANCER_STORAGE_STATE` to use another path. The
+gate drives the selected Convex deployment and therefore requires the local
+environment above, valid authentication, working file storage and workflows,
+configured AI models, and OpenRouter quota. It creates a clearly named runtime
+verification Project Room. On systems where the browser is not in a standard
+location, set `BROWSER_EXECUTABLE_PATH` to Chrome, Edge, or Chromium. See
+[launch-readiness.md](launch-readiness.md) for the machine, runtime, and human
+gates.
+
+Convex function and boundary contract tests still run deterministically without
+live credentials. `bun run build` produces the single Convex client SPA in
+`dist/`.
+
+## Configure Convex environments
+
+Create or select the deployment appropriate to the Vite mode:
 
    ```sh
    bunx convex dev
    ```
 
-   This selects the development deployment, writes local Convex configuration,
+   This selects a development deployment, writes local Convex configuration,
    generates `convex/_generated`, and continuously pushes schema/functions.
-   Keep it running in one terminal; run `bun run dev` in another.
+   Use separate deployments, secrets, OAuth applications, and OpenRouter
+   budgets for shared development and production.
 
-2. Copy `.env.production.example` to an untracked frontend build environment
-   or provide the values through the deployment system. Public browser values are limited
-   to `VITE_APP_MODE`, `VITE_CONVEX_URL`, `VITE_CONVEX_SITE_URL`, and
-   `VITE_SITE_URL`. Never put OAuth secrets, deploy keys, auth secrets,
+2. Start from `.env.local.example`, `.env.development.example`, or
+   `.env.production.example`. Public browser values are limited to
+   `VITE_CONVEX_URL` and `VITE_CONVEX_SITE_URL`. Never put OAuth secrets,
+   deploy keys, auth secrets,
    OpenRouter keys, Invite Links, or session tokens in a `VITE_` variable.
 
 3. Use `.env.convex.example` as the checklist for server-only values and set
    them directly on each Convex deployment:
 
    ```sh
+   bunx convex env set CONVEX_SITE_URL https://your-deployment.convex.site
    bunx convex env set SITE_URL https://discovery.example.com
    bunx convex env set BETTER_AUTH_SECRET your-random-secret
    bunx convex env set GOOGLE_CLIENT_ID your-google-client-id
@@ -72,9 +102,9 @@ without credentials. `bun run build` produces the static SPA in `dist/`.
    bunx convex env set AI_MODEL_EMBEDDINGS openai/text-embedding-3-small
    ```
 
-   Convex supplies `CONVEX_SITE_URL`. Use the exact site URL printed for the
-   deployment. These server secrets do not need to be duplicated on the
-   Cloudflare build or deploy machine.
+   Use the exact `CONVEX_SITE_URL` printed for the deployment. These server
+   values do not need to be duplicated on the Cloudflare build or deploy
+   machine.
 
 ## Configure Google, GitHub, and passkeys
 
@@ -94,13 +124,14 @@ removing the final OAuth provider additionally requires two registered
 passkeys.
 
 Production passkeys require HTTPS and an RP ID matching the frontend hostname.
-`localhost` is accepted by browsers for local passkey testing, but the
-credential-free local app does not require sign-in.
+Browsers accept `localhost` for local passkey testing; the local runtime still
+requires a real Freelancer authentication method.
 
 ## Configure OpenRouter
 
-Create an OpenRouter API key and choose models for all six roles in
-`.env.production.example`. `OPENROUTER_ALLOWED_PROVIDERS` is a comma-separated
+Create an OpenRouter API key and choose models for all six roles in the Convex
+environment described by `.env.convex.example`.
+`OPENROUTER_ALLOWED_PROVIDERS` is a comma-separated
 allowlist. Every request sends provider routing with zero-data-retention
 required, data collection denied, and fallbacks restricted to that allowlist.
 

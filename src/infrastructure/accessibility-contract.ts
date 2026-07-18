@@ -1,8 +1,13 @@
 export const REQUIRED_ACCESSIBILITY_PATTERNS = [
   {
-    source: "styles",
-    description: "Phone layout",
-    pattern: /@media \(max-width:\s*760px\)/,
+    source: "room",
+    description: "Reachable narrow-screen tabs",
+    pattern: /overflow-x-auto[\s\S]*lg:flex-col/,
+  },
+  {
+    source: "room",
+    description: "Constrained narrow-screen Project Room grid",
+    pattern: /grid-cols-\[minmax\(0,1fr\)\]/,
   },
   {
     source: "styles",
@@ -15,19 +20,19 @@ export const REQUIRED_ACCESSIBILITY_PATTERNS = [
     pattern: /@media \(prefers-reduced-motion:\s*reduce\)/,
   },
   {
-    source: "styles",
-    description: "Minimum interaction target",
-    pattern: /\.button[\s\S]*min-height:\s*2\.75rem/,
+    source: "workspace",
+    description: "Minimum workspace interaction target",
+    pattern: /min-h-11/,
   },
   {
-    source: "styles",
-    description: "Minimum compact-link target",
-    pattern: /\.back-link[\s\S]*min-height:\s*2\.75rem/,
+    source: "room",
+    description: "Minimum Project Room interaction target",
+    pattern: /min-h-11/,
   },
   {
-    source: "styles",
+    source: "room",
     description: "Minimum checkbox target",
-    pattern: /input\[type="checkbox"\][\s\S]*height:\s*1\.5rem/,
+    pattern: /size-[56][\s\S]*type="checkbox"/,
   },
   {
     source: "shell",

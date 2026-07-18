@@ -43,9 +43,12 @@ The report is deliberately threshold-based:
   throttling, the soft 40-turn checkpoint, bounded attempts, AI metadata, and
   scrubbed audits.
 
-The automated browser/domain tests also exercise the complete local core flow.
-The rendered accessibility gate drives the production build in headless
-Chrome at 1280×720 and 390×844 without opening a network port. It verifies
+The deterministic domain and React tests exercise the complete core flow. After
+an authenticated Freelancer session is captured with
+`RUNTIME_BASE_URL=<url> bun run runtime:capture-session`, the separate
+`RUNTIME_BASE_URL=<url> bun run verify:runtime` gate drives that configured,
+running Convex-backed application in headless Chrome at 1280×720 and 390×844.
+It verifies
 keyboard-only skip navigation, Project Room creation, Project Material upload,
 Interview operation, Project Brief review, and Client Approval. It also checks
 accessible control names, live regions, actual overflow across those states,
@@ -72,7 +75,8 @@ resulting product change.
 
 ## Credential and deployment gate
 
-Local mode requires no external service. Hosted launch still requires:
+Every runtime mode requires a configured Convex deployment, Better Auth
+credentials, and OpenRouter models. Production launch additionally requires:
 
 - Convex project and deploy key;
 - Google and GitHub OAuth applications;

@@ -88,4 +88,38 @@ describe("hosted application adapter", () => {
       sessionId: "hashed:client-session",
     });
   });
+
+  it("persists the single Markdown Project Brief document through Convex", async () => {
+    const transport: HostedConvexTransport = {
+      query: vi.fn().mockResolvedValue({
+        draft: null,
+        visibleReviewVersion: null,
+        reviewVersions: [],
+        changeRequests: [],
+        activeChangeRequest: null,
+        operation: null,
+      }),
+      mutation: vi.fn().mockResolvedValue(null),
+      action: vi.fn(),
+    };
+    const application = createHostedApplication(transport);
+
+    await application.briefs.updateMarkdown(
+      {
+        kind: "freelancer",
+        freelancerId: "freelancer_1",
+        sessionId: "session_1",
+      },
+      "room_1",
+      { markdown: "# Project Brief" },
+    );
+
+    expect(transport.mutation).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        roomId: "room_1",
+        markdown: "# Project Brief",
+      }),
+    );
+  });
 });

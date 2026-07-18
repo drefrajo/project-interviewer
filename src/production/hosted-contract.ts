@@ -111,6 +111,7 @@ export const references = {
   briefs: {
     get: api.briefs.get,
     beginGeneration: api.briefs.beginGeneration,
+    updateMarkdown: api.briefs.updateMarkdown,
     updateSection: api.briefs.updateSection,
     addItem: api.briefs.addItem,
     updateItem: api.briefs.updateItem,

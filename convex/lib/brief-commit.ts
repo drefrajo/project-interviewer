@@ -7,6 +7,8 @@ import type { AiOperationResult } from "./ai-contract";
 import { asRecord, asString } from "./commit-values";
 import { validateEvidenceSources } from "./evidence-validation";
 import { canCommitBriefSnapshot } from "./production-boundaries";
+import { serializeProjectBriefMarkdown } from "../../src/domain/project-brief-markdown";
+import type { BriefDraft } from "../../src/domain/project-brief";
 
 export const commitBrief = async (
   context: GenericMutationCtx<GenericDataModel>,
@@ -159,12 +161,17 @@ export const commitBrief = async (
       updatedAt: now,
     };
   });
+  const language = room.briefLanguage === "de" ? "de" : "en";
   await context.db.insert("briefDrafts", {
     roomId: operation.roomId,
     revision: prior.length + 1,
-    language: room.briefLanguage === "de" ? "de" : "en",
+    language,
     status: "editing",
     sections,
+    markdown: serializeProjectBriefMarkdown({
+      language,
+      sections: sections as unknown as BriefDraft["sections"],
+    }),
     warnings,
     createdAt: now,
     updatedAt: now,

@@ -7,31 +7,38 @@ import {
 } from "./environment";
 
 describe("application environment boundary", () => {
-  it("runs the complete local application without third-party credentials", () => {
-    expect(readApplicationEnvironment({})).toEqual({
-      mode: "local",
-    });
-  });
+  it.each([
+    ["local-development", "local"],
+    ["development", "development"],
+    ["production", "production"],
+  ] as const)(
+    "uses the same Convex browser configuration in %s mode",
+    (viteMode, environment) => {
+      expect(
+        readApplicationEnvironment({
+          MODE: viteMode,
+          VITE_CONVEX_URL: "https://example.convex.cloud",
+          VITE_CONVEX_SITE_URL: "https://example.convex.site",
+        }),
+      ).toEqual({
+        mode: environment,
+        public: {
+          convexUrl: "https://example.convex.cloud",
+          convexSiteUrl: "https://example.convex.site",
+        },
+      });
+    },
+  );
 
-  it("requires only public hosted configuration in the browser boundary", () => {
+  it("never falls back to an in-browser application mode", () => {
     expect(() =>
-      readApplicationEnvironment({ VITE_APP_MODE: "production" }),
-    ).toThrow(EnvironmentConfigurationError);
-
-    expect(
-      readApplicationEnvironment({
-        VITE_APP_MODE: "production",
-        VITE_CONVEX_URL: "https://example.convex.cloud",
-        VITE_CONVEX_SITE_URL: "https://example.convex.site",
-        VITE_SITE_URL: "https://discovery.example.test",
-      }),
-    ).toMatchObject({
-      mode: "production",
-      public: {
-        convexUrl: "https://example.convex.cloud",
-        siteUrl: "https://discovery.example.test",
-      },
-    });
+      readApplicationEnvironment({ MODE: "local-development" }),
+    ).toThrow(
+      /VITE_CONVEX_URL.*VITE_CONVEX_SITE_URL/,
+    );
+    expect(() => readApplicationEnvironment({ MODE: "test" })).toThrow(
+      /runtime mode/i,
+    );
   });
 
   it("validates server-only Convex AI and auth configuration separately", () => {
@@ -40,6 +47,7 @@ describe("application environment boundary", () => {
     );
     expect(
       readConvexServerEnvironment({
+        CONVEX_SITE_URL: "https://example.convex.site",
         BETTER_AUTH_SECRET: "better-auth-secret-with-32-characters",
         SITE_URL: "https://discovery.example.test",
         GOOGLE_CLIENT_ID: "google-client",
@@ -56,8 +64,10 @@ describe("application environment boundary", () => {
         AI_MODEL_EMBEDDINGS: "openai/text-embedding-3-small",
       }),
     ).toMatchObject({
+      convexSiteUrl: "https://example.convex.site",
       ai: {
         allowedProviders: ["openai", "anthropic"],
+        baseUrl: "https://openrouter.ai/api/v1",
       },
     });
   });
@@ -74,6 +84,9 @@ describe("application environment boundary", () => {
   it("rejects secrets exposed through Vite's public environment prefix", () => {
     expect(() =>
       readApplicationEnvironment({
+        MODE: "local-development",
+        VITE_CONVEX_URL: "https://example.convex.cloud",
+        VITE_CONVEX_SITE_URL: "https://example.convex.site",
         VITE_OPENROUTER_API_KEY: "must-never-be-public",
       }),
     ).toThrow(/public VITE_/i);

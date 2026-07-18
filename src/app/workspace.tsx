@@ -112,76 +112,78 @@ export const Workspace = ({ application, freelancer }: RouteContext) => {
   };
 
   return (
-    <main className="page" id="main-content">
-      <section className="hero compact">
+    <main className="mx-auto max-w-7xl px-4 py-8 sm:px-8 lg:px-12 lg:py-16" id="main-content">
+      <section className="mb-10 flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-end">
         <div>
-          <p className="eyebrow">{t("workspace")}</p>
-          <h1>{t("rooms")}</h1>
-          <p>{t("tagline")}</p>
+          <p className="mb-3 text-xs font-extrabold tracking-[0.14em] text-forest uppercase">{t("workspace")}</p>
+          <h1 className="mb-3 font-display text-4xl leading-none font-extrabold tracking-tight text-ink sm:text-5xl">{t("rooms")}</h1>
+          <p className="max-w-2xl leading-7 text-muted">{t("tagline")}</p>
         </div>
-        <button className="button primary" onClick={() => setCreating(true)}>
+        <button className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-forest px-4 py-2 text-sm font-bold text-white hover:bg-[#0f3d2f] sm:w-auto" onClick={() => setCreating(true)}>
           <Plus aria-hidden="true" size={18} />
           {t("createProjectRoom")}
         </button>
       </section>
 
       {creating ? (
-        <section aria-labelledby="create-room-heading" className="panel">
-          <div className="section-heading">
+        <section aria-labelledby="create-room-heading" className="mb-8 border border-line bg-surface p-5 shadow-[0_1.5rem_4rem_rgb(19_34_29_/_7%)] sm:p-8">
+          <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="eyebrow">{t("newProjectRoom")}</p>
-              <h2 id="create-room-heading">{t("startingPoint")}</h2>
+              <p className="mb-2 text-xs font-extrabold tracking-[0.14em] text-forest uppercase">{t("newProjectRoom")}</p>
+              <h2 className="font-display text-2xl font-extrabold tracking-tight text-ink" id="create-room-heading">{t("startingPoint")}</h2>
             </div>
             <button
-              className="button ghost"
+              className="inline-flex min-h-11 items-center justify-center rounded-md border border-line bg-transparent px-4 py-2 text-sm font-bold text-ink hover:bg-[#f5f6f0]"
               onClick={() => setCreating(false)}
               type="button"
             >
               {t("cancel")}
             </button>
           </div>
-          <form className="form-grid" onSubmit={createRoom}>
+          <form className="mt-6 grid gap-4 md:grid-cols-2" onSubmit={createRoom}>
             <TextField label={t("projectTitle")} name="title" required />
             <TextField
               label={t("clientLabel")}
               name="clientLabel"
               required
             />
-            <label className="field span-two">
+            <label className="flex flex-col gap-1.5 text-sm font-bold text-ink md:col-span-2">
               <span>{t("projectDescription")}</span>
               <textarea
+                className="min-h-28 rounded-md border border-[#bec7c0] bg-white px-3 py-2 font-normal"
                 name="projectDescription"
                 required
                 rows={4}
                 placeholder={t("descriptionPlaceholder")}
               />
-              <small>{t("descriptionHint")}</small>
+              <small className="font-normal text-muted">{t("descriptionHint")}</small>
             </label>
-            <label className="field">
+            <label className="flex flex-col gap-1.5 text-sm font-bold text-ink">
               <span>{t("briefLanguage")}</span>
-              <select defaultValue="en" name="briefLanguage">
+              <select className="min-h-11 rounded-md border border-[#bec7c0] bg-white px-3 py-2 font-normal" defaultValue="en" name="briefLanguage">
                 <option value="en">English</option>
                 <option value="de">Deutsch</option>
               </select>
             </label>
-            <label className="field">
+            <label className="flex flex-col gap-1.5 text-sm font-bold text-ink">
               <span>{t("discoveryProfile")}</span>
-              <select disabled value="software-project">
+              <select className="min-h-11 rounded-md border border-[#bec7c0] bg-white px-3 py-2 font-normal" disabled value="software-project">
                 <option value="software-project">{t("softwareProject")}</option>
               </select>
             </label>
-            <label className="field span-two">
+            <label className="flex flex-col gap-1.5 text-sm font-bold text-ink md:col-span-2">
               <span>
-                {t("guidance")} <em>{t("privateOptional")}</em>
+                {t("guidance")} <em className="ml-1 text-xs font-normal not-italic text-muted">{t("privateOptional")}</em>
               </span>
               <textarea
+                className="min-h-24 rounded-md border border-[#bec7c0] bg-white px-3 py-2 font-normal"
                 name="freelancerGuidance"
                 rows={3}
                 placeholder={t("guidancePlaceholder")}
               />
             </label>
-            <div className="form-actions span-two">
-              <button className="button primary" type="submit">
+            <div className="flex justify-end md:col-span-2">
+              <button className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-forest px-4 py-2 text-sm font-bold text-white hover:bg-[#0f3d2f]" type="submit">
                 {t("createRoom")} <ArrowRight aria-hidden="true" size={17} />
               </button>
             </div>
@@ -189,19 +191,21 @@ export const Workspace = ({ application, freelancer }: RouteContext) => {
         </section>
       ) : null}
 
-      <section aria-label={t("roomFilters")} className="filter-bar">
-        <label className="search-field">
+      <section aria-label={t("roomFilters")} className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <label className="flex min-h-11 flex-1 items-center gap-2 rounded-md border border-[#bec7c0] bg-white px-3">
           <Search aria-hidden="true" size={18} />
           <span className="sr-only">{t("searchRooms")}</span>
           <input
+            className="min-w-0 flex-1 border-0 bg-transparent py-2 outline-none"
             onChange={(event) => setSearch(event.target.value)}
             placeholder={t("searchPlaceholder")}
             value={search}
           />
         </label>
-        <label className="select-field">
+        <label>
           <span className="sr-only">{t("filterPhase")}</span>
           <select
+            className="min-h-11 w-full rounded-md border border-[#bec7c0] bg-white px-3 py-2 sm:w-auto"
             onChange={(event) =>
               setPhase(event.target.value as ProjectPhase | "all")
             }
@@ -226,34 +230,34 @@ export const Workspace = ({ application, freelancer }: RouteContext) => {
         </label>
       </section>
 
-      <section aria-live="polite" className="room-grid">
+      <section aria-live="polite" className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,17.5rem),1fr))] gap-4">
         {rooms.length ? (
           rooms.map((room) => (
-            <article className="room-card" key={room.id}>
+            <article className="flex flex-col border border-line bg-surface transition hover:-translate-y-0.5 hover:shadow-[0_1rem_2rem_rgb(19_34_29_/_8%)]" key={room.id}>
               <button
                 aria-label={`${lifecycleText.open} ${room.title}`}
-                className="room-card-open"
+                className="flex flex-1 cursor-pointer flex-col p-5 text-left"
                 onClick={() => navigate(`/rooms/${room.id}`)}
                 type="button"
               >
-                <div className="room-card-top">
-                  <span className={`phase phase-${room.phase}`}>
+                <div className="flex items-center justify-between text-xs text-muted">
+                  <span className={`inline-flex bg-[#e3ede8] px-2 py-1 text-[0.7rem] font-extrabold tracking-wide text-forest uppercase ${room.phase === "approved" ? "bg-lime" : room.phase === "archived" ? "bg-[#e9e7e0] text-muted" : ""}`}>
                     {projectPhaseLabel(room.phase, locale)}
                   </span>
                   <span>{formatDate(room.lastActivityAt, locale)}</span>
                 </div>
-                <h2>{room.title}</h2>
-                <p>{room.clientLabel}</p>
-                <span className="next-action">
+                <h2 className="mt-10 mb-1 font-display text-2xl font-extrabold tracking-tight text-ink">{room.title}</h2>
+                <p className="text-muted">{room.clientLabel}</p>
+                <span className="mt-7 inline-flex items-center gap-1 font-bold text-forest">
                   {projectNextActionLabel(room.nextAction, locale)}{" "}
                   <ArrowRight aria-hidden="true" size={15} />
                 </span>
               </button>
-              <div className="room-card-actions">
+              <div className="flex flex-wrap gap-2 border-t border-line p-3">
                 {room.phase === "archived" ? (
                   <button
                     aria-label={`${lifecycleText.restore} ${room.title}`}
-                    className="button ghost"
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-line bg-transparent px-3 py-2 text-sm font-bold text-ink hover:bg-[#f5f6f0]"
                     onClick={() =>
                       void performLifecycle(() =>
                         application.projectHome.lifecycle.restoreArchived(
@@ -270,7 +274,7 @@ export const Workspace = ({ application, freelancer }: RouteContext) => {
                 ) : (
                   <button
                     aria-label={`${lifecycleText.archive} ${room.title}`}
-                    className="button ghost"
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-line bg-transparent px-3 py-2 text-sm font-bold text-ink hover:bg-[#f5f6f0]"
                     onClick={() =>
                       void performLifecycle(() =>
                         application.projectHome.lifecycle.archive(
@@ -287,7 +291,7 @@ export const Workspace = ({ application, freelancer }: RouteContext) => {
                 )}
                 <button
                   aria-label={`${lifecycleText.remove} ${room.title}`}
-                  className="button ghost danger"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-[#e9b29e] bg-transparent px-3 py-2 text-sm font-bold text-[#852f21] hover:bg-[#fff1e7]"
                   onClick={() => setConfirmingDelete(room.id)}
                   type="button"
                 >
@@ -296,9 +300,9 @@ export const Workspace = ({ application, freelancer }: RouteContext) => {
                 </button>
               </div>
               {confirmingDelete === room.id ? (
-                <div className="room-delete-confirmation" role="alert">
+                <div className="border-t border-[#f0c6b3] bg-[#fff1e7] p-3" role="alert">
                   <button
-                    className="button danger"
+                    className="mr-2 inline-flex min-h-11 items-center justify-center rounded-md border border-[#e9b29e] bg-white px-3 py-2 text-sm font-bold text-[#852f21]"
                     onClick={() =>
                       void performLifecycle(() =>
                         application.projectHome.lifecycle.delete(
@@ -312,7 +316,7 @@ export const Workspace = ({ application, freelancer }: RouteContext) => {
                     {lifecycleText.confirmRemove}
                   </button>
                   <button
-                    className="button ghost"
+                    className="inline-flex min-h-11 items-center justify-center rounded-md border border-line bg-transparent px-3 py-2 text-sm font-bold text-ink hover:bg-white"
                     onClick={() => setConfirmingDelete("")}
                     type="button"
                   >
@@ -323,7 +327,7 @@ export const Workspace = ({ application, freelancer }: RouteContext) => {
             </article>
           ))
         ) : (
-          <div className="empty-state">
+          <div className="col-span-full border border-dashed border-[#aeb8b1] p-12 text-center text-muted">
             <FolderOpen aria-hidden="true" size={28} />
             <h2>{t("noRooms")}</h2>
             <p>{t("noRoomsHint")}</p>
@@ -334,30 +338,30 @@ export const Workspace = ({ application, freelancer }: RouteContext) => {
       {deletedRooms.length ? (
         <section
           aria-labelledby="recently-deleted-heading"
-          className="recently-deleted"
+          className="mt-12 border-t border-line pt-8"
         >
-          <div className="section-heading">
+          <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="eyebrow">{lifecycleText.deleted}</p>
-              <h2 id="recently-deleted-heading">
+              <p className="mb-2 text-xs font-extrabold tracking-[0.14em] text-forest uppercase">{lifecycleText.deleted}</p>
+              <h2 className="font-display text-2xl font-extrabold tracking-tight text-ink" id="recently-deleted-heading">
                 {lifecycleText.deleted}
               </h2>
               <p>{lifecycleText.deletedHint}</p>
             </div>
           </div>
-          <div className="recently-deleted-list">
+          <div className="mt-5 grid gap-3">
             {deletedRooms.map((room) => (
-              <article key={room.id}>
+              <article className="flex flex-col gap-3 border border-line bg-surface p-4 sm:flex-row sm:items-center sm:justify-between" key={room.id}>
                 <div>
-                  <h3>{room.title}</h3>
-                  <p>
+                  <h3 className="font-display font-bold text-ink">{room.title}</h3>
+                  <p className="mt-1 text-sm text-muted">
                     {lifecycleText.purge}:{" "}
                     {formatDate(room.purgeAfter, locale)}
                   </p>
                 </div>
                 <button
                   aria-label={`${lifecycleText.recover} ${room.title}`}
-                  className="button ghost"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-line bg-transparent px-4 py-2 text-sm font-bold text-ink hover:bg-[#f5f6f0]"
                   onClick={() =>
                     void performLifecycle(() =>
                       application.projectHome.lifecycle.recover(
@@ -389,9 +393,9 @@ export const TextField = ({
   name: string;
   required?: boolean;
 }) => (
-  <label className="field">
+  <label className="flex flex-col gap-1.5 text-sm font-bold text-ink">
     <span>{label}</span>
-    <input name={name} required={required} />
+    <input className="min-h-11 rounded-md border border-[#bec7c0] bg-white px-3 py-2 font-normal" name={name} required={required} />
   </label>
 );
 

@@ -16,28 +16,17 @@ import type {
   ProjectPhase,
   RoomActor,
 } from "./project-interviewer";
+import {
+  replaceProjectBriefMarkdown,
+  serializeProjectBriefMarkdown,
+} from "./project-brief-markdown";
+import {
+  BRIEF_SECTION_IDS,
+  type BriefSectionId,
+} from "./project-brief-sections";
 
-export const BRIEF_SECTION_IDS = [
-  "executive-summary",
-  "goals-and-success",
-  "users-and-stakeholders",
-  "in-scope",
-  "out-of-scope",
-  "functional-requirements",
-  "quality-and-constraints",
-  "ux-content-design",
-  "data-and-integrations",
-  "targets-and-external-constraints",
-  "delivery-and-commercial",
-  "open-trade-offs",
-  "assumptions",
-  "risks",
-  "gaps-and-contradictions",
-  "key-decisions",
-  "evidence-appendix",
-] as const;
-
-export type BriefSectionId = (typeof BRIEF_SECTION_IDS)[number];
+export { BRIEF_SECTION_IDS } from "./project-brief-sections";
+export type { BriefSectionId } from "./project-brief-sections";
 export type BriefItemKind =
   | "requirement"
   | "target"
@@ -177,6 +166,8 @@ export interface BriefDraft {
   basedOnReviewVersionId?: string | undefined;
   language: Language;
   status: "editing" | "sent";
+  /** The source document. Older persisted drafts are projected on read. */
+  markdown: string;
   sections: BriefSection[];
   warnings: BriefWarning[];
   createdAt: number;
@@ -201,6 +192,8 @@ export interface ReviewVersion {
     | "change_requested"
     | "approved"
     | "invalidated";
+  /** Immutable Markdown sent to the Client. */
+  markdown: string;
   sections: BriefSection[];
   sentAt: number;
   approval?: BriefApproval | undefined;
@@ -366,6 +359,23 @@ const operationFor = (
     .filter((operation) => operation.roomId === roomId)
     .sort((left, right) => right.updatedAt - left.updatedAt)[0];
 
+const documentFor = (
+  artifact: Pick<BriefDraft, "language" | "sections"> & {
+    markdown?: string;
+  },
+): string =>
+  artifact.markdown?.trim() || serializeProjectBriefMarkdown(artifact);
+
+const draftWithDocument = (draft: BriefDraft): BriefDraft => ({
+  ...draft,
+  markdown: documentFor(draft),
+});
+
+const reviewWithDocument = (review: ReviewVersion): ReviewVersion => ({
+  ...review,
+  markdown: documentFor(review),
+});
+
 const toView = (
   state: ProjectBriefState,
   actor: RoomActor,
@@ -382,9 +392,11 @@ const toView = (
   return copy({
     draft:
       actor.kind === "freelancer"
-        ? activeDraft(state, roomId) ?? null
+        ? activeDraft(state, roomId)
+          ? draftWithDocument(activeDraft(state, roomId)!)
+          : null
         : null,
-    visibleReviewVersion: review ?? null,
+    visibleReviewVersion: review ? reviewWithDocument(review) : null,
     reviewVersions: state.reviewVersions
       .filter(
         (version) =>
@@ -392,7 +404,8 @@ const toView = (
           (actor.kind === "freelancer" ||
             version.status !== "invalidated"),
       )
-      .sort((left, right) => right.version - left.version),
+      .sort((left, right) => right.version - left.version)
+      .map(reviewWithDocument),
     changeRequests: state.briefChangeRequests
       .filter(
         (request) =>
@@ -883,6 +896,7 @@ export const createProjectBriefCoordinator = (
         revision,
         language: room.briefLanguage,
         status: "editing",
+        markdown: "",
         sections: generated.sections.map((section) => ({
           id: section.id,
           title: section.title.trim(),
@@ -914,6 +928,7 @@ export const createProjectBriefCoordinator = (
         createdAt: now,
         updatedAt: now,
       };
+      draft.markdown = serializeProjectBriefMarkdown(draft);
       refreshWarnings(draft, discovery.findings, now);
       dependencies.state.briefDrafts.push(draft);
       operation.status = "succeeded";
@@ -1101,6 +1116,31 @@ export const createProjectBriefCoordinator = (
         });
       }
       draft.updatedAt = dependencies.clock.now();
+      draft.markdown = serializeProjectBriefMarkdown(draft);
+      persistRoom(roomId);
+      return toView(dependencies.state, actor, roomId);
+    },
+
+    async updateMarkdown(
+      actor: RoomActor,
+      roomId: string,
+      input: { markdown: string },
+    ): Promise<ProjectBriefView> {
+      const { draft, discovery } = editableDraft(
+        dependencies,
+        actor,
+        roomId,
+      );
+      const now = dependencies.clock.now();
+      const replacement = replaceProjectBriefMarkdown(draft, input.markdown, {
+        nextId: dependencies.ids.next,
+        now,
+      });
+      draft.sections = replacement.sections;
+      draft.markdown = replacement.markdown;
+      refreshWarnings(draft, discovery.findings, now);
+      draft.updatedAt = now;
+      dependencies.audit(actor, roomId, "project_brief.markdown_updated");
       persistRoom(roomId);
       return toView(dependencies.state, actor, roomId);
     },
@@ -1158,6 +1198,7 @@ export const createProjectBriefCoordinator = (
       });
       refreshWarnings(draft, discovery.findings, now);
       draft.updatedAt = now;
+      draft.markdown = serializeProjectBriefMarkdown(draft);
       persistRoom(roomId);
       return toView(dependencies.state, actor, roomId);
     },
@@ -1249,6 +1290,7 @@ export const createProjectBriefCoordinator = (
         dependencies.clock.now(),
       );
       draft.updatedAt = dependencies.clock.now();
+      draft.markdown = serializeProjectBriefMarkdown(draft);
       persistRoom(roomId);
       return toView(dependencies.state, actor, roomId);
     },
@@ -1283,6 +1325,7 @@ export const createProjectBriefCoordinator = (
         });
       }
       draft.updatedAt = dependencies.clock.now();
+      draft.markdown = serializeProjectBriefMarkdown(draft);
       persistRoom(roomId);
       return toView(dependencies.state, actor, roomId);
     },
@@ -1311,6 +1354,7 @@ export const createProjectBriefCoordinator = (
         dependencies.clock.now(),
       );
       draft.updatedAt = dependencies.clock.now();
+      draft.markdown = serializeProjectBriefMarkdown(draft);
       persistRoom(roomId);
       return toView(dependencies.state, actor, roomId);
     },
@@ -1382,6 +1426,7 @@ export const createProjectBriefCoordinator = (
         version,
         language: draft.language,
         status: "awaiting_client",
+        markdown: documentFor(draft),
         sections: cloneSectionsForState(
           draft.sections,
           "proposed",
@@ -1487,6 +1532,7 @@ export const createProjectBriefCoordinator = (
         basedOnReviewVersionId: review.id,
         language: review.language,
         status: "editing",
+        markdown: documentFor(review),
         sections: cloneSectionsForState(
           review.sections,
           "candidate",
@@ -1496,6 +1542,7 @@ export const createProjectBriefCoordinator = (
         createdAt: now,
         updatedAt: now,
       };
+      draft.markdown = serializeProjectBriefMarkdown(draft);
       refreshWarnings(
         draft,
         dependencies.discovery(roomId).findings,
@@ -1586,6 +1633,7 @@ export const createProjectBriefCoordinator = (
         basedOnReviewVersionId: review.id,
         language: review.language,
         status: "editing",
+        markdown: documentFor(review),
         sections: cloneSectionsForState(
           review.sections,
           "candidate",
@@ -1595,6 +1643,7 @@ export const createProjectBriefCoordinator = (
         createdAt: now,
         updatedAt: now,
       };
+      draft.markdown = serializeProjectBriefMarkdown(draft);
       refreshWarnings(
         draft,
         dependencies.discovery(roomId).findings,
@@ -1648,9 +1697,7 @@ export const createProjectBriefCoordinator = (
       );
       const citation = (sourceList: BriefSource[]): string => {
         const numbers = sourceList
-          .map((source) =>
-            sourceNumbers.get(briefSourceKey(source)),
-          )
+          .map((source) => sourceNumbers.get(briefSourceKey(source)))
           .filter((value): value is number => value !== undefined);
         return numbers.length
           ? ` [${numbers.map((number) => `E${number}`).join(", ")}]`
@@ -1704,19 +1751,17 @@ export const createProjectBriefCoordinator = (
                       : german
                         ? "Freelancer-Bearbeitung"
                         : "Freelancer edit";
-        const locator = detail?.locator
-          ? ` · ${detail.locator}`
-          : "";
+        const locator = detail?.locator ? ` · ${detail.locator}` : "";
         const detailText =
           detail?.unavailable
             ? german
               ? "Der zitierte Quellenauszug ist nicht verfügbar."
               : "The cited source excerpt is unavailable."
             : source.type === "freelancer_edit"
-            ? german
-              ? "Vom Freelancer bearbeiteter Inhalt."
-              : "Content edited by the Freelancer."
-            : detail?.text;
+              ? german
+                ? "Vom Freelancer bearbeiteter Inhalt."
+                : "Content edited by the Freelancer."
+              : detail?.text;
         const reason = detail?.reason
           ? ` ${german ? "Begründung" : "Reason"}: ${detail.reason}`
           : "";

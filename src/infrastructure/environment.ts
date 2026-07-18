@@ -7,13 +7,13 @@ export class EnvironmentConfigurationError extends Error {
 
 type EnvironmentSource = Readonly<Record<string, string | undefined>>;
 
-const publicProductionVariables = [
+const publicRuntimeVariables = [
   "VITE_CONVEX_URL",
   "VITE_CONVEX_SITE_URL",
-  "VITE_SITE_URL",
 ] as const;
 
 const convexServerVariables = [
+  "CONVEX_SITE_URL",
   "BETTER_AUTH_SECRET",
   "SITE_URL",
   "GOOGLE_CLIENT_ID",
@@ -36,7 +36,7 @@ const requireValue = (source: EnvironmentSource, key: string): string => {
   const value = source[key]?.trim();
   if (!value) {
     throw new EnvironmentConfigurationError(
-      `Missing required production environment variable: ${key}`,
+      `Missing required environment variable: ${key}`,
     );
   }
   return value;
@@ -52,25 +52,33 @@ export const readApplicationEnvironment = (source: EnvironmentSource) => {
     );
   }
 
-  if (source.VITE_APP_MODE !== "production") {
-    return { mode: "local" as const };
+  const viteMode = source.MODE;
+  const mode =
+    viteMode === "local-development"
+      ? ("local" as const)
+      : viteMode === "development" || viteMode === "production"
+        ? viteMode
+        : null;
+  if (!mode) {
+    throw new EnvironmentConfigurationError(
+      "The browser runtime mode must be local-development, development, or production.",
+    );
   }
 
-  const missing = publicProductionVariables.filter(
+  const missing = publicRuntimeVariables.filter(
     (key) => !source[key]?.trim(),
   );
   if (missing.length > 0) {
     throw new EnvironmentConfigurationError(
-      `Missing required production environment variables: ${missing.join(", ")}`,
+      `Missing required browser environment variables: ${missing.join(", ")}`,
     );
   }
 
   return {
-    mode: "production" as const,
+    mode,
     public: {
       convexUrl: requireValue(source, "VITE_CONVEX_URL"),
       convexSiteUrl: requireValue(source, "VITE_CONVEX_SITE_URL"),
-      siteUrl: requireValue(source, "VITE_SITE_URL"),
     },
   };
 };
@@ -85,6 +93,7 @@ export const readConvexServerEnvironment = (source: EnvironmentSource) => {
     );
   }
   return {
+    convexSiteUrl: requireValue(source, "CONVEX_SITE_URL"),
     siteUrl: requireValue(source, "SITE_URL"),
     auth: {
       secret: requireValue(source, "BETTER_AUTH_SECRET"),
@@ -99,6 +108,9 @@ export const readConvexServerEnvironment = (source: EnvironmentSource) => {
     },
     ai: {
       apiKey: requireValue(source, "OPENROUTER_API_KEY"),
+      baseUrl:
+        source.OPENROUTER_BASE_URL?.trim() ||
+        "https://openrouter.ai/api/v1",
       allowedProviders: requireValue(
         source,
         "OPENROUTER_ALLOWED_PROVIDERS",

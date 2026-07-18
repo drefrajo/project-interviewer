@@ -196,7 +196,9 @@ describe("Project Material public service", () => {
           releaseAnalysis = resolve;
         }),
     };
-    const { app, freelancer, room } = await createRoom(dependencies);
+    const { app, freelancer, room } = await createRoom(
+      dependencies,
+    );
     const accepted = await app.materials.accept(
       freelancer,
       room.id,
@@ -295,7 +297,9 @@ describe("Project Material public service", () => {
 
   it("accepts first, masks suspected secrets, then commits shallow analysis and a Context Pack Revision", async () => {
     const { dependencies, analyzedInputs } = createDependencies();
-    const { app, freelancer, room } = await createRoom(dependencies);
+    const { app, freelancer, room } = await createRoom(
+      dependencies,
+    );
 
     const accepted = await app.materials.accept(freelancer, room.id, {
       name: "Brief.txt",
@@ -642,7 +646,9 @@ describe("Project Material public service", () => {
     const { dependencies } = createDependencies({
       extraction: new Error("corrupt document"),
     });
-    const { app, freelancer, room } = await createRoom(dependencies);
+    const { app, freelancer, room, inviteToken } = await createRoom(
+      dependencies,
+    );
     const material = await app.materials.accept(freelancer, room.id, {
       name: "Brief.pdf",
       size: 12,
@@ -656,8 +662,19 @@ describe("Project Material public service", () => {
       await app.materials.process(freelancer, room.id, material.id),
     ).toMatchObject({ state: "failed", retryAvailable: true });
 
+    const access = await app.clientAccess.resolveInvite(inviteToken, {
+      deviceId: "failed-material-client",
+    });
+    await app.clientAccess.onboard(access.actor, {
+      displayName: "Casey",
+      interviewLanguage: "en",
+      acknowledgedDisclosure: true,
+    });
+    await expect(
+      app.materials.continueWithoutFiles(freelancer, room.id),
+    ).rejects.toThrow(/only the client/i);
     const pack = await app.materials.continueWithoutFiles(
-      freelancer,
+      access.actor,
       room.id,
     );
     expect(pack).toMatchObject({
@@ -1065,7 +1082,9 @@ describe("Project Material public service", () => {
           }),
       };
     });
-    const { app, freelancer, room } = await createRoom(dependencies);
+    const { app, freelancer, room, inviteToken } = await createRoom(
+      dependencies,
+    );
     const material = await app.materials.accept(freelancer, room.id, {
       name: "Brief.txt",
       size: 74,
@@ -1079,8 +1098,16 @@ describe("Project Material public service", () => {
       material.id,
     );
     await analysisStarted;
+    const access = await app.clientAccess.resolveInvite(inviteToken, {
+      deviceId: "processing-material-client",
+    });
+    await app.clientAccess.onboard(access.actor, {
+      displayName: "Casey",
+      interviewLanguage: "en",
+      acknowledgedDisclosure: true,
+    });
     await expect(
-      app.materials.continueWithoutFiles(freelancer, room.id),
+      app.materials.continueWithoutFiles(access.actor, room.id),
     ).rejects.toThrow(/wait for current/i);
     const removeFile = dependencies.materialFiles?.remove;
     const removeSpy = removeFile

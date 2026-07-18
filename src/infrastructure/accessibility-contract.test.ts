@@ -30,6 +30,8 @@ describe("accessible multilingual application contract", () => {
       styles: readSource("../styles.css"),
       shell: readSource("../app/application-shell.tsx"),
       routes: readSource("../app/routes.tsx"),
+      room: readSource("../app/project-room.tsx"),
+      workspace: readSource("../app/workspace.tsx"),
       interview: readSource("../app/discovery-interview-panel.tsx"),
       material: readSource("../app/project-material-panel.tsx"),
       brief: readSource("../app/project-brief-panel.tsx"),

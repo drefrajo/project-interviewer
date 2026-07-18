@@ -432,6 +432,7 @@ const draftSchema = z.object({
   basedOnReviewVersionId: z.string().optional(),
   language,
   status: z.enum(["editing", "sent"]),
+  markdown: z.string(),
   sections: z.array(sectionSchema),
   warnings: z.array(warningSchema),
   createdAt: z.number(),
@@ -449,6 +450,7 @@ const reviewSchema = z.object({
     "approved",
     "invalidated",
   ]),
+  markdown: z.string(),
   sections: z.array(sectionSchema),
   sentAt: z.number(),
   approval: z
