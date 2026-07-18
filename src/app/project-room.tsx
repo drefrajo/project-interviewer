@@ -24,11 +24,13 @@ import type {
 import type { RouteContext } from "./routes";
 import { TextField } from "./workspace";
 import { useI18n } from "./i18n";
+import { ProjectMaterialPanel } from "./project-material-panel";
 import { projectPhaseLabel } from "./project-phase-copy";
 
 export const FreelancerProjectRoom = ({
   application,
   freelancer,
+  materialFileStore,
 }: RouteContext) => {
   const { roomId = "" } = useParams();
   const location = useLocation();
@@ -39,6 +41,7 @@ export const FreelancerProjectRoom = ({
       actor={freelancer}
       application={application}
       roomId={roomId}
+      {...(materialFileStore ? { materialFileStore } : {})}
       {...(inviteToken ? { inviteToken } : {})}
     />
   );
@@ -50,12 +53,14 @@ const ProjectRoomLoader = ({
   roomId,
   inviteToken,
   welcomeName,
+  materialFileStore,
 }: {
   application: ProjectInterviewer;
   actor: RoomActor;
   roomId: string;
   inviteToken?: string;
   welcomeName?: string;
+  materialFileStore?: RouteContext["materialFileStore"];
 }) => {
   const { t } = useI18n();
   const [room, setRoom] = useState<ProjectRoomView>();
@@ -66,13 +71,22 @@ const ProjectRoomLoader = ({
   return (
     <ProjectRoomHome
       room={room}
+      actor={actor}
+      application={application}
+      onReadinessChange={() => {
+        void application.rooms.get(actor, roomId).then(setRoom);
+      }}
+      {...(materialFileStore ? { materialFileStore } : {})}
       {...(inviteToken ? { inviteToken } : {})}
       {...(welcomeName ? { welcomeName } : {})}
     />
   );
 };
 
-export const ClientEntry = ({ application }: RouteContext) => {
+export const ClientEntry = ({
+  application,
+  materialFileStore,
+}: RouteContext) => {
   const { t } = useI18n();
   sessionStorage.setItem("project-interviewer.actor-mode", "client");
   const { inviteToken = "" } = useParams();
@@ -118,8 +132,16 @@ export const ClientEntry = ({ application }: RouteContext) => {
   }
   return (
     <ProjectRoomHome
+      actor={access.actor}
       actorKind="client"
+      application={application}
       room={access.room}
+      onReadinessChange={() => {
+        void application.rooms
+          .get(access.actor, access.room.id)
+          .then((room) => setAccess({ ...access, room }));
+      }}
+      {...(materialFileStore ? { materialFileStore } : {})}
       {...(access.client?.displayName
         ? { welcomeName: access.client.displayName }
         : {})}
@@ -226,15 +248,23 @@ const Disclosure = ({
 );
 
 const ProjectRoomHome = ({
+  application,
+  actor,
   room,
   inviteToken,
   welcomeName,
   actorKind = "freelancer",
+  materialFileStore,
+  onReadinessChange,
 }: {
+  application: ProjectInterviewer;
+  actor: RoomActor;
   room: ProjectRoomView;
   inviteToken?: string;
   welcomeName?: string;
   actorKind?: "freelancer" | "client";
+  materialFileStore?: RouteContext["materialFileStore"];
+  onReadinessChange?(): void;
 }) => {
   const { locale, t } = useI18n();
   const sectionAvailability = availabilityFor(room);
@@ -298,15 +328,15 @@ const ProjectRoomHome = ({
         </section>
       ) : null}
 
+      <ProjectMaterialPanel
+        actor={actor}
+        application={application}
+        room={room}
+        {...(materialFileStore ? { materialFileStore } : {})}
+        {...(onReadinessChange ? { onReadinessChange } : {})}
+      />
+
       <section className="home-grid">
-        <AvailabilityCard
-          available={sectionAvailability.material}
-          id="material"
-          title={t("material")}
-          icon={<FileText aria-hidden="true" />}
-        >
-          {t("materialBody")}
-        </AvailabilityCard>
         <AvailabilityCard
           available={sectionAvailability.interview}
           id="interview"

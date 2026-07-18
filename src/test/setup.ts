@@ -40,3 +40,17 @@ Object.defineProperty(window, "matchMedia", {
     dispatchEvent: () => false,
   }),
 });
+
+if (!Blob.prototype.arrayBuffer) {
+  Object.defineProperty(Blob.prototype, "arrayBuffer", {
+    configurable: true,
+    value(this: Blob) {
+      return new Promise<ArrayBuffer>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(reader.error);
+        reader.onload = () => resolve(reader.result as ArrayBuffer);
+        reader.readAsArrayBuffer(this);
+      });
+    },
+  });
+}

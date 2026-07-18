@@ -81,6 +81,47 @@ const copy = {
     notAvailable: "Not yet available",
     materialBody:
       "Add Project Material here or deliberately continue without files.",
+    evidenceFirst: "Evidence first",
+    materialPanelIntro:
+      "Add Project Material here. Files are checked, summarized, and indexed inside this Project Room before discovery begins.",
+    addMaterial: "Add Project Material",
+    materialLimits:
+      "PDF, DOCX, PPTX, XLSX, CSV, TXT, Markdown, PNG, JPG, and WebP · 25 MB per file · 20 files · 100 MB total.",
+    imageProviderDisclosure:
+      "Images are sent in full through OpenRouter to the configured routed multimodal provider.",
+    materialUploadFailed: "The file could not be added.",
+    uploadedByFreelancer: "Added by Freelancer",
+    uploadedByClient: "Added by Client",
+    uploadingMaterial: "Uploading",
+    confidence: "confidence",
+    summarySources: "Summary sources",
+    suspectedSecrets: "Suspected secrets found",
+    secretMaskingExplanation:
+      "Matching text was masked before AI analysis. Detection reduces risk but cannot guarantee that every secret is found.",
+    secretOverrideDisclosure:
+      "I understand that including this text sends the flagged content through OpenRouter to the configured routed provider.",
+    includeFlaggedText: "Include flagged text and reprocess",
+    reprocessingMaterial: "Reprocessing",
+    flaggedTextIncluded: "Flagged text included by explicit override",
+    analysisFeedback: "Analysis feedback",
+    feedbackSource: "Affected source",
+    feedbackPlaceholder: "Add a correction or clarification…",
+    addFeedback: "Add feedback",
+    retry: "Retry",
+    remove: "Remove",
+    noMaterialYet: "No active Project Material yet.",
+    continueWithoutFiles: "Continue without files",
+    contextPackRevision: "Context Pack revision",
+    minimalContextWarning:
+      "Discovery will begin with minimal context because no files were provided.",
+    materialFailed: "Processing failed",
+    materialUnsupported: "Unsupported",
+    materialAnalyzed: "Analyzed",
+    checkingFile: "Checking file",
+    extractingContent: "Extracting content",
+    checkingSecrets: "Checking for secrets",
+    analyzingMaterial: "Analyzing",
+    indexingMaterial: "Indexing",
     interviewBody:
       "Available after current Project Material reaches a terminal state.",
     briefBody:
@@ -163,6 +204,48 @@ const copy = {
     notAvailable: "Noch nicht verfügbar",
     materialBody:
       "Fügen Sie hier Projektmaterial hinzu oder fahren Sie bewusst ohne Dateien fort.",
+    evidenceFirst: "Belege zuerst",
+    materialPanelIntro:
+      "Dateien werden in diesem Projektraum geprüft, zusammengefasst und indexiert, bevor die Klärung beginnt.",
+    addMaterial: "Projektmaterial hinzufügen",
+    materialLimits:
+      "PDF, DOCX, PPTX, XLSX, CSV, TXT, Markdown, PNG, JPG und WebP · 25 MB je Datei · 20 Dateien · 100 MB gesamt.",
+    imageProviderDisclosure:
+      "Bilder werden vollständig über OpenRouter an den konfigurierten gerouteten multimodalen Anbieter gesendet.",
+    materialUploadFailed: "Die Datei konnte nicht hinzugefügt werden.",
+    uploadedByFreelancer: "Vom Freelancer hinzugefügt",
+    uploadedByClient: "Vom Client hinzugefügt",
+    uploadingMaterial: "Wird hochgeladen",
+    confidence: "Konfidenz",
+    summarySources: "Quellen der Zusammenfassung",
+    suspectedSecrets: "Mögliche Geheimnisse gefunden",
+    secretMaskingExplanation:
+      "Passende Textstellen wurden vor der KI-Analyse maskiert. Die Erkennung senkt das Risiko, kann aber nicht garantieren, dass jedes Geheimnis gefunden wird.",
+    secretOverrideDisclosure:
+      "Ich verstehe, dass die markierten Inhalte dadurch über OpenRouter an den konfigurierten gerouteten Anbieter gesendet werden.",
+    includeFlaggedText: "Markierten Text einbeziehen und neu verarbeiten",
+    reprocessingMaterial: "Wird neu verarbeitet",
+    flaggedTextIncluded:
+      "Markierter Text wurde nach ausdrücklicher Bestätigung einbezogen",
+    analysisFeedback: "Feedback zur Analyse",
+    feedbackSource: "Betroffene Quelle",
+    feedbackPlaceholder: "Korrektur oder Erläuterung hinzufügen…",
+    addFeedback: "Feedback hinzufügen",
+    retry: "Erneut versuchen",
+    remove: "Entfernen",
+    noMaterialYet: "Noch kein aktives Projektmaterial.",
+    continueWithoutFiles: "Ohne Dateien fortfahren",
+    contextPackRevision: "Kontextpaket-Revision",
+    minimalContextWarning:
+      "Die Klärung beginnt mit minimalem Kontext, weil keine Dateien bereitgestellt wurden.",
+    materialFailed: "Verarbeitung fehlgeschlagen",
+    materialUnsupported: "Nicht unterstützt",
+    materialAnalyzed: "Analysiert",
+    checkingFile: "Datei wird geprüft",
+    extractingContent: "Inhalt wird extrahiert",
+    checkingSecrets: "Geheimnisse werden geprüft",
+    analyzingMaterial: "Analyse läuft",
+    indexingMaterial: "Indexierung läuft",
     interviewBody:
       "Verfügbar, sobald das aktuelle Projektmaterial einen Endzustand erreicht.",
     briefBody:

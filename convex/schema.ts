@@ -10,6 +10,14 @@ const projectPhase = v.union(
   v.literal("approved"),
   v.literal("archived"),
 );
+const actorKind = v.union(v.literal("freelancer"), v.literal("client"));
+const materialState = v.union(
+  v.literal("accepted"),
+  v.literal("processing"),
+  v.literal("analyzed"),
+  v.literal("unsupported"),
+  v.literal("failed"),
+);
 
 export default defineSchema({
   freelancerProfiles: defineTable({
@@ -82,6 +90,103 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_room", ["roomId"]),
+
+  projectMaterials: defineTable({
+    roomId: v.id("projectRooms"),
+    storageId: v.id("_storage"),
+    uploaderKind: actorKind,
+    uploaderId: v.string(),
+    name: v.string(),
+    size: v.number(),
+    declaredContentType: v.string(),
+    actualContentType: v.optional(v.string()),
+    state: materialState,
+    stage: v.string(),
+    active: v.boolean(),
+    retryAvailable: v.boolean(),
+    includeSuspectedSecrets: v.boolean(),
+    suspectedSecrets: v.array(v.any()),
+    extractionMethod: v.optional(v.string()),
+    failureCode: v.optional(v.string()),
+    processingVersion: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_room_active", ["roomId", "active", "createdAt"])
+    .index("by_room_state", ["roomId", "state", "updatedAt"]),
+
+  fileAnalyses: defineTable({
+    roomId: v.id("projectRooms"),
+    materialId: v.id("projectMaterials"),
+    summary: v.string(),
+    summaryLanguage: language,
+    analysisVersion: v.number(),
+    summarySources: v.array(v.any()),
+    primaryCategory: v.string(),
+    secondaryCategories: v.array(v.string()),
+    confidence: v.number(),
+    language: v.string(),
+    signals: v.array(v.any()),
+    model: v.string(),
+    provider: v.string(),
+    processingVersion: v.string(),
+    schemaVersion: v.string(),
+    promptVersion: v.string(),
+    extractionMethod: v.string(),
+    analyzedAt: v.number(),
+  })
+    .index("by_material", ["materialId", "analyzedAt"])
+    .index("by_room", ["roomId", "analyzedAt"]),
+
+  analysisFeedback: defineTable({
+    roomId: v.id("projectRooms"),
+    materialId: v.id("projectMaterials"),
+    explanation: v.string(),
+    actorKind,
+    actorId: v.string(),
+    locator: v.any(),
+    createdAt: v.number(),
+  })
+    .index("by_material", ["materialId", "createdAt"])
+    .index("by_room", ["roomId", "createdAt"]),
+
+  materialChunks: defineTable({
+    roomId: v.id("projectRooms"),
+    materialId: v.id("projectMaterials"),
+    text: v.string(),
+    locator: v.any(),
+    language: v.string(),
+    embedding: v.array(v.float64()),
+    active: v.boolean(),
+    createdAt: v.number(),
+  })
+    .index("by_material", ["materialId", "active"])
+    .searchIndex("search_text", {
+      searchField: "text",
+      filterFields: ["roomId", "materialId", "active", "language"],
+    })
+    .vectorIndex("by_embedding", {
+      vectorField: "embedding",
+      dimensions: 1536,
+      filterFields: ["roomId", "materialId", "active", "language"],
+    }),
+
+  contextPackRevisions: defineTable({
+    roomId: v.id("projectRooms"),
+    revision: v.number(),
+    reason: v.string(),
+    subjectMaterialId: v.optional(v.id("projectMaterials")),
+    globalProjectSummary: v.string(),
+    likelyProjectType: v.optional(v.string()),
+    notableSignals: v.array(v.any()),
+    includedMaterialIds: v.array(v.id("projectMaterials")),
+    materialSummaries: v.array(v.any()),
+    feedback: v.array(v.any()),
+    minimalContextWarning: v.boolean(),
+    createdAt: v.number(),
+  })
+    .index("by_room_revision", ["roomId", "revision"])
+    .index("by_room_created", ["roomId", "createdAt"]),
 
   durableOperations: defineTable({
     roomId: v.id("projectRooms"),

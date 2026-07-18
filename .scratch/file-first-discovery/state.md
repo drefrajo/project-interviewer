@@ -2,7 +2,7 @@
 
 **Overall baseline:** `01cbf0e68c1853e5168160d572a95583d48f15dc`
 **Current frontier:** 02
-**Status:** implementing
+**Status:** ticket 02 verified; committing
 
 ## Decisions
 
@@ -15,8 +15,8 @@
 
 | Ticket | Status | Starting commit | Ending commit | Notes |
 | --- | --- | --- | --- | --- |
-| 01 Foundation and shared Project Room | resolved | `01cbf0e68c1853e5168160d572a95583d48f15dc` | Ticket commit | 7 tests; typecheck/lint/build; both review axes clean |
-| 02 Project Material to Context Pack | ready-for-agent | — | — | Blocked by 01 |
+| 01 Foundation and shared Project Room | resolved | `01cbf0e68c1853e5168160d572a95583d48f15dc` | `6299f331ba8e0405724ad040b25514afdc6dae49` | 7 tests; typecheck/lint/build; both review axes clean |
+| 02 Project Material to Context Pack | resolved | `6299f331ba8e0405724ad040b25514afdc6dae49` | ticket commit | 36 tests; typecheck/lint/build; both review axes clean |
 | 03 File-aware Discovery Interview | ready-for-agent | — | — | Blocked by 02 |
 | 04 Traceable Project Brief review | ready-for-agent | — | — | Blocked by 03 |
 | 05 Durable Project Home lifecycle | ready-for-agent | — | — | Blocked by 04 |

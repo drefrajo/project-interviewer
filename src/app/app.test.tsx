@@ -130,4 +130,113 @@ describe("File-First Discovery application shell", () => {
       }),
     ).toBeInTheDocument();
   });
+
+  it("shows accepted Project Material immediately and its source-linked analysis when processing finishes", async () => {
+    const user = userEvent.setup();
+    const bytes = new Map<string, Uint8Array>();
+    const application = createProjectInterviewer({
+      ids: {
+        next: (() => {
+          let id = 0;
+          return (prefix: string) => `${prefix}_${++id}`;
+        })(),
+        inviteToken: () => "invite-material",
+        deviceId: () => "browser-device",
+      },
+      clock: { now: () => 1_800_000_000_000 },
+      inviteTokens: { hash: async (value) => `digest:${value}` },
+      materialFiles: {
+        inspect: async (_reference, scope) => ({
+          size: scope.claimedSize,
+          contentType: scope.declaredContentType,
+        }),
+        read: async (reference) => bytes.get(reference) ?? new Uint8Array(),
+        remove: async (reference) => void bytes.delete(reference),
+      },
+      contentInspector: {
+        detect: async ({ declaredContentType }) => declaredContentType,
+      },
+      parser: {
+        extract: async ({ bytes: content }) => ({
+          language: "en",
+          method: "plain-text",
+          segments: [
+            {
+              text: new TextDecoder().decode(content),
+              locator: {
+                kind: "paragraph",
+                label: "Paragraph 1",
+                paragraph: 1,
+              },
+            },
+          ],
+        }),
+      },
+      fileAnalyzer: {
+        analyze: async () => ({
+          summary: "A one-page portal brief with an October launch target.",
+          summaryLanguage: "en",
+          primaryCategory: "brief",
+          secondaryCategories: ["timeline"],
+          confidence: 0.9,
+          language: "en",
+          signals: [
+            {
+              text: "The source states an October launch target.",
+              locator: {
+                kind: "paragraph",
+                label: "Paragraph 1",
+                paragraph: 1,
+              },
+            },
+          ],
+          model: "test",
+          provider: "test",
+        }),
+      },
+      embeddings: {
+        embed: async (texts) => texts.map(() => [1, 0]),
+      },
+    });
+    const freelancer =
+      await application.identities.createDevelopmentFreelancer({
+        displayName: "Ada",
+      });
+    const { room } = await application.rooms.create(freelancer, {
+      title: "Material Room",
+      clientLabel: "Alpine",
+      projectDescription: "A portal.",
+      briefLanguage: "en",
+      freelancerGuidance: "",
+    });
+    const routes = createRoutes(application, freelancer, {
+      save: async (file) => {
+        const reference = "file-ref";
+        bytes.set(reference, new Uint8Array(await file.arrayBuffer()));
+        return reference;
+      },
+      remove: async (reference) => void bytes.delete(reference),
+    });
+    const TestRoutes = () => useRoutes(routes);
+    render(
+      <MemoryRouter initialEntries={[`/rooms/${room.id}`]}>
+        <TestRoutes />
+      </MemoryRouter>,
+    );
+
+    await user.upload(
+      await screen.findByLabelText(/add project material/i),
+      new File(["Portal launch target: October."], "Brief.txt", {
+        type: "text/plain",
+      }),
+    );
+
+    expect(
+      await screen.findByText(/one-page portal brief/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Brief.txt" }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText(/paragraph 1/i).length).toBeGreaterThan(0);
+  });
 });

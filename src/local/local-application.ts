@@ -4,6 +4,14 @@ import {
   type ProjectInterviewer,
   type ProjectInterviewerSnapshot,
 } from "../domain/project-interviewer";
+import {
+  createLocalMaterialFileStore,
+  detectActualContentTypeFromBytes,
+  localEmbeddings,
+  localFileAnalyzer,
+  localParser,
+} from "./local-material-adapters";
+import type { LocalMaterialFileStore } from "./local-material-adapters";
 
 const STATE_KEY = "project-interviewer.local-state.v1";
 const FREELANCER_KEY = "project-interviewer.local-freelancer.v1";
@@ -41,8 +49,10 @@ const bytesToBase64Url = (bytes: Uint8Array): string => {
 export const createLocalApplication = async (): Promise<{
   application: ProjectInterviewer;
   freelancer: FreelancerActor;
+  materialFileStore: LocalMaterialFileStore;
 }> => {
   const initialState = readSnapshot();
+  const materialFileStore = createLocalMaterialFileStore();
   const application = createProjectInterviewer({
     ids: {
       next: (prefix) => `${prefix}_${crypto.randomUUID()}`,
@@ -51,6 +61,18 @@ export const createLocalApplication = async (): Promise<{
     },
     clock: { now: () => Date.now() },
     inviteTokens: { hash: hashInviteToken },
+    materialFiles: materialFileStore,
+    contentInspector: {
+      detect: ({ name, declaredContentType, bytes }) =>
+        detectActualContentTypeFromBytes(
+          name,
+          declaredContentType,
+          bytes,
+        ),
+    },
+    parser: localParser,
+    fileAnalyzer: localFileAnalyzer,
+    embeddings: localEmbeddings,
     ...(initialState ? { initialState } : {}),
     persist: (snapshot) =>
       localStorage.setItem(STATE_KEY, JSON.stringify(snapshot)),
@@ -69,5 +91,5 @@ export const createLocalApplication = async (): Promise<{
       });
 
   localStorage.setItem(FREELANCER_KEY, freelancer.freelancerId);
-  return { application, freelancer };
+  return { application, freelancer, materialFileStore };
 };

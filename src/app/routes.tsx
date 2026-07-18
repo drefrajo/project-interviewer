@@ -8,17 +8,24 @@ import { ApplicationShell } from "./application-shell";
 import { ClientEntry, FreelancerProjectRoom } from "./project-room";
 import { Workspace } from "./workspace";
 import { useI18n } from "./i18n";
+import type { LocalMaterialFileStore } from "../local/local-material-adapters";
 
 export interface RouteContext {
   application: ProjectInterviewer;
   freelancer: FreelancerActor;
+  materialFileStore?: Pick<LocalMaterialFileStore, "save" | "remove">;
 }
 
 export const createRoutes = (
   application: ProjectInterviewer,
   freelancer: FreelancerActor,
+  materialFileStore?: Pick<LocalMaterialFileStore, "save" | "remove">,
 ): RouteObject[] => {
-  const context = { application, freelancer };
+  const context: RouteContext = {
+    application,
+    freelancer,
+    ...(materialFileStore ? { materialFileStore } : {}),
+  };
   return [
     {
       element: <ApplicationShell />,

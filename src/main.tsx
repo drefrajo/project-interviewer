@@ -8,8 +8,11 @@ import "./styles.css";
 const rootElement = document.getElementById("root");
 if (!rootElement) throw new Error("Application root element is missing.");
 
-const { application, freelancer } = await createLocalApplication();
-const router = createBrowserRouter(createRoutes(application, freelancer));
+const { application, freelancer, materialFileStore } =
+  await createLocalApplication();
+const router = createBrowserRouter(
+  createRoutes(application, freelancer, materialFileStore),
+);
 
 createRoot(rootElement).render(
   <StrictMode>
