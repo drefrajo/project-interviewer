@@ -33,7 +33,7 @@ const materialWasUsedInTurn = async (
 ) => {
   const interview = await context.db
     .query("discoveryInterviews")
-    .withIndex("by_room", (query) => query.eq("roomId", roomId))
+    .withIndex("by_room_purge", (query) => query.eq("roomId", roomId))
     .first();
   if (!interview) return false;
   const interviewId = context.db.normalizeId(

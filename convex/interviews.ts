@@ -59,7 +59,7 @@ export const get = queryGeneric({
     );
     const interview = await context.db
       .query("discoveryInterviews")
-      .withIndex("by_room", (query) => query.eq("roomId", args.roomId))
+      .withIndex("by_room_purge", (query) => query.eq("roomId", args.roomId))
       .first();
     if (!interview) return null;
     const [plan, turns, corrections, findings, events, lease, operation] =
@@ -97,7 +97,7 @@ export const get = queryGeneric({
           .collect(),
         context.db
           .query("respondingDeviceLeases")
-          .withIndex("by_room", (query) => query.eq("roomId", args.roomId))
+          .withIndex("by_room_purge", (query) => query.eq("roomId", args.roomId))
           .first(),
         latestOperation(context, args.roomId),
       ]);
@@ -197,7 +197,7 @@ export const start = mutationGeneric({
     );
     const existing = await context.db
       .query("discoveryInterviews")
-      .withIndex("by_room", (query) => query.eq("roomId", args.roomId))
+      .withIndex("by_room_purge", (query) => query.eq("roomId", args.roomId))
       .first();
     if (existing) return { interviewId: existing._id, operationId: null };
     const [room, activeMaterials, latestContext] = await Promise.all([
@@ -235,7 +235,7 @@ export const start = mutationGeneric({
     }
     const profile = await context.db
       .query("clientProfiles")
-      .withIndex("by_room", (query) => query.eq("roomId", args.roomId))
+      .withIndex("by_room_purge", (query) => query.eq("roomId", args.roomId))
       .unique();
     if (!profile) throw new Error("Client onboarding is required.");
     const now = Date.now();
@@ -291,7 +291,7 @@ const requireRespondingDevice = async (
   );
   const lease = await context.db
     .query("respondingDeviceLeases")
-    .withIndex("by_room", (query) => query.eq("roomId", args.roomId))
+    .withIndex("by_room_purge", (query) => query.eq("roomId", args.roomId))
     .first();
   if (!lease || lease.deviceHash !== actor.session.deviceHash) {
     throw new Error("This device does not have response permission.");
@@ -342,7 +342,7 @@ export const takeover = mutationGeneric({
     });
     const lease = await context.db
       .query("respondingDeviceLeases")
-      .withIndex("by_room", (query) => query.eq("roomId", args.roomId))
+      .withIndex("by_room_purge", (query) => query.eq("roomId", args.roomId))
       .first();
     if (!lease) throw new Error("Interview lease not found.");
     const now = Date.now();
@@ -377,7 +377,7 @@ const acceptTurn = mutationGeneric({
     const { actor } = await requireRespondingDevice(context, args);
     const interview = await context.db
       .query("discoveryInterviews")
-      .withIndex("by_room", (query) => query.eq("roomId", args.roomId))
+      .withIndex("by_room_purge", (query) => query.eq("roomId", args.roomId))
       .first();
     if (!interview) throw new Error("Interview not found.");
     const existing = await context.db
@@ -509,7 +509,7 @@ export const setStatus = mutationGeneric({
     const { actor } = await requireRespondingDevice(context, args);
     const interview = await context.db
       .query("discoveryInterviews")
-      .withIndex("by_room", (query) => query.eq("roomId", args.roomId))
+      .withIndex("by_room_purge", (query) => query.eq("roomId", args.roomId))
       .first();
     if (!interview) throw new Error("Interview not found.");
     if (
@@ -547,7 +547,7 @@ export const finishEarly = mutationGeneric({
     if (!args.confirmed) throw new Error("Confirmation is required.");
     const interview = await context.db
       .query("discoveryInterviews")
-      .withIndex("by_room", (query) => query.eq("roomId", args.roomId))
+      .withIndex("by_room_purge", (query) => query.eq("roomId", args.roomId))
       .first();
     if (
       !interview ||
@@ -698,7 +698,7 @@ export const confirmCompletion = mutationGeneric({
     const { actor } = await requireRespondingDevice(context, args);
     const interview = await context.db
       .query("discoveryInterviews")
-      .withIndex("by_room", (query) => query.eq("roomId", args.roomId))
+      .withIndex("by_room_purge", (query) => query.eq("roomId", args.roomId))
       .first();
     if (!interview || interview.status !== "awaiting_confirmation") {
       throw new Error("Discovery is not awaiting Client confirmation.");
@@ -787,7 +787,7 @@ export const retry = mutationGeneric({
     const { actor } = await requireRespondingDevice(context, args);
     const interview = await context.db
       .query("discoveryInterviews")
-      .withIndex("by_room", (query) => query.eq("roomId", args.roomId))
+      .withIndex("by_room_purge", (query) => query.eq("roomId", args.roomId))
       .first();
     if (
       !interview ||
@@ -845,7 +845,7 @@ export const beginReview = mutationGeneric({
     const { actor } = await requireRespondingDevice(context, args);
     const interview = await context.db
       .query("discoveryInterviews")
-      .withIndex("by_room", (query) => query.eq("roomId", args.roomId))
+      .withIndex("by_room_purge", (query) => query.eq("roomId", args.roomId))
       .first();
     if (!interview || interview.status !== "awaiting_confirmation") {
       throw new Error("Discovery is not ready for completion review.");

@@ -126,7 +126,7 @@ export const commitFileAnalysis = async (
   });
   const interview = await context.db
     .query("discoveryInterviews")
-    .withIndex("by_room", (query) =>
+    .withIndex("by_room_purge", (query) =>
       query.eq("roomId", operation.roomId),
     )
     .first();

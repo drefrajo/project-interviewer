@@ -119,7 +119,7 @@ export const loadDomainOperationContext = internalQueryGeneric({
       ? await context.db.get(interviewId)
       : await context.db
           .query("discoveryInterviews")
-          .withIndex("by_room", (query) =>
+          .withIndex("by_room_purge", (query) =>
             query.eq("roomId", operation.roomId),
           )
           .first();

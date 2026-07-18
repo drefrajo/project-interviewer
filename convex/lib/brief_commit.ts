@@ -24,7 +24,7 @@ export const commitBrief = async (
   const [interview, contextPack] = await Promise.all([
     context.db
       .query("discoveryInterviews")
-      .withIndex("by_room", (query) =>
+      .withIndex("by_room_purge", (query) =>
         query.eq("roomId", operation.roomId),
       )
       .first(),

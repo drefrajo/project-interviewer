@@ -312,7 +312,7 @@ export const beginGeneration = mutationGeneric({
       await Promise.all([
         context.db
           .query("discoveryInterviews")
-          .withIndex("by_room", (query) =>
+          .withIndex("by_room_purge", (query) =>
             query.eq("roomId", args.roomId),
           )
           .first(),
@@ -906,7 +906,7 @@ export const approve = mutationGeneric({
     );
     const profile = await context.db
       .query("clientProfiles")
-      .withIndex("by_room", (query) => query.eq("roomId", args.roomId))
+      .withIndex("by_room_purge", (query) => query.eq("roomId", args.roomId))
       .unique();
     const review = (await context.db
       .query("reviewVersions")

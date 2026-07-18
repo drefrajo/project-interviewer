@@ -24,7 +24,7 @@ const roomView = async (
     context.db.get(room.freelancerId),
     context.db
       .query("clientProfiles")
-      .withIndex("by_room", (query) => query.eq("roomId", room._id))
+      .withIndex("by_room_purge", (query) => query.eq("roomId", room._id))
       .unique(),
   ]);
   return {
@@ -257,7 +257,7 @@ export const onboardClient = mutationGeneric({
     }
     const existing = await context.db
       .query("clientProfiles")
-      .withIndex("by_room", (query) => query.eq("roomId", args.roomId))
+      .withIndex("by_room_purge", (query) => query.eq("roomId", args.roomId))
       .unique();
     if (existing) throw new Error("Client onboarding is already complete.");
     const now = Date.now();

@@ -259,7 +259,6 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   })
-    .index("by_room", ["roomId"])
     .index("by_room_purge", ["roomId"]),
 
   sharedResources: defineTable({
@@ -285,7 +284,6 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   })
-    .index("by_room", ["roomId"])
     .index("by_room_purge", ["roomId"]),
 
   projectMaterials: defineTable({
@@ -435,7 +433,6 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   })
-    .index("by_room", ["roomId"])
     .index("by_room_status", ["roomId", "status"])
     .index("by_room_purge", ["roomId"]),
 

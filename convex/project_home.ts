@@ -250,7 +250,7 @@ export const reopenDiscovery = mutationGeneric({
     }
     const interview = await context.db
       .query("discoveryInterviews")
-      .withIndex("by_room", (query) => query.eq("roomId", args.roomId))
+      .withIndex("by_room_purge", (query) => query.eq("roomId", args.roomId))
       .first();
     if (
       !interview ||
