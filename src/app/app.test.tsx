@@ -579,11 +579,18 @@ describe("File-First Discovery application shell", () => {
     expect(await screen.findByRole("status")).toHaveTextContent(
       /markdown saved/i,
     );
+    const writeText = vi.spyOn(navigator.clipboard, "writeText");
     await user.click(
       screen.getByRole("button", { name: /copy markdown/i }),
     );
     expect(await screen.findByRole("status")).toHaveTextContent(
       /markdown copied/i,
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("## Evidence appendix"),
+    );
+    expect(writeText).not.toHaveBeenCalledWith(
+      expect.stringContaining("project-brief:section"),
     );
     const preview = screen
       .getByRole("heading", { name: /preview/i })
@@ -637,6 +644,7 @@ describe("File-First Discovery application shell", () => {
     expect(
       screen.getByRole("button", { name: /approve this review version/i }),
     ).toBeInTheDocument();
+    expect(screen.getByText(/not a signature or contract/i)).toBeInTheDocument();
     const changeRequestField = screen.getByLabelText(/^change request$/i);
     await user.type(changeRequestField, "Clarify who administers SSO.");
     await user.click(

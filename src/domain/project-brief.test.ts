@@ -975,6 +975,9 @@ describe("Project Brief public service", () => {
       edited.activeChangeRequest?.id,
     );
     expect(edited.activeChangeRequest?.revisions).toHaveLength(2);
+    expect((await app.rooms.get(freelancer, room.id)).phase).toBe(
+      "freelancer_review",
+    );
 
     const acknowledged =
       await app.briefs.acknowledgeChangeRequest(

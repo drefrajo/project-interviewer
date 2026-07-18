@@ -81,6 +81,13 @@ const attentionCopy = {
         title: "You need to invite the Client.",
       },
     },
+    material_waiting: {
+      freelancer: {
+        detail:
+          "The Client still needs to add Project Material or deliberately continue without files.",
+        title: "Waiting for the Client to prepare Project Material.",
+      },
+    },
     discovery: {
       client: {
         detail:
@@ -150,6 +157,13 @@ const attentionCopy = {
         detail:
           "Teilen Sie unten den Einladungslink. Danach bereitet der Client den Klärungskontext vor.",
         title: "Sie müssen den Client einladen.",
+      },
+    },
+    material_waiting: {
+      freelancer: {
+        detail:
+          "Der Client muss noch Projektmaterial hinzufügen oder bewusst ohne Dateien fortfahren.",
+        title: "Warten auf die Vorbereitung des Projektmaterials durch den Client.",
       },
     },
     discovery: {
@@ -225,6 +239,24 @@ export const projectAttentionFor = (
       actor: actorKind,
       ...copy.archived[actorKind],
     };
+  }
+  if (
+    (room.phase === "setup" || room.phase === "discovery") &&
+    room.interviewReadiness === "waiting_for_material"
+  ) {
+    if (actorKind === "freelancer" && room.phase === "discovery") {
+      return {
+        actor: "client",
+        ...copy.material_waiting.freelancer,
+      };
+    }
+    if (actorKind === "client") {
+      return {
+        actor: "client",
+        ...copy.setup.client,
+        targetTab: "material",
+      };
+    }
   }
   if (room.phase === "setup" && actorKind === "client") {
     if (room.interviewReadiness === "ready") {

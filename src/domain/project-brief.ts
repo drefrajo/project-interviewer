@@ -1489,6 +1489,7 @@ export const createProjectBriefCoordinator = (
       if (!prior) {
         dependencies.state.briefChangeRequests.push(request);
       }
+      dependencies.setRoomPhase(roomId, "freelancer_review");
       dependencies.audit(actor, room.id, "change_request.saved");
       persistRoom(roomId);
       return toView(dependencies.state, actor, roomId);

@@ -29,6 +29,32 @@ describe("Project Home next-action guidance", () => {
     expect(attention).not.toHaveProperty("targetTab");
   });
 
+  it("keeps both roles focused on material until discovery is ready", () => {
+    expect(
+      projectAttentionFor(
+        {
+          phase: "discovery",
+          interviewReadiness: "waiting_for_material",
+        },
+        "client",
+        "en",
+      ),
+    ).toMatchObject({ actor: "client", targetTab: "material" });
+    expect(
+      projectAttentionFor(
+        {
+          phase: "discovery",
+          interviewReadiness: "waiting_for_material",
+        },
+        "freelancer",
+        "en",
+      ),
+    ).toMatchObject({
+      actor: "client",
+      title: "Waiting for the Client to prepare Project Material.",
+    });
+  });
+
   it("sends each reviewing party to the Project Brief", () => {
     expect(
       projectAttentionFor(

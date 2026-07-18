@@ -40,6 +40,8 @@ const copy = {
     print: "Print / Save as PDF",
     history: "Previous Review Versions",
     evidence: "Evidence",
+    approvalDisclaimer:
+      "Approval confirms this discovery understanding only. It is not a signature or contract.",
     readOnly: "This archived Project Room is read-only.",
     saved: "Markdown saved.",
   },
@@ -68,6 +70,8 @@ const copy = {
     print: "Drucken / Als PDF speichern",
     history: "Frühere Prüfversionen",
     evidence: "Quellen",
+    approvalDisclaimer:
+      "Die Freigabe bestätigt nur dieses gemeinsame Projektverständnis. Sie ist keine Unterschrift und kein Vertrag.",
     readOnly: "Dieser archivierte Projektraum ist schreibgeschützt.",
     saved: "Markdown gespeichert.",
   },
@@ -215,8 +219,18 @@ export const ProjectBriefPanel = ({
   };
 
   const copyMarkdown = async () => {
+    if (!view?.draft) return;
     try {
-      await navigator.clipboard.writeText(markdown);
+      const saved = await perform(() =>
+        application.briefs.updateMarkdown(actor, room.id, { markdown }),
+      );
+      if (!saved) return;
+      const exported = await application.briefs.exportMarkdown(
+        actor,
+        room.id,
+        { artifactId: view.draft.id },
+      );
+      await navigator.clipboard.writeText(exported);
       setNotice(locale === "de" ? "Markdown kopiert." : "Markdown copied.");
     } catch {
       setError(
@@ -484,7 +498,12 @@ const ReviewDocument = ({
       <p>{review.status.replaceAll("_", " ")}</p>
     </div>
     <MarkdownDocument markdown={review.markdown} />
-    <EvidenceList sections={review.sections} selectedSource={selectedSource} setSelectedSource={setSelectedSource} title={text.evidence} />
+    <p className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+      {text.approvalDisclaimer}
+    </p>
+    {actor.kind === "freelancer" ? (
+      <EvidenceList sections={review.sections} selectedSource={selectedSource} setSelectedSource={setSelectedSource} title={text.evidence} />
+    ) : null}
     {actor.kind === "client" && !readOnly && review.status === "awaiting_client" ? (
       <div className="flex flex-wrap gap-2">
         <button className={primaryButton} disabled={busy} onClick={() => void perform(() => application.briefs.approve(actor, roomId))} type="button">
@@ -504,6 +523,9 @@ const ReviewDocument = ({
         </label>
         <button className={secondaryButton} disabled={busy || !changeRequest.trim()} type="submit">{text.saveChange}</button>
       </form>
+    ) : null}
+    {actor.kind === "client" ? (
+      <EvidenceList sections={review.sections} selectedSource={selectedSource} setSelectedSource={setSelectedSource} title={text.evidence} />
     ) : null}
     {actor.kind === "freelancer" && !readOnly && review.status === "change_requested" && view.activeChangeRequest ? (
       <button className={primaryButton} disabled={busy} onClick={() => void perform(() => application.briefs.acknowledgeChangeRequest(actor, roomId))} type="button">{text.acknowledgeChange}</button>

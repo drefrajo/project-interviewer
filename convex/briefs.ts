@@ -1,5 +1,10 @@
-import { mutationGeneric, queryGeneric } from "convex/server";
-import { v, type GenericId } from "convex/values";
+import {
+  mutationGeneric,
+  queryGeneric,
+  type GenericDataModel,
+  type GenericMutationCtx,
+} from "convex/server";
+import { v, type GenericId, type Value } from "convex/values";
 import type {
   BriefChangeRequest,
   BriefDraft,
@@ -419,7 +424,7 @@ export const beginGeneration = mutationGeneric({
 });
 
 const requireEditableDraft = async (
-  context: Parameters<typeof requireFreelancerRoom>[0],
+  context: GenericMutationCtx<GenericDataModel>,
   roomId: Parameters<typeof requireFreelancerRoom>[1],
 ) => {
   await requireWritableFreelancerRoom(context, roomId);
@@ -428,6 +433,57 @@ const requireEditableDraft = async (
     throw new Error("No editable Brief Draft is available.");
   }
   return draft;
+};
+
+const saveStructuredDraft = async (
+  context: GenericMutationCtx<GenericDataModel>,
+  draft: StoredDraft,
+  sections: StoredDraft["sections"],
+  updatedAt = Date.now(),
+) => {
+  await context.db.patch(draft._id, {
+    sections: sections as unknown as Value,
+    markdown: serializeProjectBriefMarkdown({
+      language: draft.language,
+      sections,
+    }),
+    updatedAt,
+  });
+};
+
+const createDraftFromReview = async (
+  context: GenericMutationCtx<GenericDataModel>,
+  input: {
+    roomId: GenericId<"projectRooms">;
+    review: StoredReview;
+    revision: number;
+    now: number;
+  },
+) => {
+  const sections = structuredClone(input.review.sections).map((section) => ({
+    ...section,
+    items: section.items.map((item) => ({
+      ...item,
+      ...(item.kind === "requirement"
+        ? { requirementState: "candidate" as const }
+        : {}),
+    })),
+  }));
+  await context.db.insert("briefDrafts", {
+    roomId: input.roomId,
+    revision: input.revision,
+    basedOnReviewVersionId: String(input.review._id),
+    language: input.review.language,
+    status: "editing",
+    sections: sections as unknown as Value,
+    markdown: serializeProjectBriefMarkdown({
+      language: input.review.language,
+      sections,
+    }),
+    warnings: [],
+    createdAt: input.now,
+    updatedAt: input.now,
+  });
 };
 
 export const updateSection = mutationGeneric({
@@ -456,14 +512,7 @@ export const updateSection = mutationGeneric({
       });
     }
     section.content = content;
-    await context.db.patch(draft._id, {
-      sections,
-      markdown: serializeProjectBriefMarkdown({
-        language: draft.language,
-        sections,
-      }),
-      updatedAt: Date.now(),
-    });
+    await saveStructuredDraft(context, draft, sections);
   },
 });
 
@@ -538,14 +587,7 @@ export const addItem = mutationGeneric({
       createdAt: now,
       updatedAt: now,
     });
-    await context.db.patch(draft._id, {
-      sections,
-      markdown: serializeProjectBriefMarkdown({
-        language: draft.language,
-        sections,
-      }),
-      updatedAt: now,
-    });
+    await saveStructuredDraft(context, draft, sections, now);
   },
 });
 
@@ -601,14 +643,7 @@ export const updateItem = mutationGeneric({
         candidate.order = order;
       });
     }
-    await context.db.patch(draft._id, {
-      sections,
-      markdown: serializeProjectBriefMarkdown({
-        language: draft.language,
-        sections,
-      }),
-      updatedAt: Date.now(),
-    });
+    await saveStructuredDraft(context, draft, sections);
   },
 });
 
@@ -636,14 +671,7 @@ export const moveItem = mutationGeneric({
         item.order = order;
       });
     }
-    await context.db.patch(draft._id, {
-      sections,
-      markdown: serializeProjectBriefMarkdown({
-        language: draft.language,
-        sections,
-      }),
-      updatedAt: Date.now(),
-    });
+    await saveStructuredDraft(context, draft, sections);
   },
 });
 
@@ -658,14 +686,7 @@ export const removeItem = mutationGeneric({
         item.order = order;
       });
     }
-    await context.db.patch(draft._id, {
-      sections,
-      markdown: serializeProjectBriefMarkdown({
-        language: draft.language,
-        sections,
-      }),
-      updatedAt: Date.now(),
-    });
+    await saveStructuredDraft(context, draft, sections);
   },
 });
 
@@ -806,6 +827,11 @@ export const submitChangeRequest = mutationGeneric({
       });
     }
     await context.db.patch(review._id, { status: "change_requested" });
+    await context.db.patch(args.roomId, {
+      phase: "freelancer_review",
+      updatedAt: now,
+      lastActivityAt: now,
+    });
     await recordAudit(context, {
       roomId: args.roomId,
       actorKind: "client",
@@ -849,30 +875,11 @@ export const acknowledgeChangeRequest = mutationGeneric({
       acknowledgedAt: now,
       updatedAt: now,
     });
-    const reviewSections = review.sections as StoredReview["sections"];
-    const draftSections = structuredClone(reviewSections).map((section) => ({
-      ...section,
-      items: section.items.map((item) => ({
-        ...item,
-        ...(item.kind === "requirement"
-          ? { requirementState: "candidate" as const }
-          : {}),
-      })),
-    }));
-    await context.db.insert("briefDrafts", {
+    await createDraftFromReview(context, {
       roomId: args.roomId,
       revision: prior.length + 1,
-      basedOnReviewVersionId: String(review._id),
-      language: review.language,
-      status: "editing",
-      sections: draftSections,
-      markdown: serializeProjectBriefMarkdown({
-        language: review.language,
-        sections: draftSections,
-      }),
-      warnings: [],
-      createdAt: now,
-      updatedAt: now,
+      review,
+      now,
     });
     await context.db.patch(args.roomId, {
       phase: "freelancer_review",
@@ -981,30 +988,11 @@ export const reopen = mutationGeneric({
       )
       .collect();
     const now = Date.now();
-    const reviewSections = review.sections as StoredReview["sections"];
-    const draftSections = structuredClone(reviewSections).map((section) => ({
-      ...section,
-      items: section.items.map((item) => ({
-        ...item,
-        ...(item.kind === "requirement"
-          ? { requirementState: "candidate" as const }
-          : {}),
-      })),
-    }));
-    await context.db.insert("briefDrafts", {
+    await createDraftFromReview(context, {
       roomId: args.roomId,
       revision: prior.length + 1,
-      basedOnReviewVersionId: String(review._id),
-      language: review.language,
-      status: "editing",
-      sections: draftSections,
-      markdown: serializeProjectBriefMarkdown({
-        language: review.language,
-        sections: draftSections,
-      }),
-      warnings: [],
-      createdAt: now,
-      updatedAt: now,
+      review: review as unknown as StoredReview,
+      now,
     });
     await context.db.patch(args.roomId, {
       phase: "freelancer_review",
