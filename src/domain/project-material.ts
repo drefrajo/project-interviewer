@@ -17,6 +17,49 @@ export type SourceLocator =
   | { kind: "paragraph"; label: string; paragraph?: number }
   | { kind: "text_range"; label: string; start: number; end: number };
 
+export const sourceLocatorKey = (locator: SourceLocator): string => {
+  switch (locator.kind) {
+    case "page":
+      return JSON.stringify([
+        locator.kind,
+        locator.label,
+        locator.page,
+      ]);
+    case "slide":
+      return JSON.stringify([
+        locator.kind,
+        locator.label,
+        locator.slide,
+      ]);
+    case "sheet":
+      return JSON.stringify([
+        locator.kind,
+        locator.label,
+        locator.sheet,
+        locator.range ?? null,
+      ]);
+    case "image":
+      return JSON.stringify([
+        locator.kind,
+        locator.label,
+        locator.image,
+      ]);
+    case "paragraph":
+      return JSON.stringify([
+        locator.kind,
+        locator.label,
+        locator.paragraph ?? null,
+      ]);
+    case "text_range":
+      return JSON.stringify([
+        locator.kind,
+        locator.label,
+        locator.start,
+        locator.end,
+      ]);
+  }
+};
+
 export interface MaterialSegment {
   text: string;
   locator: SourceLocator;

@@ -9,7 +9,11 @@ import type {
   FileAnalysisDraft,
   MaterialExtraction,
 } from "./project-material";
-import { UnsupportedMaterialError } from "./project-material";
+import {
+  UnsupportedMaterialError,
+  sourceLocatorKey,
+  type SourceLocator,
+} from "./project-material";
 import {
   findSuspectedSecrets,
   publicSuspectedSecrets,
@@ -110,6 +114,20 @@ const createRoom = async (dependencies: ProjectInterviewerDependencies) => {
 };
 
 describe("Project Material public service", () => {
+  it("canonicalizes source locators independently of object property order", () => {
+    const canonical: SourceLocator = {
+      kind: "paragraph",
+      label: "Paragraph 1",
+      paragraph: 1,
+    };
+    const reordered = JSON.parse(
+      '{"paragraph":1,"label":"Paragraph 1","kind":"paragraph"}',
+    ) as SourceLocator;
+    expect(sourceLocatorKey(reordered)).toBe(
+      sourceLocatorKey(canonical),
+    );
+  });
+
   it("never treats punctuation inside a generic high-entropy token as a public assignment prefix", () => {
     const matches = findSuspectedSecrets([
       {

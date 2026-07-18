@@ -17,6 +17,7 @@ import {
   localInterviewPlanner,
   localInterviewReviewer,
 } from "./local-interview-adapters";
+import { localBriefGenerator } from "./local-brief-adapter";
 
 const STATE_KEY = "project-interviewer.local-state.v1";
 const FREELANCER_KEY = "project-interviewer.local-freelancer.v1";
@@ -81,6 +82,7 @@ export const createLocalApplication = async (): Promise<{
     interviewPlanner: localInterviewPlanner,
     interviewAgent: localInterviewAgent,
     interviewReviewer: localInterviewReviewer,
+    briefGenerator: localBriefGenerator,
     ...(initialState ? { initialState } : {}),
     persist: (snapshot) =>
       localStorage.setItem(STATE_KEY, JSON.stringify(snapshot)),

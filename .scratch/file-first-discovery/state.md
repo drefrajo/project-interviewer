@@ -1,7 +1,7 @@
 # File-First Discovery implementation state
 
 **Overall baseline:** `01cbf0e68c1853e5168160d572a95583d48f15dc`
-**Current frontier:** 03
+**Current frontier:** 04
 **Status:** implementing
 
 ## Decisions
@@ -17,8 +17,8 @@
 | --- | --- | --- | --- | --- |
 | 01 Foundation and shared Project Room | resolved | `01cbf0e68c1853e5168160d572a95583d48f15dc` | `6299f331ba8e0405724ad040b25514afdc6dae49` | 7 tests; typecheck/lint/build; both review axes clean |
 | 02 Project Material to Context Pack | resolved | `6299f331ba8e0405724ad040b25514afdc6dae49` | `3d7285bc4be00f64506d5ef5bcd8cbdd988c794d` | 36 tests; typecheck/lint/build; both review axes clean |
-| 03 File-aware Discovery Interview | resolved | `3d7285bc4be00f64506d5ef5bcd8cbdd988c794d` | pending commit | 66 tests; typecheck/lint/build; both review axes clean |
-| 04 Traceable Project Brief review | ready-for-agent | — | — | Blocked by 03 |
+| 03 File-aware Discovery Interview | resolved | `3d7285bc4be00f64506d5ef5bcd8cbdd988c794d` | `6cd898682526d3c946ed8d55eed5bca89adde413` | 66 tests; typecheck/lint/build; both review axes clean |
+| 04 Traceable Project Brief review | resolved | `6cd898682526d3c946ed8d55eed5bca89adde413` | pending commit | 86 tests; typecheck/lint/build; both review axes clean |
 | 05 Durable Project Home lifecycle | ready-for-agent | — | — | Blocked by 04 |
 | 06 Production boundaries and deployment | ready-for-agent | — | — | Blocked by 05 |
 | 07 Hardening, evaluation, and launch readiness | ready-for-agent | — | — | Blocked by 06 |

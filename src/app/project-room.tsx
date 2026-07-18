@@ -27,6 +27,7 @@ import { useI18n } from "./i18n";
 import { ProjectMaterialPanel } from "./project-material-panel";
 import { projectPhaseLabel } from "./project-phase-copy";
 import { DiscoveryInterviewPanel } from "./discovery-interview-panel";
+import { ProjectBriefPanel } from "./project-brief-panel";
 
 export const FreelancerProjectRoom = ({
   application,
@@ -347,14 +348,14 @@ const ProjectRoomHome = ({
             ? { onRoomChange: onReadinessChange }
             : {})}
         />
-        <AvailabilityCard
-          available={sectionAvailability.brief}
-          id="brief"
-          title={t("brief")}
-          icon={<FolderOpen aria-hidden="true" />}
-        >
-          {t("briefBody")}
-        </AvailabilityCard>
+        <ProjectBriefPanel
+          actor={actor}
+          application={application}
+          room={room}
+          {...(onReadinessChange
+            ? { onRoomChange: onReadinessChange }
+            : {})}
+        />
         <AvailabilityCard
           available
           id="resources"

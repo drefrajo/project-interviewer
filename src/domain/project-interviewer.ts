@@ -1,5 +1,6 @@
 import {
   DEFAULT_MATERIAL_LIMITS,
+  sourceLocatorKey,
   UnsupportedMaterialError,
   fileExtension,
   supportedMaterialTypes,
@@ -29,6 +30,11 @@ import {
   type DiscoveryInterviewState,
   type InterviewAdapters,
 } from "./discovery-interview";
+import {
+  createProjectBriefCoordinator,
+  type ProjectBriefAdapters,
+  type ProjectBriefState,
+} from "./project-brief";
 
 export type Language = "en" | "de";
 
@@ -137,7 +143,8 @@ interface FreelancerIdentity {
 
 export interface ProjectInterviewerSnapshot
   extends ProjectMaterialState,
-    DiscoveryInterviewState {
+    DiscoveryInterviewState,
+    ProjectBriefState {
   freelancers: FreelancerIdentity[];
   rooms: ProjectRoom[];
   auditEvents: AuditEvent[];
@@ -201,6 +208,7 @@ export interface ProjectInterviewerDependencies {
   interviewPlanner?: InterviewAdapters["planner"];
   interviewAgent?: InterviewAdapters["agent"];
   interviewReviewer?: InterviewAdapters["reviewer"];
+  briefGenerator?: ProjectBriefAdapters["generator"];
   initialState?: ProjectInterviewerSnapshot;
   persist?: (snapshot: ProjectInterviewerSnapshot) => void;
 }
@@ -256,6 +264,10 @@ export const createProjectInterviewer = (
     respondingDeviceLeases:
       initialState?.respondingDeviceLeases ?? [],
     interviewOperations: initialState?.interviewOperations ?? [],
+    briefDrafts: initialState?.briefDrafts ?? [],
+    reviewVersions: initialState?.reviewVersions ?? [],
+    briefChangeRequests: initialState?.briefChangeRequests ?? [],
+    briefOperations: initialState?.briefOperations ?? [],
   });
   const materialLimits: MaterialLimits = {
     ...DEFAULT_MATERIAL_LIMITS,
@@ -282,6 +294,14 @@ export const createProjectInterviewer = (
         operation.status = "retryable";
         operation.stage = "complete";
         operation.errorCode = "interrupted_processing";
+        operation.updatedAt = dependencies.clock.now();
+      }
+    }
+    for (const operation of state.briefOperations) {
+      if (operation.status === "running") {
+        operation.status = "retryable";
+        operation.stage = "complete";
+        operation.errorCode = "interrupted_generation";
         operation.updatedAt = dependencies.clock.now();
       }
     }
@@ -1080,6 +1100,214 @@ export const createProjectInterviewer = (
       audit,
     });
 
+  const briefCoordinator = createProjectBriefCoordinator({
+    state,
+    ids: dependencies.ids,
+    clock: dependencies.clock,
+    ...(dependencies.briefGenerator
+      ? { generator: dependencies.briefGenerator }
+      : {}),
+    authorize: (actor, roomId) => {
+      const room = requireRoomActor(actor, roomId);
+      return {
+        id: room.id,
+        projectDescription: room.projectDescription,
+        briefLanguage: room.briefLanguage,
+        phase: room.phase,
+        ...(room.client
+          ? {
+              client: {
+                displayName: room.client.displayName,
+              },
+            }
+          : {}),
+      };
+    },
+    discovery: (roomId) => {
+      const interview = state.discoveryInterviews.find(
+        (candidate) => candidate.roomId === roomId,
+      );
+      const plan = interview
+        ? state.interviewPlans.find(
+            (candidate) => candidate.id === interview.planId,
+          )
+        : undefined;
+      if (!interview || !plan) {
+        throw new ValidationError(
+          "A completed Discovery Interview is required.",
+        );
+      }
+      return {
+        contextPack:
+          state.contextPackRevisions
+            .filter((revision) => revision.roomId === roomId)
+            .sort(
+              (left, right) => right.revision - left.revision,
+            )[0] ?? null,
+        plan,
+        findings: state.discoveryFindings.filter(
+          (finding) => finding.interviewId === interview.id,
+        ),
+        turns: state.interviewTurns
+          .filter((turn) => turn.interviewId === interview.id)
+          .sort((left, right) => left.sequence - right.sequence),
+        corrections: state.interviewCorrections.filter(
+          (correction) =>
+            correction.interviewId === interview.id,
+        ),
+        interviewStatus: interview.status,
+      };
+    },
+    ...(dependencies.embeddings
+      ? {
+          searchEvidence: (
+            roomId: string,
+            query: string,
+            limit = 5,
+          ) => searchEvidence(roomId, query, limit),
+          inspectEvidence: async (
+            roomId: string,
+            materialId: string,
+            requestedCharacters = 2_000,
+          ) => {
+            let remaining = Math.max(
+              0,
+              Math.min(Math.floor(requestedCharacters), 4_000),
+            );
+            const excerpts: Array<{
+              materialId: string;
+              text: string;
+              locator: ProjectMaterialState["materialChunks"][number]["locator"];
+            }> = [];
+            for (const chunk of state.materialChunks.filter(
+              (candidate) =>
+                candidate.roomId === roomId &&
+                candidate.materialId === materialId &&
+                candidate.active,
+            )) {
+              if (remaining <= 0) break;
+              const text = chunk.text.slice(0, remaining);
+              remaining -= text.length;
+              excerpts.push({
+                materialId,
+                text,
+                locator: copy(chunk.locator),
+              });
+            }
+            return excerpts;
+          },
+        }
+      : {}),
+    validateMaterialSource: (roomId, materialId, locator) =>
+      state.materialChunks.some(
+        (candidate) =>
+          candidate.roomId === roomId &&
+          candidate.materialId === materialId &&
+          candidate.active &&
+          sourceLocatorKey(candidate.locator) ===
+            sourceLocatorKey(locator),
+      ),
+    sourceDetail: (roomId, source) => {
+      switch (source.type) {
+        case "project_description": {
+          const room = state.rooms.find(
+            (candidate) => candidate.id === roomId,
+          );
+          return room
+            ? {
+                label: "Project Description",
+                text: room.projectDescription,
+              }
+            : null;
+        }
+        case "turn": {
+          const turn = state.interviewTurns.find(
+            (candidate) =>
+              candidate.id === source.turnId &&
+              candidate.roomId === roomId,
+          );
+          return turn
+            ? {
+                label: `Interview Turn ${turn.sequence}`,
+                text: `${turn.question.text}\n\n${turn.answer}`,
+                sequence: turn.sequence,
+              }
+            : null;
+        }
+        case "correction": {
+          const correction = state.interviewCorrections.find(
+            (candidate) =>
+              candidate.id === source.correctionId &&
+              candidate.roomId === roomId,
+          );
+          return correction
+            ? {
+                label: "Interview Correction",
+                text: correction.correctedAnswer,
+                reason: correction.reason,
+              }
+            : null;
+        }
+        case "material": {
+          const material = state.projectMaterials.find(
+            (candidate) =>
+              candidate.id === source.materialId &&
+              candidate.roomId === roomId,
+          );
+          const excerpt = state.materialChunks.find(
+            (candidate) =>
+              candidate.roomId === roomId &&
+              candidate.materialId === source.materialId &&
+              candidate.active &&
+              sourceLocatorKey(candidate.locator) ===
+                sourceLocatorKey(source.locator),
+          );
+          return material
+            ? {
+                label: `${material.name} · ${source.locator.label}`,
+                text: excerpt?.text.slice(0, 2_000) ?? "",
+                ...(!excerpt ? { unavailable: true } : {}),
+                locator: source.locator.label,
+              }
+            : null;
+        }
+        case "analysis_feedback": {
+          const feedback = state.analysisFeedback.find(
+            (candidate) =>
+              candidate.id === source.feedbackId &&
+              candidate.roomId === roomId,
+          );
+          return feedback
+            ? {
+                label: `Analysis Feedback · ${feedback.locator.label}`,
+                text: feedback.explanation,
+                locator: feedback.locator.label,
+              }
+            : null;
+        }
+        case "model_inference":
+          return {
+            label: "Model inference",
+            text: source.description,
+          };
+        case "freelancer_edit":
+          return {
+            label: "Freelancer-authored edit",
+            text: source.description,
+          };
+      }
+    },
+    setRoomPhase: (roomId, phase) => {
+      const room = state.rooms.find(({ id }) => id === roomId);
+      if (room) {
+        room.phase = phase;
+        room.updatedAt = dependencies.clock.now();
+      }
+    },
+    persist,
+    audit,
+  });
+
   return {
     identities: {
       async createDevelopmentFreelancer(input: {
@@ -1657,6 +1885,7 @@ export const createProjectInterviewer = (
       },
     },
     interviews: discoveryCoordinator,
+    briefs: briefCoordinator,
     inspectState: (): ProjectInterviewerSnapshot => copy(state),
   };
 };

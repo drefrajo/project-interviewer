@@ -103,6 +103,85 @@ const coverageArea = v.object({
   required: v.boolean(),
   vagueFollowupCount: v.optional(v.number()),
 });
+const briefSource = v.union(
+  evidenceReference,
+  v.object({
+    type: v.literal("project_description"),
+  }),
+  v.object({
+    type: v.literal("freelancer_edit"),
+    editId: v.string(),
+    description: v.string(),
+  }),
+);
+const briefItem = v.object({
+  id: v.string(),
+  sectionId: v.string(),
+  kind: v.union(
+    v.literal("requirement"),
+    v.literal("target"),
+    v.literal("parameter"),
+    v.literal("assumption"),
+    v.literal("risk"),
+    v.literal("gap"),
+    v.literal("contradiction"),
+    v.literal("decision"),
+  ),
+  text: v.string(),
+  scopeStatus: v.optional(
+    v.union(
+      v.literal("in_scope"),
+      v.literal("out_of_scope"),
+      v.literal("open"),
+    ),
+  ),
+  priority: v.union(v.string(), v.null()),
+  sources: v.array(briefSource),
+  findingId: v.optional(v.string()),
+  authoredBy: v.union(
+    v.literal("generator"),
+    v.literal("freelancer"),
+  ),
+  requirementState: v.optional(
+    v.union(
+      v.literal("candidate"),
+      v.literal("proposed"),
+      v.literal("agreed"),
+      v.literal("excluded"),
+    ),
+  ),
+  order: v.number(),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+});
+const briefSection = v.object({
+  id: v.string(),
+  title: v.string(),
+  content: v.string(),
+  sources: v.array(briefSource),
+  items: v.array(briefItem),
+});
+const briefWarning = v.object({
+  id: v.string(),
+  category: v.union(
+    v.literal("feasibility"),
+    v.literal("scope"),
+    v.literal("budget"),
+    v.literal("timeline"),
+    v.literal("responsibility"),
+    v.literal("critical_gap"),
+    v.literal("contradiction"),
+  ),
+  message: v.string(),
+  subjectId: v.string(),
+  status: v.union(
+    v.literal("unresolved"),
+    v.literal("resolved"),
+    v.literal("acknowledged"),
+  ),
+  note: v.optional(v.string()),
+  updatedAt: v.number(),
+});
 
 export default defineSchema({
   freelancerProfiles: defineTable({
@@ -429,6 +508,95 @@ export default defineSchema({
       "interviewId",
       "idempotencyKey",
     ]),
+
+  briefDrafts: defineTable({
+    roomId: v.id("projectRooms"),
+    revision: v.number(),
+    basedOnReviewVersionId: v.optional(v.string()),
+    language,
+    status: v.union(v.literal("editing"), v.literal("sent")),
+    sections: v.array(briefSection),
+    warnings: v.array(briefWarning),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_room_revision", ["roomId", "revision"])
+    .index("by_room_status", ["roomId", "status", "updatedAt"]),
+
+  reviewVersions: defineTable({
+    roomId: v.id("projectRooms"),
+    sourceDraftId: v.id("briefDrafts"),
+    version: v.number(),
+    language,
+    status: v.union(
+      v.literal("awaiting_client"),
+      v.literal("change_requested"),
+      v.literal("approved"),
+    ),
+    sections: v.array(briefSection),
+    sentAt: v.number(),
+    approval: v.optional(
+      v.object({
+        displayName: v.string(),
+        deviceHash: v.string(),
+        approvedAt: v.number(),
+        agreedRequirementIds: v.array(v.string()),
+      }),
+    ),
+  })
+    .index("by_room_version", ["roomId", "version"])
+    .index("by_room_status", ["roomId", "status", "version"]),
+
+  briefChangeRequests: defineTable({
+    roomId: v.id("projectRooms"),
+    reviewVersionId: v.id("reviewVersions"),
+    status: v.union(
+      v.literal("editing"),
+      v.literal("acknowledged"),
+    ),
+    revisions: v.array(
+      v.object({
+        version: v.number(),
+        text: v.string(),
+        createdAt: v.number(),
+      }),
+    ),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    acknowledgedAt: v.optional(v.number()),
+  })
+    .index("by_review", ["reviewVersionId"])
+    .index("by_room_status", ["roomId", "status", "updatedAt"]),
+
+  briefOperations: defineTable({
+    roomId: v.id("projectRooms"),
+    operationType: v.literal("brief_generation"),
+    idempotencyKey: v.string(),
+    status: v.union(
+      v.literal("running"),
+      v.literal("retryable"),
+      v.literal("succeeded"),
+    ),
+    stage: v.union(
+      v.literal("generating"),
+      v.literal("validating"),
+      v.literal("complete"),
+    ),
+    attemptCount: v.number(),
+    model: v.optional(v.string()),
+    provider: v.optional(v.string()),
+    promptVersion: v.string(),
+    schemaVersion: v.string(),
+    contextPackRevisionId: v.optional(v.id("contextPackRevisions")),
+    inputTokens: v.optional(v.number()),
+    outputTokens: v.optional(v.number()),
+    estimatedCostUsd: v.optional(v.number()),
+    errorCode: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_room", ["roomId", "updatedAt"])
+    .index("by_idempotency", ["roomId", "idempotencyKey"]),
 
   durableOperations: defineTable({
     roomId: v.id("projectRooms"),

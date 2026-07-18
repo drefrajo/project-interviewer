@@ -683,11 +683,137 @@ h2 {
   color: #8d5a18;
 }
 
+.brief-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  grid-column: 1 / -1;
+  padding: clamp(1.25rem, 3vw, 2rem);
+}
+
+.brief-draft,
+.review-version {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.brief-section {
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+}
+
+.brief-section textarea,
+.brief-items textarea {
+  min-height: 5rem;
+  width: 100%;
+}
+
+.brief-items,
+.brief-warnings ul {
+  display: grid;
+  gap: 0.75rem;
+  padding-left: 1.25rem;
+}
+
+.brief-items li,
+.brief-warnings li,
+.review-version li {
+  background: #f5f7f3;
+  padding: 0.75rem;
+}
+
+.source-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.5rem 0;
+}
+
+.source-chip {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.78rem;
+  padding: 0.25rem 0.55rem;
+}
+
+.source-inspector,
+.markdown-export {
+  background: #f5f7f3;
+  border-left: 4px solid var(--green);
+  margin-top: 1rem;
+  overflow: auto;
+  padding: 1rem;
+  white-space: pre-wrap;
+}
+
+.brief-warnings {
+  background: #fff4e9;
+  padding: 1rem;
+}
+
+.brief-add-item,
+.change-request {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.evidence-appendix {
+  border-top: 2px solid var(--ink);
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+}
+
+.evidence-appendix small {
+  color: var(--muted);
+  display: block;
+  margin-top: 0.25rem;
+}
+
+.change-request-history {
+  border-top: 1px solid var(--line);
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+}
+
 .material-panel {
   background: var(--surface);
   border: 1px solid var(--line);
   margin-top: 2rem;
   padding: clamp(1.25rem, 3vw, 2rem);
+}
+
+@media print {
+  .site-header,
+  .room-sidebar,
+  .material-panel,
+  .interview-panel,
+  .brief-panel > header,
+  .brief-panel button,
+  .brief-draft,
+  .availability-card,
+  .room-intro,
+  .invite-panel {
+    display: none !important;
+  }
+
+  .room-layout,
+  .room-main,
+  .home-grid,
+  .brief-panel,
+  .review-version {
+    display: block;
+    border: 0;
+    margin: 0;
+    padding: 0;
+  }
+
+  .review-version {
+    color: #000;
+    font-size: 11pt;
+  }
 }
 
 .material-heading {

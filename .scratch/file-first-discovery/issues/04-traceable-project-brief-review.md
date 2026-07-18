@@ -4,7 +4,9 @@
 
 **Blocked by:** 03 — File-aware Discovery Interview.
 
-**Status:** ready-for-agent
+**Status:** resolved
+
+**Starting commit:** `6cd898682526d3c946ed8d55eed5bca89adde413`
 
 ## Authorized public test seams
 
@@ -14,12 +16,11 @@
 
 ## Acceptance criteria
 
-- [ ] Separate idempotent Brief Generator uses structured state and bounded evidence, emits the required software-project structure, and labels unsupported sections `Not established`.
-- [ ] Brief Draft supports structured text/item editing, reorder/reclassify/scope, evidence retention, and Freelancer-authored material without AI section regeneration.
-- [ ] Unresolved feasibility, scope, budget, timeline, responsibility, critical Gap, and Contradiction warnings must be resolved or explicitly acknowledged before send.
-- [ ] Review Versions are immutable; their Candidate Requirements become Proposed, and Approval makes only that frozen version's items Agreed for discovery purposes.
-- [ ] Client may approve or maintain one Change Request editable until acknowledgement; acknowledgement freezes history and creates a new private revision path.
-- [ ] Approved history remains visible; reopening creates a private draft while the Client sees the last approved version.
-- [ ] Print/PDF-friendly output and Markdown export preserve readable evidence appendices without raw storage URLs.
-- [ ] Focused tests cover unsupported claims, provenance, lifecycle immutability, one-change-request rule, and English/German output.
-
+- [x] Separate idempotent Brief Generator uses structured state and bounded evidence, emits the required software-project structure, and labels unsupported sections `Not established`.
+- [x] Brief Draft supports structured text/item editing, reorder/reclassify/scope, evidence retention, and Freelancer-authored material without AI section regeneration.
+- [x] Unresolved feasibility, scope, budget, timeline, responsibility, critical Gap, and Contradiction warnings must be resolved or explicitly acknowledged before send.
+- [x] Review Versions are immutable; their Candidate Requirements become Proposed, and Approval makes only that frozen version's items Agreed for discovery purposes.
+- [x] Client may approve or maintain one Change Request editable until acknowledgement; acknowledgement freezes history and creates a new private revision path.
+- [x] Approved history remains visible; reopening creates a private draft while the Client sees the last approved version.
+- [x] Print/PDF-friendly output and Markdown export preserve readable evidence appendices without raw storage URLs.
+- [x] Focused tests cover unsupported claims, provenance, lifecycle immutability, one-change-request rule, and English/German output.

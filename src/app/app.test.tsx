@@ -1,4 +1,9 @@
-import { render, screen, within } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, useRoutes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
@@ -13,6 +18,7 @@ import {
   localInterviewReviewer,
 } from "../local/local-interview-adapters";
 import type { InterviewAgentDelta } from "../domain/discovery-interview";
+import { localBriefGenerator } from "../local/local-brief-adapter";
 
 const createTestApplication = (
   overrides: Partial<ProjectInterviewerDependencies> = {},
@@ -30,6 +36,7 @@ const createTestApplication = (
     interviewPlanner: localInterviewPlanner,
     interviewAgent: localInterviewAgent,
     interviewReviewer: localInterviewReviewer,
+    briefGenerator: localBriefGenerator,
     ...overrides,
   };
   return createProjectInterviewer(dependencies);
@@ -431,5 +438,190 @@ describe("File-First Discovery application shell", () => {
         name: /what must the first useful release include/i,
       }),
     ).toBeInTheDocument();
+  });
+
+  it("lets the Freelancer generate, inspect, clear warnings, and send a traceable Brief", async () => {
+    localStorage.setItem("project-interviewer.locale", "en");
+    const application = createTestApplication();
+    const freelancer =
+      await application.identities.createDevelopmentFreelancer({
+        displayName: "Ada",
+      });
+    const created = await application.rooms.create(freelancer, {
+      title: "Brief Room",
+      clientLabel: "Alpine",
+      projectDescription: "A self-service portal.",
+      briefLanguage: "en",
+      freelancerGuidance: "",
+    });
+    await application.materials.continueWithoutFiles(
+      freelancer,
+      created.room.id,
+    );
+    const access = await application.clientAccess.resolveInvite(
+      created.inviteToken,
+      { deviceId: "client-device" },
+    );
+    await application.clientAccess.onboard(access.actor, {
+      displayName: "Chris",
+      interviewLanguage: "en",
+      acknowledgedDisclosure: true,
+    });
+    const started = await application.interviews.start(
+      access.actor,
+      created.room.id,
+    );
+    const contextPack = await application.contextPacks.latest(
+      access.actor,
+      created.room.id,
+    );
+    await application.interviews.submitAnswer(
+      access.actor,
+      created.room.id,
+      {
+        questionId: started.currentQuestion!.id,
+        answer: "The product must support single sign-on.",
+        idempotencyKey: "brief-ui-answer",
+        contextPackRevisionId: contextPack?.id ?? null,
+      },
+    );
+    await application.interviews.finishEarly(
+      access.actor,
+      created.room.id,
+      { confirmed: true },
+    );
+
+    const routes = createRoutes(application, freelancer);
+    const TestRoutes = () => useRoutes(routes);
+    const user = userEvent.setup();
+    const rendered = render(
+      <MemoryRouter initialEntries={[`/rooms/${created.room.id}`]}>
+        <TestRoutes />
+      </MemoryRouter>,
+    );
+
+    await user.click(
+      await screen.findByRole("button", {
+        name: /generate project brief/i,
+      }),
+    );
+    expect(
+      await screen.findByRole("heading", { name: /brief draft/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("button", { name: /interview turn/i })[0],
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "DE" }));
+    expect(
+      screen.getByRole("option", { name: "Anforderung" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByLabelText(/punkt bearbeiten/i)[0],
+    ).toBeInTheDocument();
+    expect(screen.queryByText("functional-requirements")).toBeNull();
+    await user.click(screen.getByRole("button", { name: "EN" }));
+    const summaryEditor = screen.getByLabelText(
+      /content for executive summary/i,
+    );
+    await user.clear(summaryEditor);
+    await user.click(
+      within(summaryEditor.closest("section")!).getByRole("button", {
+        name: /^save$/i,
+      }),
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /section content is required/i,
+    );
+    const addInput = screen.getByLabelText(
+      /add freelancer-authored requirement/i,
+    );
+    await user.type(addInput, "A single rapid-submit requirement.");
+    const addForm = addInput.closest("form")!;
+    fireEvent.submit(addForm);
+    fireEvent.submit(addForm);
+    await vi.waitFor(async () => {
+      const brief = await application.briefs.get(
+        freelancer,
+        created.room.id,
+      );
+      expect(
+        brief.draft!.sections
+          .flatMap(({ items }) => items)
+          .filter(
+            ({ text }) =>
+              text === "A single rapid-submit requirement.",
+          ),
+      ).toHaveLength(1);
+      expect(addInput).toHaveValue("");
+    });
+    const dirtyItem = screen.getAllByLabelText(/edit item/i)[0]!;
+    await user.clear(dirtyItem);
+    await user.type(dirtyItem, "Unsaved sibling item text.");
+    await user.click(
+      screen.getAllByRole("button", {
+        name: /acknowledge open warning/i,
+      })[0]!,
+    );
+    expect(dirtyItem).toHaveValue("Unsaved sibling item text.");
+    for (const button of screen.queryAllByRole("button", {
+      name: /acknowledge open warning/i,
+    })) {
+      await user.click(button);
+    }
+    await user.click(
+      screen.getByRole("button", { name: /send for client review/i }),
+    );
+    expect(
+      await screen.findByRole("heading", {
+        name: /review version 1/i,
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText(/^Proposed$/i)[0]).toBeInTheDocument();
+
+    rendered.unmount();
+    localStorage.setItem(
+      "project-interviewer.device-id",
+      "client-device",
+    );
+    render(
+      <MemoryRouter initialEntries={["/invite/test-invite-1"]}>
+        <TestRoutes />
+      </MemoryRouter>,
+    );
+    expect(
+      await screen.findByRole("heading", {
+        name: /review version 1/i,
+      }),
+    ).toBeInTheDocument();
+    await user.click(
+      screen.getAllByRole("button", { name: /interview turn/i })[0]!,
+    );
+    expect(
+      (await screen.findAllByText(/what should become better/i))
+        .length,
+    ).toBeGreaterThan(0);
+    await user.type(
+      screen.getByLabelText(/^change request$/i),
+      "Clarify who administers SSO.",
+    );
+    await user.click(
+      screen.getByRole("button", { name: /save change request/i }),
+    );
+    await vi.waitFor(async () =>
+      expect(
+        (
+          await application.briefs.get(
+            access.actor,
+            created.room.id,
+          )
+        ).activeChangeRequest,
+      ).toMatchObject({
+        revisions: [
+          expect.objectContaining({
+            text: "Clarify who administers SSO.",
+          }),
+        ],
+      }),
+    );
   });
 });
