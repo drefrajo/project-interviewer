@@ -52,6 +52,8 @@ export const ProjectMaterialPanel = ({
   >({});
   const [secretOverridesInFlight, setSecretOverridesInFlight] =
     useState<Record<string, boolean>>({});
+  const [reanalysisInFlight, setReanalysisInFlight] =
+    useState<Record<string, boolean>>({});
 
   const refresh = async () => {
     const [nextMaterials, nextPack] = await Promise.all([
@@ -214,6 +216,34 @@ export const ProjectMaterialPanel = ({
   const remove = async (materialId: string) => {
     await application.materials.remove(actor, room.id, materialId);
     await refresh();
+  };
+
+  const reanalyze = async (materialId: string) => {
+    if (actor.kind !== "freelancer" || reanalysisInFlight[materialId]) {
+      return;
+    }
+    setReanalysisInFlight((current) => ({
+      ...current,
+      [materialId]: true,
+    }));
+    setMaterials((current) =>
+      current.map((material) =>
+        material.id === materialId
+          ? { ...material, state: "processing", stage: "analyzing" }
+          : material,
+      ),
+    );
+    const progressTimer = beginProgressPolling();
+    try {
+      await application.materials.reanalyze(actor, room.id, materialId);
+    } finally {
+      window.clearInterval(progressTimer);
+      setReanalysisInFlight((current) => ({
+        ...current,
+        [materialId]: false,
+      }));
+      await refresh();
+    }
   };
 
   const includeSecrets = async (materialId: string) => {
@@ -486,6 +516,18 @@ export const ProjectMaterialPanel = ({
             ) : null}
 
             {!readOnly ? <div className="material-actions">
+              {actor.kind === "freelancer" &&
+              material.state === "analyzed" ? (
+                <button
+                  className="button ghost"
+                  disabled={reanalysisInFlight[material.id]}
+                  onClick={() => void reanalyze(material.id)}
+                  type="button"
+                >
+                  <RefreshCw aria-hidden="true" size={15} />{" "}
+                  {t("reanalyze")}
+                </button>
+              ) : null}
               {material.retryAvailable ? (
                 <button
                   className="button ghost"

@@ -12,4 +12,6 @@ bun run dev
 ```
 
 Then open `http://localhost:5173`. See [docs/setup.md](docs/setup.md) for local
-verification and hosted-service configuration.
+and hosted-service configuration, and
+[docs/launch-readiness.md](docs/launch-readiness.md) for the machine, human,
+credential, and deployment gates.

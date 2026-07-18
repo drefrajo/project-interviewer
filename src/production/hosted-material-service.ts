@@ -138,6 +138,42 @@ export const createHostedMaterialServices = (
           stringValue(started.operationId, "operation id"),
         );
       },
+      async reanalyze(
+        actor,
+        roomId,
+        materialId,
+      ) {
+        if (actor.kind !== "freelancer") {
+          throw new Error("Only the Freelancer may request reanalysis.");
+        }
+        const material = (await listMaterials(actor, roomId)).find(
+          ({ id }) => id === materialId,
+        );
+        if (!material || material.state !== "analyzed") {
+          throw new Error(
+            "Only analyzed Project Material can be reanalyzed.",
+          );
+        }
+        const started = record(
+          await transport.mutation(references.operations.begin, {
+            roomId,
+            operationType: "file_processing",
+            subjectId: materialId,
+            idempotencyKey:
+              `file_processing:${materialId}:reanalysis:${material.analysisVersions.length + 1}`,
+            schemaVersion: "file-analysis-v1",
+            promptVersion: "software-project-file-analysis-v1",
+            processingIntent: "reanalysis",
+            ...actorArguments(actor),
+          }),
+        );
+        return startFileOperation(
+          actor,
+          roomId,
+          materialId,
+          stringValue(started.operationId, "operation id"),
+        );
+      },
       async includeSuspectedSecrets(
         actor: RoomActor,
         roomId: string,

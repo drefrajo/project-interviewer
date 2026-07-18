@@ -1,8 +1,8 @@
 # File-First Discovery implementation state
 
 **Overall baseline:** `01cbf0e68c1853e5168160d572a95583d48f15dc`
-**Current frontier:** 07
-**Status:** Ticket 06 verified; awaiting its commit
+**Current frontier:** complete
+**Status:** completed
 
 ## Decisions
 
@@ -20,12 +20,15 @@
 | 03 File-aware Discovery Interview | resolved | `3d7285bc4be00f64506d5ef5bcd8cbdd988c794d` | `6cd898682526d3c946ed8d55eed5bca89adde413` | 66 tests; typecheck/lint/build; both review axes clean |
 | 04 Traceable Project Brief review | resolved | `6cd898682526d3c946ed8d55eed5bca89adde413` | `48f958951797b8935b73216ee6d3690009bb4193` | 86 tests; typecheck/lint/build; both review axes clean |
 | 05 Durable Project Home lifecycle | resolved | `48f958951797b8935b73216ee6d3690009bb4193` | `e1493243c5d130b0b3473183a916dbb5fde4b495` | 102 tests; typecheck/lint/build; both review axes clean |
-| 06 Production boundaries and deployment | resolved | `e1493243c5d130b0b3473183a916dbb5fde4b495` | pending commit | 148 tests; typecheck/lint/build; credential-shaped production validation; both review axes clean |
-| 07 Hardening, evaluation, and launch readiness | ready-for-agent | — | — | Blocked by 06 |
+| 06 Production boundaries and deployment | resolved | `e1493243c5d130b0b3473183a916dbb5fde4b495` | `1c1657054d69fa779c8b98a75c49c52279f2c64e` | 148 tests; typecheck/lint/build; credential-shaped production validation; both review axes clean |
+| 07 Hardening, evaluation, and launch readiness | resolved | `1c1657054d69fa779c8b98a75c49c52279f2c64e` | this commit | 157 tests; evaluation/accessibility/typecheck/lint/build/deploy validation; final reviews clean |
 
 ## Blockers
 
-- No credentials are present yet. This does not block local implementation or production-boundary configuration.
+- None for machine-implementable MVP completion.
+- Hosted launch still requires credentials, service projects, production
+  deployment authorization, and five representative human pilots. These are
+  tracked separately in `docs/setup.md` and `docs/launch-readiness.md`.
 
 ## Continuation protocol
 

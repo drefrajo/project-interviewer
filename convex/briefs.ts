@@ -886,7 +886,7 @@ export const reopen = mutationGeneric({
     );
     const { room } = authorized;
     if (room.phase !== "approved") {
-      throw new Error("Only an approved brief can be reopened.");
+      throw new Error("Only an approved Review Version can be reopened.");
     }
     const review = await context.db
       .query("reviewVersions")

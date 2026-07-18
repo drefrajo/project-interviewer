@@ -1185,6 +1185,7 @@ export const createProjectInterviewer = (
     room: ProjectRoom,
     material: ProjectMaterial,
     includeSuspectedSecrets: boolean,
+    reanalysisVersion?: number,
   ): Promise<ProjectMaterialView> => {
     if (materialRemovalLocks.has(material.id)) {
       return Promise.reject(
@@ -1192,6 +1193,7 @@ export const createProjectInterviewer = (
       );
     }
     if (
+      reanalysisVersion === undefined &&
       material.state === "analyzed" &&
       material.includeSuspectedSecrets === includeSuspectedSecrets
     ) {
@@ -1202,6 +1204,9 @@ export const createProjectInterviewer = (
       room.id,
       material.id,
       includeSuspectedSecrets ? "include_flagged" : "masked",
+      ...(reanalysisVersion === undefined
+        ? []
+        : [`reanalysis_${reanalysisVersion}`]),
     ].join(":");
     const existingPromise =
       materialProcessingPromises.get(idempotencyKey);
@@ -2415,6 +2420,30 @@ export const createProjectInterviewer = (
           room,
           material,
           material.includeSuspectedSecrets,
+        );
+      },
+
+      async reanalyze(
+        actor: FreelancerActor,
+        roomId: string,
+        materialId: string,
+      ): Promise<ProjectMaterialView> {
+        requireFreelancerRoom(actor, roomId);
+        const room = requireWritableRoomActor(actor, roomId);
+        const material = requireMaterial(actor, roomId, materialId);
+        if (material.state !== "analyzed") {
+          throw new ValidationError(
+            "Only analyzed Project Material can be reanalyzed.",
+          );
+        }
+        audit(actor, roomId, "project_material.reanalysis_requested");
+        persist();
+        return processMaterial(
+          actor,
+          room,
+          material,
+          material.includeSuspectedSecrets,
+          material.analysisVersions.length + 1,
         );
       },
 

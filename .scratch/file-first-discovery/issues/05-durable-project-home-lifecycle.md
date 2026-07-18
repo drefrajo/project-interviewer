@@ -1,6 +1,6 @@
 # 05 — Durable Project Home lifecycle
 
-**What to build:** The approved Project Room remains a useful Project Home where both parties see current and prior approved briefs and live Shared Resources, while the Freelancer can manage room lifecycle safely.
+**What to build:** The approved Project Room remains a useful Project Home where both parties see the current and prior approved Review Versions and live Shared Resources, while the Freelancer can manage room lifecycle safely.
 
 **Blocked by:** 04 — Traceable Project Brief review.
 

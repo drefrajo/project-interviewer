@@ -38,6 +38,10 @@ textarea {
   font: inherit;
 }
 
+button {
+  min-height: 2.75rem;
+}
+
 button,
 a,
 input,
@@ -303,6 +307,7 @@ h2 {
 .search-field input {
   background: transparent;
   border: 0;
+  min-height: 2.75rem;
   min-width: 0;
   outline: 0;
   width: 100%;
@@ -358,7 +363,7 @@ h2 {
 }
 
 .room-card-actions .button {
-  min-height: 2.25rem;
+  min-height: 2.75rem;
   padding: 0.45rem 0.65rem;
 }
 
@@ -502,10 +507,14 @@ h2 {
   line-height: 1.45;
 }
 
+input[type="checkbox"] {
+  flex: 0 0 auto;
+  height: 1.5rem;
+  width: 1.5rem;
+}
+
 .check-row input {
-  height: 1.2rem;
   margin-top: 0.15rem;
-  width: 1.2rem;
 }
 
 .room-layout {
@@ -526,10 +535,12 @@ h2 {
 }
 
 .back-link {
+  align-items: center;
   color: var(--muted);
-  display: inline-block;
+  display: inline-flex;
   font-size: 0.78rem;
   margin-bottom: 2.5rem;
+  min-height: 2.75rem;
   text-decoration: none;
 }
 
@@ -618,6 +629,13 @@ h2 {
 
 .invite-panel code {
   overflow-wrap: anywhere;
+}
+
+.invite-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
 }
 
 .home-grid {
@@ -993,11 +1011,18 @@ h2 {
 }
 
 .file-button input {
-  height: 1px;
+  cursor: pointer;
+  height: 100%;
+  inset: 0;
   opacity: 0;
   overflow: hidden;
   position: absolute;
-  width: 1px;
+  width: 100%;
+}
+
+.file-button:has(input:focus-visible) {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
 }
 
 .button.disabled,

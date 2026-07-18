@@ -342,15 +342,13 @@ const ProjectRoomHome = ({
         </div>
       </section>
 
-      {inviteToken ? (
-        <section className="invite-panel" aria-labelledby="invite-heading">
-          <Share2 aria-hidden="true" />
-          <div>
-            <h2 id="invite-heading">{t("inviteCreated")}</h2>
-            <p>{t("inviteHint")}</p>
-            <code>{`${window.location.origin}/invite/${inviteToken}`}</code>
-          </div>
-        </section>
+      {actor.kind === "freelancer" ? (
+        <InviteLinkControls
+          actor={actor}
+          application={application}
+          roomId={room.id}
+          {...(inviteToken ? { initialInviteToken: inviteToken } : {})}
+        />
       ) : null}
 
       <ProjectLifecycleControls
@@ -401,6 +399,87 @@ const ProjectRoomHome = ({
       </section>
     </div>
   </main>
+  );
+};
+
+const InviteLinkControls = ({
+  application,
+  actor,
+  roomId,
+  initialInviteToken,
+}: {
+  application: ProjectInterviewer;
+  actor: Extract<RoomActor, { kind: "freelancer" }>;
+  roomId: string;
+  initialInviteToken?: string;
+}) => {
+  const { t } = useI18n();
+  const [inviteToken, setInviteToken] = useState(initialInviteToken);
+  const [busy, setBusy] = useState(false);
+  const [revoked, setRevoked] = useState(false);
+  const [error, setError] = useState("");
+  const perform = async (action: () => Promise<void>) => {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      await action();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <section className="invite-panel" aria-labelledby="invite-heading">
+      <Share2 aria-hidden="true" />
+      <div>
+        <h2 id="invite-heading">
+          {inviteToken ? t("inviteCreated") : t("inviteControls")}
+        </h2>
+        {inviteToken ? (
+          <>
+            <p>{t("inviteHint")}</p>
+            <code>{`${window.location.origin}/invite/${inviteToken}`}</code>
+          </>
+        ) : null}
+        {revoked ? <p role="status">{t("inviteRevoked")}</p> : null}
+        {error ? <p role="alert">{error}</p> : null}
+        <div className="invite-actions">
+          <button
+            className="button ghost"
+            disabled={busy}
+            onClick={() =>
+              void perform(async () => {
+                const result = await application.clientAccess.rotateInvite(
+                  actor,
+                  roomId,
+                );
+                setInviteToken(result.inviteToken);
+                setRevoked(false);
+              })
+            }
+            type="button"
+          >
+            {t("rotateInvite")}
+          </button>
+          <button
+            className="button ghost danger"
+            disabled={busy}
+            onClick={() =>
+              void perform(async () => {
+                await application.clientAccess.revokeInvite(actor, roomId);
+                setInviteToken(undefined);
+                setRevoked(true);
+              })
+            }
+            type="button"
+          >
+            {t("revokeInvite")}
+          </button>
+        </div>
+      </div>
+    </section>
   );
 };
 

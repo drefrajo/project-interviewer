@@ -3,6 +3,7 @@ import type {
   GenericMutationCtx,
 } from "convex/server";
 import type { GenericId } from "convex/values";
+import { decideRateLimit } from "./rate-limit-policy";
 
 export const enforceRateLimit = async (
   context: GenericMutationCtx<GenericDataModel>,
@@ -21,16 +22,29 @@ export const enforceRateLimit = async (
     .withIndex("by_key", (query) => query.eq("key", input.key))
     .collect()
     .then((items) => items.find((item) => item.scope === input.scope));
-  if (!existing || now - Number(existing.windowStartedAt) >= input.windowMs) {
-    if (existing) {
+  const decision = decideRateLimit(
+    existing
+      ? {
+          count: Number(existing.count),
+          windowStartedAt: Number(existing.windowStartedAt),
+        }
+      : undefined,
+    {
+      now,
+      limit: input.limit,
+      windowMs: input.windowMs,
+    },
+  );
+  if (decision.action === "create" || decision.action === "reset") {
+    if (decision.action === "reset" && existing) {
       const existingId = context.db.normalizeId(
         "rateLimitBuckets",
         String(existing._id),
       );
       if (!existingId) throw new Error("Invalid rate-limit bucket.");
       await context.db.patch(existingId, {
-        windowStartedAt: now,
-        count: 1,
+        windowStartedAt: decision.windowStartedAt,
+        count: decision.count,
         updatedAt: now,
       });
     } else {
@@ -38,23 +52,21 @@ export const enforceRateLimit = async (
         ...(input.roomId ? { roomId: input.roomId } : {}),
         scope: input.scope,
         key: input.key,
-        windowStartedAt: now,
-        count: 1,
+        windowStartedAt: decision.windowStartedAt,
+        count: decision.count,
         updatedAt: now,
       });
     }
     return;
   }
-  if (Number(existing.count) >= input.limit) {
-    throw new Error("Too many attempts. Please wait and try again.");
-  }
+  if (!existing) throw new Error("Rate-limit bucket disappeared.");
   const existingId = context.db.normalizeId(
     "rateLimitBuckets",
     String(existing._id),
   );
   if (!existingId) throw new Error("Invalid rate-limit bucket.");
   await context.db.patch(existingId, {
-    count: Number(existing.count) + 1,
+    count: decision.count,
     updatedAt: now,
   });
 };

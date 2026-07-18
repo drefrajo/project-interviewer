@@ -233,7 +233,8 @@ export default defineSchema({
     revokedAt: v.optional(v.number()),
   })
     .index("by_token_hash", ["tokenHash"])
-    .index("by_room", ["roomId", "version"]),
+    .index("by_room", ["roomId", "version"])
+    .index("by_room_purge", ["roomId"]),
 
   clientSessions: defineTable({
     roomId: v.id("projectRooms"),
@@ -246,7 +247,8 @@ export default defineSchema({
     revokedAt: v.optional(v.number()),
   })
     .index("by_session_hash", ["sessionHash"])
-    .index("by_room", ["roomId", "active", "lastSeenAt"]),
+    .index("by_room", ["roomId", "active", "lastSeenAt"])
+    .index("by_room_purge", ["roomId"]),
 
   clientProfiles: defineTable({
     roomId: v.id("projectRooms"),
@@ -255,7 +257,9 @@ export default defineSchema({
     acknowledgedAt: v.number(),
     createdAt: v.number(),
     updatedAt: v.number(),
-  }).index("by_room", ["roomId"]),
+  })
+    .index("by_room", ["roomId"])
+    .index("by_room_purge", ["roomId"]),
 
   sharedResources: defineTable({
     roomId: v.id("projectRooms"),
@@ -266,7 +270,9 @@ export default defineSchema({
     order: v.number(),
     createdAt: v.number(),
     updatedAt: v.number(),
-  }).index("by_room_order", ["roomId", "order"]),
+  })
+    .index("by_room_order", ["roomId", "order"])
+    .index("by_room_purge", ["roomId"]),
 
   respondingDeviceLeases: defineTable({
     roomId: v.id("projectRooms"),
@@ -277,7 +283,9 @@ export default defineSchema({
     leaseVersion: v.number(),
     createdAt: v.number(),
     updatedAt: v.number(),
-  }).index("by_room", ["roomId"]),
+  })
+    .index("by_room", ["roomId"])
+    .index("by_room_purge", ["roomId"]),
 
   projectMaterials: defineTable({
     roomId: v.id("projectRooms"),
@@ -301,7 +309,8 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_room_active", ["roomId", "active", "createdAt"])
-    .index("by_room_state", ["roomId", "state", "updatedAt"]),
+    .index("by_room_state", ["roomId", "state", "updatedAt"])
+    .index("by_room_purge", ["roomId"]),
 
   uploadIntents: defineTable({
     roomId: v.id("projectRooms"),
@@ -316,7 +325,8 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_room", ["roomId", "createdAt"])
-    .index("by_idempotency", ["roomId", "idempotencyKey"]),
+    .index("by_idempotency", ["roomId", "idempotencyKey"])
+    .index("by_room_purge", ["roomId"]),
 
   fileAnalyses: defineTable({
     roomId: v.id("projectRooms"),
@@ -339,7 +349,8 @@ export default defineSchema({
     analyzedAt: v.number(),
   })
     .index("by_material", ["materialId", "analyzedAt"])
-    .index("by_room", ["roomId", "analyzedAt"]),
+    .index("by_room", ["roomId", "analyzedAt"])
+    .index("by_room_purge", ["roomId"]),
 
   analysisFeedback: defineTable({
     roomId: v.id("projectRooms"),
@@ -351,7 +362,8 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_material", ["materialId", "createdAt"])
-    .index("by_room", ["roomId", "createdAt"]),
+    .index("by_room", ["roomId", "createdAt"])
+    .index("by_room_purge", ["roomId"]),
 
   materialChunks: defineTable({
     roomId: v.id("projectRooms"),
@@ -364,6 +376,7 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_material", ["materialId", "active"])
+    .index("by_room_purge", ["roomId"])
     .searchIndex("search_text", {
       searchField: "text",
       filterFields: ["roomId", "materialId", "active", "language"],
@@ -389,7 +402,8 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_room_revision", ["roomId", "revision"])
-    .index("by_room_created", ["roomId", "createdAt"]),
+    .index("by_room_created", ["roomId", "createdAt"])
+    .index("by_room_purge", ["roomId"]),
 
   discoveryInterviews: defineTable({
     roomId: v.id("projectRooms"),
@@ -421,7 +435,8 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_room", ["roomId"])
-    .index("by_room_status", ["roomId", "status"]),
+    .index("by_room_status", ["roomId", "status"])
+    .index("by_room_purge", ["roomId"]),
 
   interviewPlans: defineTable({
     roomId: v.id("projectRooms"),
@@ -440,7 +455,8 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_interview", ["interviewId"])
-    .index("by_room", ["roomId", "createdAt"]),
+    .index("by_room", ["roomId", "createdAt"])
+    .index("by_room_purge", ["roomId"]),
 
   interviewTurns: defineTable({
     roomId: v.id("projectRooms"),
@@ -458,7 +474,8 @@ export default defineSchema({
     .index("by_interview_idempotency", [
       "interviewId",
       "idempotencyKey",
-    ]),
+    ])
+    .index("by_room_purge", ["roomId"]),
 
   interviewCorrections: defineTable({
     roomId: v.id("projectRooms"),
@@ -470,7 +487,8 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_turn", ["turnId", "createdAt"])
-    .index("by_interview", ["interviewId", "createdAt"]),
+    .index("by_interview", ["interviewId", "createdAt"])
+    .index("by_room_purge", ["roomId"]),
 
   discoveryFindings: defineTable({
     roomId: v.id("projectRooms"),
@@ -493,7 +511,8 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_interview", ["interviewId", "createdAt"])
-    .index("by_room_type", ["roomId", "findingType"]),
+    .index("by_room_type", ["roomId", "findingType"])
+    .index("by_room_purge", ["roomId"]),
 
   interviewEvents: defineTable({
     roomId: v.id("projectRooms"),
@@ -509,7 +528,8 @@ export default defineSchema({
     .index("by_material_context", [
       "materialId",
       "contextPackRevisionId",
-    ]),
+    ])
+    .index("by_room_purge", ["roomId"]),
 
   interviewOperations: defineTable({
     roomId: v.id("projectRooms"),
@@ -548,7 +568,8 @@ export default defineSchema({
     .index("by_interview_idempotency", [
       "interviewId",
       "idempotencyKey",
-    ]),
+    ])
+    .index("by_room_purge", ["roomId"]),
 
   briefDrafts: defineTable({
     roomId: v.id("projectRooms"),
@@ -562,7 +583,8 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_room_revision", ["roomId", "revision"])
-    .index("by_room_status", ["roomId", "status", "updatedAt"]),
+    .index("by_room_status", ["roomId", "status", "updatedAt"])
+    .index("by_room_purge", ["roomId"]),
 
   reviewVersions: defineTable({
     roomId: v.id("projectRooms"),
@@ -587,7 +609,8 @@ export default defineSchema({
     ),
   })
     .index("by_room_version", ["roomId", "version"])
-    .index("by_room_status", ["roomId", "status", "version"]),
+    .index("by_room_status", ["roomId", "status", "version"])
+    .index("by_room_purge", ["roomId"]),
 
   briefChangeRequests: defineTable({
     roomId: v.id("projectRooms"),
@@ -608,7 +631,8 @@ export default defineSchema({
     acknowledgedAt: v.optional(v.number()),
   })
     .index("by_review", ["reviewVersionId"])
-    .index("by_room_status", ["roomId", "status", "updatedAt"]),
+    .index("by_room_status", ["roomId", "status", "updatedAt"])
+    .index("by_room_purge", ["roomId"]),
 
   briefOperations: defineTable({
     roomId: v.id("projectRooms"),
@@ -639,7 +663,8 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_room", ["roomId", "updatedAt"])
-    .index("by_idempotency", ["roomId", "idempotencyKey"]),
+    .index("by_idempotency", ["roomId", "idempotencyKey"])
+    .index("by_room_purge", ["roomId"]),
 
   durableOperations: defineTable({
     roomId: v.id("projectRooms"),
@@ -672,7 +697,8 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_room", ["roomId", "createdAt"])
-    .index("by_idempotency", ["roomId", "idempotencyKey"]),
+    .index("by_idempotency", ["roomId", "idempotencyKey"])
+    .index("by_room_purge", ["roomId"]),
 
   usageRecords: defineTable({
     roomId: v.id("projectRooms"),
@@ -688,7 +714,8 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_room", ["roomId", "createdAt"])
-    .index("by_operation", ["operationId"]),
+    .index("by_operation", ["operationId"])
+    .index("by_room_purge", ["roomId"]),
 
   auditEvents: defineTable({
     roomId: v.id("projectRooms"),
@@ -697,7 +724,9 @@ export default defineSchema({
     deviceHash: v.optional(v.string()),
     action: v.string(),
     createdAt: v.number(),
-  }).index("by_room", ["roomId", "createdAt"]),
+  })
+    .index("by_room", ["roomId", "createdAt"])
+    .index("by_room_purge", ["roomId"]),
 
   rateLimitBuckets: defineTable({
     roomId: v.optional(v.id("projectRooms")),
@@ -706,7 +735,9 @@ export default defineSchema({
     windowStartedAt: v.number(),
     count: v.number(),
     updatedAt: v.number(),
-  }).index("by_key", ["key", "scope"]),
+  })
+    .index("by_key", ["key", "scope"])
+    .index("by_room_purge", ["roomId"]),
 
   deletionRecoveryRecords: defineTable({
     roomId: v.id("projectRooms"),
@@ -715,10 +746,14 @@ export default defineSchema({
     status: v.union(
       v.literal("recoverable"),
       v.literal("recovered"),
+      v.literal("purging"),
     ),
     activeMaterialIds: v.array(v.string()),
     recoveredAt: v.optional(v.number()),
+    purgeStartedAt: v.optional(v.number()),
   })
     .index("by_room", ["roomId", "deletedAt"])
-    .index("by_purge_after", ["status", "purgeAfter"]),
+    .index("by_purge_after", ["status", "purgeAfter"])
+    .index("by_purge_started", ["status", "purgeStartedAt"])
+    .index("by_room_purge", ["roomId"]),
 });

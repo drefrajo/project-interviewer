@@ -21,6 +21,7 @@ export const begin = mutationGeneric({
     idempotencyKey: v.string(),
     schemaVersion: v.string(),
     promptVersion: v.optional(v.string()),
+    processingIntent: v.optional(v.literal("reanalysis")),
     sessionHash: v.optional(v.string()),
   },
   handler: async (context, args) => {
@@ -63,14 +64,19 @@ export const begin = mutationGeneric({
     if (decision.action === "reuse") {
       return { operationId: existing!._id, reused: true };
     }
+    const isFreelancerReanalysis =
+      actor.kind === "freelancer" &&
+      fileMaterial?.state === "analyzed" &&
+      args.processingIntent === "reanalysis";
     if (
       args.operationType === "file_processing" &&
       (!fileMaterialId ||
         !fileMaterial ||
         fileMaterial.active !== true ||
-        !["accepted", "failed", "unsupported"].includes(
-          String(fileMaterial.state),
-        ) ||
+        (!isFreelancerReanalysis &&
+          !["accepted", "failed", "unsupported"].includes(
+            String(fileMaterial.state),
+          )) ||
         ((fileMaterial.state === "failed" ||
           fileMaterial.state === "unsupported") &&
           fileMaterial.retryAvailable !== true))

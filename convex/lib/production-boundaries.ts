@@ -222,3 +222,10 @@ export const PURGE_TABLE_ORDER = [
   "deletionRecoveryRecords",
   "projectRooms",
 ] as const;
+
+export const PURGE_BATCH_SIZE = 50;
+export const PURGE_STALE_AFTER_MS = 15 * 60 * 1000;
+
+export const PURGE_BATCH_TABLES = PURGE_TABLE_ORDER.filter(
+  (table) => table !== "projectRooms",
+);

@@ -111,7 +111,12 @@ const createRoom = async (dependencies: ProjectInterviewerDependencies) => {
     briefLanguage: "en",
     freelancerGuidance: "",
   });
-  return { app, freelancer, room: created.room };
+  return {
+    app,
+    freelancer,
+    room: created.room,
+    inviteToken: created.inviteToken,
+  };
 };
 
 describe("Project Material public service", () => {
@@ -475,6 +480,64 @@ describe("Project Material public service", () => {
     expect(
       app.inspectState().projectMaterials[0]?.analysisVersions,
     ).toHaveLength(2);
+  });
+
+  it("lets the Freelancer request a new analysis while retaining prior versions", async () => {
+    const { dependencies } = createDependencies();
+    const analyze = dependencies.fileAnalyzer?.analyze;
+    const { app, freelancer, room } = await createRoom(dependencies);
+    const material = await app.materials.accept(freelancer, room.id, {
+      name: "Brief.txt",
+      size: 74,
+      declaredContentType: "text/plain",
+      fileReference: "file-ref",
+      uploader: "freelancer",
+    });
+    await app.materials.process(freelancer, room.id, material.id);
+
+    const reanalyzed = await app.materials.reanalyze(
+      freelancer,
+      room.id,
+      material.id,
+    );
+
+    expect(analyze).toHaveBeenCalledTimes(2);
+    expect(reanalyzed.analysisVersions).toHaveLength(2);
+    expect(reanalyzed.analysis?.version).toBe(2);
+    expect(
+      app
+        .inspectState()
+        .auditEvents.some(
+          ({ action }) => action === "project_material.reanalysis_requested",
+        ),
+    ).toBe(true);
+  });
+
+  it("rejects Client-requested reanalysis at the public domain boundary", async () => {
+    const { dependencies } = createDependencies();
+    const { app, freelancer, room, inviteToken } =
+      await createRoom(dependencies);
+    const material = await app.materials.accept(freelancer, room.id, {
+      name: "Brief.txt",
+      size: 74,
+      declaredContentType: "text/plain",
+      fileReference: "file-ref",
+      uploader: "freelancer",
+    });
+    await app.materials.process(freelancer, room.id, material.id);
+    const client = (
+      await app.clientAccess.resolveInvite(inviteToken, {
+        deviceId: "client-device",
+      })
+    ).actor;
+
+    await expect(
+      app.materials.reanalyze(
+        client as unknown as typeof freelancer,
+        room.id,
+        material.id,
+      ),
+    ).rejects.toBeInstanceOf(AuthorizationError);
   });
 
   it("masks repeated and short credentials everywhere, including provider output", async () => {

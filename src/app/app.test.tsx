@@ -79,6 +79,15 @@ describe("File-First Discovery application shell", () => {
     expect(
       screen.getByText(/add project material here/i),
     ).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", { name: /rotate invite link/i }),
+    );
+    expect(screen.getByText(/test-invite-2/)).toBeInTheDocument();
+    await user.click(
+      screen.getByRole("button", { name: /revoke invite link/i }),
+    );
+    expect(screen.getByText(/invite link revoked/i)).toBeInTheDocument();
   });
 
   it("shows disclosure onboarding once and returns the Client to Project Home", async () => {

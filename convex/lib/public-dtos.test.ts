@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { clientMaterialDto, clientRoomDto } from "./public-dtos";
 
 describe("Client-safe Convex projections", () => {
-  it("does not expose Freelancer-only room guidance or ownership fields", () => {
+  it("does not expose Freelancer-only room guidance or Freelancer identity fields", () => {
     expect(
       clientRoomDto({
         _id: "room_1",

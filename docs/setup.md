@@ -21,6 +21,16 @@ Run all machine checks with:
 bun run verify
 ```
 
+This also writes the machine-readable launch report to
+`.scratch/file-first-discovery/evaluation-report.json` and the rendered
+phone/desktop report to
+`.scratch/file-first-discovery/accessibility-report.json`. The rendered check
+uses an installed Chrome, Edge, or Chromium without opening a network port.
+On systems where the browser is not in a standard location, set
+`BROWSER_EXECUTABLE_PATH` to its executable. See
+[launch-readiness.md](launch-readiness.md) for its thresholds and the separate
+human pilot gate.
+
 The production-shaped Convex functions and boundary contract tests also run
 without credentials. `bun run build` produces the static SPA in `dist/`.
 

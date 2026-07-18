@@ -8,12 +8,47 @@ import {
   decideIdempotentOperation,
   enforceOperationConcurrency,
   enforceUploadQuota,
+  PURGE_BATCH_SIZE,
+  PURGE_BATCH_TABLES,
   PURGE_TABLE_ORDER,
   validateStoredUpload,
 } from "./production-boundaries";
+import { decideRateLimit } from "./rate-limit-policy";
 
 describe("Convex production boundaries", () => {
-  it("authorizes owners and room-scoped client sessions without cross-room access", () => {
+  it("throttles repeated mutations and resets only after the bounded window", () => {
+    expect(
+      decideRateLimit(undefined, { now: 1_000, limit: 2, windowMs: 60_000 }),
+    ).toEqual({
+      action: "create",
+      count: 1,
+      windowStartedAt: 1_000,
+    });
+    expect(
+      decideRateLimit(
+        { count: 1, windowStartedAt: 1_000 },
+        { now: 2_000, limit: 2, windowMs: 60_000 },
+      ),
+    ).toEqual({ action: "increment", count: 2 });
+    expect(() =>
+      decideRateLimit(
+        { count: 2, windowStartedAt: 1_000 },
+        { now: 3_000, limit: 2, windowMs: 60_000 },
+      ),
+    ).toThrow(/too many attempts/i);
+    expect(
+      decideRateLimit(
+        { count: 2, windowStartedAt: 1_000 },
+        { now: 61_000, limit: 2, windowMs: 60_000 },
+      ),
+    ).toEqual({
+      action: "reset",
+      count: 1,
+      windowStartedAt: 61_000,
+    });
+  });
+
+  it("authorizes Freelancers and room-scoped Client sessions without cross-room access", () => {
     expect(
       assertRoomAccess(
         { roomId: "room-a", freelancerAuthUserId: "user-a" },
@@ -203,5 +238,8 @@ describe("Convex production boundaries", () => {
     expect(PURGE_TABLE_ORDER.indexOf("projectMaterials")).toBeLessThan(
       PURGE_TABLE_ORDER.indexOf("projectRooms"),
     );
+    expect(PURGE_BATCH_SIZE).toBeLessThanOrEqual(100);
+    expect(PURGE_BATCH_TABLES).not.toContain("projectRooms");
+    expect(PURGE_BATCH_TABLES).toContain("deletionRecoveryRecords");
   });
 });

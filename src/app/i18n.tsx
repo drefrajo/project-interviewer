@@ -8,7 +8,7 @@ import {
 } from "react";
 import type { Language } from "../domain/project-interviewer";
 
-const copy = {
+export const UI_COPY = {
   en: {
     skip: "Skip to main content",
     languages: "Interface language",
@@ -77,6 +77,10 @@ const copy = {
     nextStep: "Next step",
     inviteCreated: "Invite Link created",
     inviteHint: "Copy it now. The secret is only shown in this browser response.",
+    inviteControls: "Invite Link access",
+    rotateInvite: "Rotate Invite Link",
+    revokeInvite: "Revoke Invite Link",
+    inviteRevoked: "Invite Link revoked. Existing Client sessions no longer have access.",
     available: "Available",
     notAvailable: "Not yet available",
     materialBody:
@@ -108,6 +112,7 @@ const copy = {
     feedbackPlaceholder: "Add a correction or clarification…",
     addFeedback: "Add feedback",
     retry: "Retry",
+    reanalyze: "Reanalyze",
     remove: "Remove",
     noMaterialYet: "No active Project Material yet.",
     continueWithoutFiles: "Continue without files",
@@ -200,6 +205,11 @@ const copy = {
     inviteCreated: "Einladungslink erstellt",
     inviteHint:
       "Kopieren Sie ihn jetzt. Das Geheimnis wird nur in dieser Browserantwort angezeigt.",
+    inviteControls: "Zugriff über Einladungslink",
+    rotateInvite: "Einladungslink erneuern",
+    revokeInvite: "Einladungslink widerrufen",
+    inviteRevoked:
+      "Einladungslink widerrufen. Bestehende Client-Sitzungen haben keinen Zugriff mehr.",
     available: "Verfügbar",
     notAvailable: "Noch nicht verfügbar",
     materialBody:
@@ -232,6 +242,7 @@ const copy = {
     feedbackPlaceholder: "Korrektur oder Erläuterung hinzufügen…",
     addFeedback: "Feedback hinzufügen",
     retry: "Erneut versuchen",
+    reanalyze: "Neu analysieren",
     remove: "Entfernen",
     noMaterialYet: "Noch kein aktives Projektmaterial.",
     continueWithoutFiles: "Ohne Dateien fortfahren",
@@ -257,7 +268,7 @@ const copy = {
   },
 } as const;
 
-type CopyKey = keyof (typeof copy)["en"];
+type CopyKey = keyof (typeof UI_COPY)["en"];
 
 interface I18nValue {
   locale: Language;
@@ -284,7 +295,7 @@ export const I18nProvider = ({ children }: { children: ReactNode }) => {
         Object.entries(variables).reduce(
           (text, [name, replacement]) =>
             text.replace(`{${name}}`, replacement),
-          copy[locale][key] as string,
+          UI_COPY[locale][key] as string,
         ),
     }),
     [locale],
