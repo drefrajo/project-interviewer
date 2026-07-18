@@ -13,7 +13,6 @@ type ValidationResult<T> =
 type AdapterConfiguration = Readonly<{
   apiKey: string;
   baseUrl: string;
-  allowedProviders: readonly string[];
   models: Partial<Record<AiRole, string>>;
 }>;
 
@@ -105,7 +104,6 @@ export const createOpenAiCompatibleAdapter = (
   const fetcher = dependencies.fetch ?? globalThis.fetch;
   const baseUrl = configuration.baseUrl.replace(/\/+$/, "");
   const provider = {
-    only: [...configuration.allowedProviders],
     allow_fallbacks: true,
     zdr: true,
     data_collection: "deny",

@@ -23,7 +23,6 @@ const convexServerVariables = [
   "GITHUB_CLIENT_ID",
   "GITHUB_CLIENT_SECRET",
   "OPENROUTER_API_KEY",
-  "OPENROUTER_ALLOWED_PROVIDERS",
 ] as const;
 
 const publicSecretPattern = /^VITE_.*(?:API_KEY|SECRET|TOKEN|DEPLOY_KEY)$/;
@@ -107,13 +106,6 @@ export const readConvexServerEnvironment = (source: EnvironmentSource) => {
       baseUrl:
         source.OPENROUTER_BASE_URL?.trim() ||
         "https://openrouter.ai/api/v1",
-      allowedProviders: requireValue(
-        source,
-        "OPENROUTER_ALLOWED_PROVIDERS",
-      )
-        .split(",")
-        .map((provider) => provider.trim())
-        .filter(Boolean),
       models: AI_MODELS,
     },
   };

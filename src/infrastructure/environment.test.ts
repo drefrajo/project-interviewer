@@ -56,12 +56,10 @@ describe("application environment boundary", () => {
         GITHUB_CLIENT_ID: "github-client",
         GITHUB_CLIENT_SECRET: "github-secret",
         OPENROUTER_API_KEY: "openrouter-secret",
-        OPENROUTER_ALLOWED_PROVIDERS: "openai,anthropic",
       }),
     ).toMatchObject({
       convexSiteUrl: "https://example.convex.site",
       ai: {
-        allowedProviders: ["openai", "anthropic"],
         baseUrl: "https://openrouter.ai/api/v1",
         models: AI_MODELS,
       },

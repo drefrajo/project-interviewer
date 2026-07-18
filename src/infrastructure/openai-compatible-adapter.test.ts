@@ -11,7 +11,7 @@ const jsonResponse = (body: unknown) =>
   });
 
 describe("OpenAI-compatible AI boundary", () => {
-  it("enforces private developer routing and captures actual model/provider usage", async () => {
+  it("enforces private routing and captures actual model/provider usage", async () => {
     const requestBodies: unknown[] = [];
     const fetcher = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
       requestBodies.push(JSON.parse(String(init?.body)));
@@ -33,7 +33,6 @@ describe("OpenAI-compatible AI boundary", () => {
       {
         apiKey: "secret",
         baseUrl: "https://openrouter.ai/api/v1",
-        allowedProviders: ["openai", "anthropic"],
         models: { file_analyzer: "openai/gpt-5-mini" },
       },
       { fetch: fetcher },
@@ -83,7 +82,6 @@ describe("OpenAI-compatible AI boundary", () => {
       model: "openai/gpt-5-mini",
       stream: false,
       provider: {
-        only: ["openai", "anthropic"],
         allow_fallbacks: true,
         zdr: true,
         data_collection: "deny",
@@ -130,7 +128,6 @@ describe("OpenAI-compatible AI boundary", () => {
       {
         apiKey: "secret",
         baseUrl: "https://openrouter.ai/api/v1",
-        allowedProviders: ["openai"],
         models: { interview_agent: "model" },
       },
       { fetch: fetcher },
@@ -167,7 +164,6 @@ describe("OpenAI-compatible AI boundary", () => {
       {
         apiKey: "secret",
         baseUrl: "https://openrouter.ai/api/v1",
-        allowedProviders: ["openai"],
         models: { brief_generator: "model" },
       },
       {
@@ -235,7 +231,6 @@ describe("OpenAI-compatible AI boundary", () => {
       {
         apiKey: "secret",
         baseUrl: "https://openrouter.ai/api/v1",
-        allowedProviders: ["openai"],
         models: { interview_agent: "model" },
       },
       { fetch: fetcher },
@@ -311,7 +306,6 @@ describe("OpenAI-compatible AI boundary", () => {
       {
         apiKey: "secret",
         baseUrl: "https://openrouter.ai/api/v1",
-        allowedProviders: ["openai"],
         models: { interview_agent: "model" },
       },
       { fetch: fetcher },
@@ -330,7 +324,7 @@ describe("OpenAI-compatible AI boundary", () => {
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
 
-  it("applies the same private provider routing to embeddings", async () => {
+  it("applies the same private routing to embeddings", async () => {
     const fetcher = vi.fn(
       async (url: string | URL | Request, init?: RequestInit) => {
         void url;
@@ -347,7 +341,6 @@ describe("OpenAI-compatible AI boundary", () => {
       {
         apiKey: "secret",
         baseUrl: "https://openrouter.ai/api/v1",
-        allowedProviders: ["openai"],
         models: { embeddings: "openai/text-embedding-3-small" },
       },
       { fetch: fetcher },
@@ -364,7 +357,6 @@ describe("OpenAI-compatible AI boundary", () => {
     });
     expect(JSON.parse(String(fetcher.mock.calls[0]?.[1]?.body))).toMatchObject({
       provider: {
-        only: ["openai"],
         allow_fallbacks: true,
         zdr: true,
         data_collection: "deny",

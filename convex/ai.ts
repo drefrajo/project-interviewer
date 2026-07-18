@@ -421,10 +421,6 @@ const createAdapter = () =>
     apiKey: requiredEnvironment("OPENROUTER_API_KEY"),
     baseUrl:
       process.env.OPENROUTER_BASE_URL ?? "https://openrouter.ai/api/v1",
-    allowedProviders: requiredEnvironment("OPENROUTER_ALLOWED_PROVIDERS")
-      .split(",")
-      .map((provider) => provider.trim())
-      .filter(Boolean),
     models: AI_MODELS,
   });
 

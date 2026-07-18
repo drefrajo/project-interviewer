@@ -100,7 +100,6 @@ Create or select the deployment appropriate to the Vite mode:
    bunx convex env set GITHUB_CLIENT_ID your-github-client-id
    bunx convex env set GITHUB_CLIENT_SECRET your-github-client-secret
    bunx convex env set OPENROUTER_API_KEY your-openrouter-key
-   bunx convex env set OPENROUTER_ALLOWED_PROVIDERS openai,anthropic
    ```
 
    Use the exact `CONVEX_SITE_URL` printed for the deployment. These server
@@ -136,9 +135,8 @@ source-owned in `src/infrastructure/ai-model-configuration.ts`, so every
 environment runs the same reviewed model policy. The embedding model and vector
 dimensions are defined together because changing either requires re-embedding
 stored material and migrating the Convex vector index.
-`OPENROUTER_ALLOWED_PROVIDERS` is a comma-separated
-allowlist. Every request sends provider routing with zero-data-retention
-required, data collection denied, and fallbacks restricted to that allowlist.
+Every request requires zero-data-retention and denies data collection while
+allowing OpenRouter to select an eligible provider.
 
 Before a pilot, confirm the selected providers actually honor ZDR for the
 chosen models in the OpenRouter dashboard. The adapter records only scrubbed
