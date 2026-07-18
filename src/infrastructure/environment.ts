@@ -1,4 +1,5 @@
 import { AI_MODELS } from "./ai-model-configuration";
+import { readOAuthProviderConfiguration } from "./oauth-provider-configuration";
 
 export class EnvironmentConfigurationError extends Error {
   constructor(message: string) {
@@ -18,10 +19,6 @@ const convexServerVariables = [
   "CONVEX_SITE_URL",
   "BETTER_AUTH_SECRET",
   "SITE_URL",
-  "GOOGLE_CLIENT_ID",
-  "GOOGLE_CLIENT_SECRET",
-  "GITHUB_CLIENT_ID",
-  "GITHUB_CLIENT_SECRET",
   "OPENROUTER_API_KEY",
 ] as const;
 
@@ -87,19 +84,13 @@ export const readConvexServerEnvironment = (source: EnvironmentSource) => {
       `Missing required Convex server environment variables: ${missing.join(", ")}`,
     );
   }
+  const oauth = readOAuthProviderConfiguration(source);
   return {
     convexSiteUrl: requireValue(source, "CONVEX_SITE_URL"),
     siteUrl: requireValue(source, "SITE_URL"),
     auth: {
       secret: requireValue(source, "BETTER_AUTH_SECRET"),
-      google: {
-        clientId: requireValue(source, "GOOGLE_CLIENT_ID"),
-        clientSecret: requireValue(source, "GOOGLE_CLIENT_SECRET"),
-      },
-      github: {
-        clientId: requireValue(source, "GITHUB_CLIENT_ID"),
-        clientSecret: requireValue(source, "GITHUB_CLIENT_SECRET"),
-      },
+      providers: oauth,
     },
     ai: {
       apiKey: requireValue(source, "OPENROUTER_API_KEY"),

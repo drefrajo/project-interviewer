@@ -3,9 +3,10 @@ import type { ComponentApi as BetterAuthComponentApi } from "@convex-dev/better-
 import { convex, crossDomain } from "@convex-dev/better-auth/plugins";
 import { passkey } from "@better-auth/passkey";
 import { betterAuth, type BetterAuthOptions } from "better-auth";
-import { componentsGeneric } from "convex/server";
+import { componentsGeneric, queryGeneric } from "convex/server";
 import authConfig from "./auth.config";
 import { authMethodGuard } from "./auth_method_guard";
+import { readOAuthProviderConfiguration } from "../src/infrastructure/oauth-provider-configuration";
 
 const components = componentsGeneric();
 
@@ -26,6 +27,7 @@ export const createAuth = (
 ) => {
   const siteUrl = requiredEnvironment("SITE_URL");
   const convexSiteUrl = requiredEnvironment("CONVEX_SITE_URL");
+  const oauth = readOAuthProviderConfiguration(process.env);
 
   const options = {
     appName: "Project Interviewer",
@@ -44,16 +46,7 @@ export const createAuth = (
     },
     database: authComponent.adapter(context),
     emailAndPassword: { enabled: false },
-    socialProviders: {
-      google: {
-        clientId: requiredEnvironment("GOOGLE_CLIENT_ID"),
-        clientSecret: requiredEnvironment("GOOGLE_CLIENT_SECRET"),
-      },
-      github: {
-        clientId: requiredEnvironment("GITHUB_CLIENT_ID"),
-        clientSecret: requiredEnvironment("GITHUB_CLIENT_SECRET"),
-      },
-    },
+    socialProviders: oauth.socialProviders,
     account: {
       accountLinking: {
         enabled: true,
@@ -76,3 +69,9 @@ export const createAuth = (
 
   return betterAuth(options);
 };
+
+export const getProviderAvailability = queryGeneric({
+  args: {},
+  handler: () =>
+    readOAuthProviderConfiguration(process.env).availability,
+});

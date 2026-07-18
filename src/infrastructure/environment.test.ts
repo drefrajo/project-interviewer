@@ -59,6 +59,11 @@ describe("application environment boundary", () => {
       }),
     ).toMatchObject({
       convexSiteUrl: "https://example.convex.site",
+      auth: {
+        providers: {
+          availability: { google: true, github: true },
+        },
+      },
       ai: {
         baseUrl: "https://openrouter.ai/api/v1",
         models: AI_MODELS,

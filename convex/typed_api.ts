@@ -11,6 +11,7 @@ import {
   type FilterApi,
   type FunctionReference,
 } from "convex/server";
+import type * as auth from "./auth";
 import type * as briefs from "./briefs";
 import type * as deletion from "./deletion";
 import type * as interviews from "./interviews";
@@ -23,6 +24,7 @@ import type * as search from "./search";
 import type * as workflows from "./workflows";
 
 type FullApi = ApiFromModules<{
+  auth: typeof auth;
   briefs: typeof briefs;
   deletion: typeof deletion;
   interviews: typeof interviews;

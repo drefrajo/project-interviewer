@@ -49,6 +49,9 @@ export interface HostedCryptography {
 }
 
 export const references = {
+  auth: {
+    getProviderAvailability: api.auth.getProviderAvailability,
+  },
   rooms: {
     ensureProfile: api.rooms.ensureFreelancerProfile,
     create: api.rooms.create,

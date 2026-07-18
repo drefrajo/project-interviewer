@@ -1,5 +1,5 @@
 import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
-import { ConvexReactClient } from "convex/react";
+import { ConvexReactClient, useQuery } from "convex/react";
 import {
   useCallback,
   useEffect,
@@ -15,6 +15,11 @@ import {
   type ProductionAuthClient,
 } from "../infrastructure/auth-client";
 import { accountMethodPolicy } from "../infrastructure/auth-method-policy";
+import type {
+  OAuthProviderAvailability,
+  OAuthProviderId,
+} from "../infrastructure/oauth-provider-configuration";
+import { references } from "./hosted-contract";
 import { createHostedApplicationBundle } from "./hosted-upload";
 
 export interface HostedRuntime {
@@ -142,8 +147,12 @@ const HostedAuthenticationGate = ({
 }) => {
   const session = authClient.useSession();
   const inviteRoute = window.location.pathname.startsWith("/invite/");
+  const providerAvailability = useQuery(
+    references.auth.getProviderAvailability,
+    inviteRoute ? "skip" : {},
+  );
   if (inviteRoute) return children;
-  if (session.isPending) {
+  if (session.isPending || providerAvailability === undefined) {
     return (
       <main className={centeredPage} id="main-content">
         <p className="font-semibold text-muted" role="status">
@@ -169,8 +178,8 @@ const HostedAuthenticationGate = ({
             Sign in as Freelancer
           </h1>
           <p className="mb-6 leading-7 text-muted">
-            Use Google or GitHub to create the account. You can add independent
-            passkeys after signing in.
+            Use a configured OAuth provider to create the account. You can add
+            independent passkeys after signing in.
           </p>
           <div className="flex flex-wrap gap-3">
             <button
@@ -180,30 +189,34 @@ const HostedAuthenticationGate = ({
             >
               Continue with a passkey
             </button>
-            <button
-              className={primaryButton}
-              onClick={() =>
-                void authClient.signIn.social({
-                  provider: "google",
-                  callbackURL: window.location.href,
-                })
-              }
-              type="button"
-            >
-              Continue with Google
-            </button>
-            <button
-              className={secondaryButton}
-              onClick={() =>
-                void authClient.signIn.social({
-                  provider: "github",
-                  callbackURL: window.location.href,
-                })
-              }
-              type="button"
-            >
-              Continue with GitHub
-            </button>
+            {providerAvailability.google ? (
+              <button
+                className={primaryButton}
+                onClick={() =>
+                  void authClient.signIn.social({
+                    provider: "google",
+                    callbackURL: window.location.href,
+                  })
+                }
+                type="button"
+              >
+                Continue with Google
+              </button>
+            ) : null}
+            {providerAvailability.github ? (
+              <button
+                className={secondaryButton}
+                onClick={() =>
+                  void authClient.signIn.social({
+                    provider: "github",
+                    callbackURL: window.location.href,
+                  })
+                }
+                type="button"
+              >
+                Continue with GitHub
+              </button>
+            ) : null}
           </div>
         </section>
       </main>
@@ -211,7 +224,10 @@ const HostedAuthenticationGate = ({
   }
   return (
     <>
-      <HostedAccountMethods authClient={authClient} />
+      <HostedAccountMethods
+        authClient={authClient}
+        providerAvailability={providerAvailability}
+      />
       {children}
     </>
   );
@@ -222,8 +238,10 @@ type PasskeyMethod = { id: string; name?: string | null };
 
 const HostedAccountMethods = ({
   authClient,
+  providerAvailability,
 }: {
   authClient: ProductionAuthClient;
+  providerAvailability: OAuthProviderAvailability;
 }) => {
   const [accounts, setAccounts] = useState<AccountMethod[]>([]);
   const [passkeys, setPasskeys] = useState<PasskeyMethod[]>([]);
@@ -310,21 +328,26 @@ const HostedAccountMethods = ({
           >
             Add passkey
           </button>
-          {(["google", "github"] as const).map((provider) => (
-            <button
-              className={secondaryButton}
-              key={provider}
-              onClick={() =>
-                void authClient.linkSocial({
-                  provider,
-                  callbackURL: window.location.href,
-                })
-              }
-              type="button"
-            >
-              Link {provider === "google" ? "Google" : "GitHub"}
-            </button>
-          ))}
+          {(["google", "github"] as const)
+            .filter(
+              (provider): provider is OAuthProviderId =>
+                providerAvailability[provider],
+            )
+            .map((provider) => (
+              <button
+                className={secondaryButton}
+                key={provider}
+                onClick={() =>
+                  void authClient.linkSocial({
+                    provider,
+                    callbackURL: window.location.href,
+                  })
+                }
+                type="button"
+              >
+                Link {provider === "google" ? "Google" : "GitHub"}
+              </button>
+            ))}
         </div>
         <ul className="mt-4 grid gap-2">
           {accounts.map((account) => (

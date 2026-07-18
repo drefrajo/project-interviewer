@@ -21,7 +21,8 @@ bunx convex dev --once
 
 2. Configure that deployment from `.env.convex.example`. For local use, set
    `SITE_URL=http://localhost:5173`, use the `CONVEX_SITE_URL` printed by
-   Convex, and provide development OAuth and OpenRouter credentials/models.
+   Convex, and provide at least one development OAuth provider plus OpenRouter
+   credentials.
 
 3. Start the Convex watcher, then run Vite in another terminal:
 
@@ -95,8 +96,6 @@ Create or select the deployment appropriate to the Vite mode:
    bunx convex env set CONVEX_SITE_URL https://your-deployment.convex.site
    bunx convex env set SITE_URL https://discovery.example.com
    bunx convex env set BETTER_AUTH_SECRET your-random-secret
-   bunx convex env set GOOGLE_CLIENT_ID your-google-client-id
-   bunx convex env set GOOGLE_CLIENT_SECRET your-google-client-secret
    bunx convex env set GITHUB_CLIENT_ID your-github-client-id
    bunx convex env set GITHUB_CLIENT_SECRET your-github-client-secret
    bunx convex env set OPENROUTER_API_KEY your-openrouter-key
@@ -104,17 +103,31 @@ Create or select the deployment appropriate to the Vite mode:
 
    Use the exact `CONVEX_SITE_URL` printed for the deployment. These server
    values do not need to be duplicated on the Cloudflare build or deploy
-   machine.
+   machine. Google and GitHub are independently optional, but each enabled
+   provider requires both its client ID and client secret, and at least one
+   provider must be configured so the first Freelancer can sign in.
 
 ## Configure Google, GitHub, and passkeys
 
-Create OAuth applications in Google Cloud and GitHub. Add these callback URLs,
-using the Convex HTTP Actions site URL:
+Create an OAuth application for each provider you want to enable. Add the
+corresponding callback URL using the Convex HTTP Actions site URL:
 
 ```text
 https://your-deployment.convex.site/api/auth/callback/google
 https://your-deployment.convex.site/api/auth/callback/github
 ```
+
+The example above bootstraps with GitHub. Google can be enabled later without a
+code change:
+
+```sh
+bunx convex env set GOOGLE_CLIENT_ID your-google-client-id
+bunx convex env set GOOGLE_CLIENT_SECRET your-google-client-secret
+```
+
+After both variables are set, the next Convex function reload exposes Google
+sign-in and account linking automatically. A half-configured credential pair is
+rejected rather than exposing a broken sign-in button.
 
 Also allow the exact frontend `SITE_URL`. The application disables passwords
 and implicit email linking. A signed-in user links another provider explicitly.
