@@ -68,10 +68,10 @@ export type BriefSource =
 export interface BriefItemDraft {
   kind: BriefItemKind;
   text: string;
-  scopeStatus?: ScopeStatus;
+  scopeStatus?: ScopeStatus | undefined;
   priority?: string | null;
   sources: BriefSource[];
-  findingId?: string;
+  findingId?: string | undefined;
 }
 
 export interface BriefSectionDraft {
@@ -132,12 +132,12 @@ export interface BriefItem {
   sectionId: BriefSectionId;
   kind: BriefItemKind;
   text: string;
-  scopeStatus?: ScopeStatus;
+  scopeStatus?: ScopeStatus | undefined;
   priority: string | null;
   sources: BriefSource[];
-  findingId?: string;
+  findingId?: string | undefined;
   authoredBy: "generator" | "freelancer";
-  requirementState?: RequirementState;
+  requirementState?: RequirementState | undefined;
   order: number;
   createdAt: number;
   updatedAt: number;
@@ -166,7 +166,7 @@ export interface BriefWarning {
   message: string;
   subjectId: string;
   status: "unresolved" | "resolved" | "acknowledged";
-  note?: string;
+  note?: string | undefined;
   updatedAt: number;
 }
 
@@ -174,7 +174,7 @@ export interface BriefDraft {
   id: string;
   roomId: string;
   revision: number;
-  basedOnReviewVersionId?: string;
+  basedOnReviewVersionId?: string | undefined;
   language: Language;
   status: "editing" | "sent";
   sections: BriefSection[];
@@ -203,7 +203,7 @@ export interface ReviewVersion {
     | "invalidated";
   sections: BriefSection[];
   sentAt: number;
-  approval?: BriefApproval;
+  approval?: BriefApproval | undefined;
 }
 
 export interface ChangeRequestRevision {
@@ -220,7 +220,7 @@ export interface BriefChangeRequest {
   revisions: ChangeRequestRevision[];
   createdAt: number;
   updatedAt: number;
-  acknowledgedAt?: number;
+  acknowledgedAt?: number | undefined;
 }
 
 export interface BriefOperation {
@@ -231,15 +231,15 @@ export interface BriefOperation {
   status: "running" | "retryable" | "succeeded" | "cancelled";
   stage: "generating" | "validating" | "complete";
   attemptCount: number;
-  model?: string;
-  provider?: string;
+  model?: string | undefined;
+  provider?: string | undefined;
   promptVersion: "software-project-brief-generator-v1";
   schemaVersion: "project-brief-v1";
-  contextPackRevisionId?: string;
-  inputTokens?: number;
-  outputTokens?: number;
-  estimatedCostUsd?: number;
-  errorCode?: string;
+  contextPackRevisionId?: string | undefined;
+  inputTokens?: number | undefined;
+  outputTokens?: number | undefined;
+  estimatedCostUsd?: number | undefined;
+  errorCode?: string | undefined;
   createdAt: number;
   updatedAt: number;
 }

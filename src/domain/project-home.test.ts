@@ -27,7 +27,7 @@ const createDependencies = (
 const createRoomWithClient = async () => {
   const application = createProjectInterviewer(createDependencies());
   const freelancer =
-    await application.identities.createDevelopmentFreelancer({
+    await application.identities.establishFreelancer({
       displayName: "Ada",
     });
   const created = await application.rooms.create(freelancer, {
@@ -123,7 +123,7 @@ describe("Project Home public service", () => {
       }),
     );
     const freelancer =
-      await first.identities.createDevelopmentFreelancer({
+      await first.identities.establishFreelancer({
         displayName: "Ada",
       });
     const created = await first.rooms.create(freelancer, {
@@ -334,7 +334,7 @@ describe("Project Home public service", () => {
       }),
     );
     const freelancer =
-      await application.identities.createDevelopmentFreelancer({
+      await application.identities.establishFreelancer({
         displayName: "Ada",
       });
     const deletedRoom = await application.rooms.create(freelancer, {
@@ -454,7 +454,7 @@ describe("Project Home public service", () => {
     const dependencies = createDependencies();
     const initialApplication = createProjectInterviewer(dependencies);
     const firstFreelancer =
-      await initialApplication.identities.createDevelopmentFreelancer({
+      await initialApplication.identities.establishFreelancer({
         displayName: "Ada",
       });
     const created = await initialApplication.rooms.create(
@@ -563,7 +563,7 @@ describe("Project Home public service", () => {
       createDependencies({ initialState: snapshot }),
     );
     const freelancer =
-      await application.identities.resumeDevelopmentFreelancer(
+      await application.identities.resumeFreelancer(
         firstFreelancer.freelancerId,
       );
 
@@ -609,7 +609,7 @@ describe("Project Home public service", () => {
       createDependencies({ clock: { now: () => now } }),
     );
     const freelancer =
-      await application.identities.createDevelopmentFreelancer({
+      await application.identities.establishFreelancer({
         displayName: "Ada",
       });
     const older = await application.rooms.create(freelancer, {
@@ -659,7 +659,7 @@ describe("Project Home public service", () => {
   it("keeps an archived first visit archived after onboarding", async () => {
     const application = createProjectInterviewer(createDependencies());
     const freelancer =
-      await application.identities.createDevelopmentFreelancer({
+      await application.identities.establishFreelancer({
         displayName: "Ada",
       });
     const created = await application.rooms.create(freelancer, {
@@ -695,7 +695,7 @@ describe("Project Home public service", () => {
       createDependencies({ clock: { now: () => now } }),
     );
     const firstFreelancer =
-      await initial.identities.createDevelopmentFreelancer({
+      await initial.identities.establishFreelancer({
         displayName: "Ada",
       });
     const created = await initial.rooms.create(firstFreelancer, {
@@ -754,7 +754,7 @@ describe("Project Home public service", () => {
       }),
     );
     const freelancer =
-      await application.identities.resumeDevelopmentFreelancer(
+      await application.identities.resumeFreelancer(
         firstFreelancer.freelancerId,
       );
 

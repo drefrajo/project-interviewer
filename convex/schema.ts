@@ -235,6 +235,19 @@ export default defineSchema({
     .index("by_token_hash", ["tokenHash"])
     .index("by_room", ["roomId", "version"]),
 
+  clientSessions: defineTable({
+    roomId: v.id("projectRooms"),
+    sessionHash: v.string(),
+    deviceHash: v.string(),
+    inviteVersion: v.number(),
+    active: v.boolean(),
+    createdAt: v.number(),
+    lastSeenAt: v.number(),
+    revokedAt: v.optional(v.number()),
+  })
+    .index("by_session_hash", ["sessionHash"])
+    .index("by_room", ["roomId", "active", "lastSeenAt"]),
+
   clientProfiles: defineTable({
     roomId: v.id("projectRooms"),
     displayName: v.string(),
@@ -289,6 +302,21 @@ export default defineSchema({
   })
     .index("by_room_active", ["roomId", "active", "createdAt"])
     .index("by_room_state", ["roomId", "state", "updatedAt"]),
+
+  uploadIntents: defineTable({
+    roomId: v.id("projectRooms"),
+    uploaderKind: actorKind,
+    uploaderId: v.string(),
+    name: v.string(),
+    expectedBytes: v.number(),
+    declaredContentType: v.string(),
+    idempotencyKey: v.string(),
+    consumed: v.boolean(),
+    expiresAt: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_room", ["roomId", "createdAt"])
+    .index("by_idempotency", ["roomId", "idempotencyKey"]),
 
   fileAnalyses: defineTable({
     roomId: v.id("projectRooms"),
@@ -387,6 +415,7 @@ export default defineSchema({
     completionRationale: v.optional(v.string()),
     incompleteReason: v.optional(v.string()),
     reviewerBlockers: v.array(v.string()),
+    reviewedAnswerCount: v.number(),
     usageReviewTriggered: v.boolean(),
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -615,6 +644,7 @@ export default defineSchema({
   durableOperations: defineTable({
     roomId: v.id("projectRooms"),
     operationType: v.string(),
+    subjectId: v.optional(v.string()),
     idempotencyKey: v.string(),
     status: v.union(
       v.literal("pending"),
@@ -636,11 +666,29 @@ export default defineSchema({
     estimatedCostUsd: v.optional(v.number()),
     latencyMs: v.optional(v.number()),
     errorCode: v.optional(v.string()),
+    workflowId: v.optional(v.string()),
+    cancelRequestedAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_room", ["roomId", "createdAt"])
     .index("by_idempotency", ["roomId", "idempotencyKey"]),
+
+  usageRecords: defineTable({
+    roomId: v.id("projectRooms"),
+    operationId: v.id("durableOperations"),
+    operationType: v.string(),
+    model: v.string(),
+    provider: v.string(),
+    inputTokens: v.number(),
+    outputTokens: v.number(),
+    estimatedCostUsd: v.optional(v.number()),
+    latencyMs: v.number(),
+    attemptCount: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_room", ["roomId", "createdAt"])
+    .index("by_operation", ["operationId"]),
 
   auditEvents: defineTable({
     roomId: v.id("projectRooms"),
@@ -650,6 +698,15 @@ export default defineSchema({
     action: v.string(),
     createdAt: v.number(),
   }).index("by_room", ["roomId", "createdAt"]),
+
+  rateLimitBuckets: defineTable({
+    roomId: v.optional(v.id("projectRooms")),
+    scope: v.string(),
+    key: v.string(),
+    windowStartedAt: v.number(),
+    count: v.number(),
+    updatedAt: v.number(),
+  }).index("by_key", ["key", "scope"]),
 
   deletionRecoveryRecords: defineTable({
     roomId: v.id("projectRooms"),

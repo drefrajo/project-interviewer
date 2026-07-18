@@ -180,7 +180,7 @@ const createInterviewHarness = async (overrides?: {
     interviewReviewer: overrides?.reviewer,
   } as unknown as ProjectInterviewerDependencies;
   const app = createProjectInterviewer(dependencies);
-  const freelancer = await app.identities.createDevelopmentFreelancer({
+  const freelancer = await app.identities.establishFreelancer({
     displayName: "Ada",
   });
   const created = await app.rooms.create(freelancer, {

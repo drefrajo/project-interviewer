@@ -27,7 +27,7 @@ const dependencies = (): ProjectInterviewerDependencies => {
 describe("Project Room public service", () => {
   it("creates a canonical Project Room and returns the Invite Link secret only once", async () => {
     const app = createProjectInterviewer(dependencies());
-    const freelancer = await app.identities.createDevelopmentFreelancer({
+    const freelancer = await app.identities.establishFreelancer({
       displayName: "Ada Freelancer",
     });
 
@@ -62,7 +62,7 @@ describe("Project Room public service", () => {
 
   it("onboards a Client once and resolves repeat visits to the same Project Home", async () => {
     const app = createProjectInterviewer(dependencies());
-    const freelancer = await app.identities.createDevelopmentFreelancer({
+    const freelancer = await app.identities.establishFreelancer({
       displayName: "Ada Freelancer",
     });
     const { room, inviteToken } = await app.rooms.create(freelancer, {
@@ -111,7 +111,7 @@ describe("Project Room public service", () => {
 
   it("rotates and revokes Invite Links without retaining usable old tokens", async () => {
     const app = createProjectInterviewer(dependencies());
-    const freelancer = await app.identities.createDevelopmentFreelancer({
+    const freelancer = await app.identities.establishFreelancer({
       displayName: "Ada Freelancer",
     });
     const { room, inviteToken } = await app.rooms.create(freelancer, {
@@ -138,10 +138,10 @@ describe("Project Room public service", () => {
 
   it("isolates every Project Room operation to its resolved actor", async () => {
     const app = createProjectInterviewer(dependencies());
-    const ada = await app.identities.createDevelopmentFreelancer({
+    const ada = await app.identities.establishFreelancer({
       displayName: "Ada",
     });
-    const grace = await app.identities.createDevelopmentFreelancer({
+    const grace = await app.identities.establishFreelancer({
       displayName: "Grace",
     });
     const adaRoom = await app.rooms.create(ada, {
@@ -185,7 +185,7 @@ describe("Project Room public service", () => {
 
   it("lists rooms by search and phase with a current next action", async () => {
     const app = createProjectInterviewer(dependencies());
-    const freelancer = await app.identities.createDevelopmentFreelancer({
+    const freelancer = await app.identities.establishFreelancer({
       displayName: "Ada",
     });
     await app.rooms.create(freelancer, {

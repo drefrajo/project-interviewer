@@ -23,6 +23,7 @@ export type FindingType =
   | "contradiction";
 
 export type EvidenceReference =
+  | { type: "project_description" }
   | {
       type: "material";
       materialId: string;
@@ -123,7 +124,7 @@ export interface InterviewEvent {
   contextPackRevisionId: string;
   contextPackRevision: number;
   createdAt: number;
-  handledAtTurnId?: string;
+  handledAtTurnId?: string | undefined;
 }
 
 export interface RespondingDeviceLease {
@@ -150,12 +151,12 @@ export interface DiscoveryInterview {
   planId: string;
   language: Language;
   status: InterviewStatus;
-  currentQuestion?: InterviewQuestion;
+  currentQuestion?: InterviewQuestion | undefined;
   operationStatus: "idle" | "running" | "retryable";
   answerCount: number;
   unresolvedTopics: string[];
-  completionRationale?: string;
-  incompleteReason?: string;
+  completionRationale?: string | undefined;
+  incompleteReason?: string | undefined;
   reviewerBlockers: string[];
   usageReviewTriggered: boolean;
   createdAt: number;
@@ -181,16 +182,16 @@ export interface InterviewOperation {
     | "cancelled";
   stage: string;
   attemptCount: number;
-  model?: string;
-  provider?: string;
+  model?: string | undefined;
+  provider?: string | undefined;
   promptVersion: string;
   schemaVersion: string;
-  contextPackRevisionId?: string;
-  inputTokens?: number;
-  outputTokens?: number;
-  estimatedCostUsd?: number;
-  latencyMs?: number;
-  errorCode?: string;
+  contextPackRevisionId?: string | undefined;
+  inputTokens?: number | undefined;
+  outputTokens?: number | undefined;
+  estimatedCostUsd?: number | undefined;
+  latencyMs?: number | undefined;
+  errorCode?: string | undefined;
   createdAt: number;
   updatedAt: number;
 }
@@ -338,18 +339,18 @@ export interface DiscoveryInterviewView {
   status: InterviewStatus;
   respondingDevice: boolean;
   leaseVersion: number | null;
-  currentQuestion?: InterviewQuestion;
+  currentQuestion?: InterviewQuestion | undefined;
   operationStatus: DiscoveryInterview["operationStatus"];
   answerCount: number;
-  plan?: Pick<InterviewPlan, "profileId" | "profileVersion">;
+  plan?: Pick<InterviewPlan, "profileId" | "profileVersion"> | undefined;
   coverage: Array<Pick<CoverageArea, "id" | "label" | "status">>;
   turns: InterviewTurn[];
   corrections: InterviewCorrection[];
   findings: DiscoveryFinding[];
   events: InterviewEvent[];
   unresolvedTopics: string[];
-  completionRationale?: string;
-  incompleteReason?: string;
+  completionRationale?: string | undefined;
+  incompleteReason?: string | undefined;
   reviewerBlockers: string[];
   usageReviewTriggered: boolean;
   operation?: Pick<
@@ -368,7 +369,7 @@ export interface DiscoveryInterviewView {
     | "estimatedCostUsd"
     | "latencyMs"
     | "errorCode"
-  >;
+  > | undefined;
 }
 
 export const SOFTWARE_PROJECT_PROFILE = {
@@ -1914,6 +1915,8 @@ const validateAgentDelta = (
     source: EvidenceReference,
   ): boolean => {
     switch (source.type) {
+      case "project_description":
+        return true;
       case "turn":
         return authorized.turnIds.has(source.turnId);
       case "correction":

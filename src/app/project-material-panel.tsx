@@ -94,6 +94,7 @@ export const ProjectMaterialPanel = ({
             fileReference = await materialFileStore.save(file, {
               roomId: room.id,
               uploaderId,
+              actor,
             });
             const material = await application.materials.accept(
               actor,
@@ -128,6 +129,7 @@ export const ProjectMaterialPanel = ({
                 .remove(fileReference, {
                   roomId: room.id,
                   uploaderId,
+                  actor,
                 })
                 .catch(() => undefined);
             }

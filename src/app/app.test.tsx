@@ -47,7 +47,7 @@ describe("File-First Discovery application shell", () => {
     const user = userEvent.setup();
     const application = createTestApplication();
     const freelancer =
-      await application.identities.createDevelopmentFreelancer({
+      await application.identities.establishFreelancer({
         displayName: "Ada",
       });
     const routes = createRoutes(application, freelancer);
@@ -85,7 +85,7 @@ describe("File-First Discovery application shell", () => {
     const user = userEvent.setup();
     const application = createTestApplication();
     const freelancer =
-      await application.identities.createDevelopmentFreelancer({
+      await application.identities.establishFreelancer({
         displayName: "Ada",
       });
     await application.rooms.create(freelancer, {
@@ -218,7 +218,7 @@ describe("File-First Discovery application shell", () => {
       },
     });
     const freelancer =
-      await application.identities.createDevelopmentFreelancer({
+      await application.identities.establishFreelancer({
         displayName: "Ada",
       });
     const { room } = await application.rooms.create(freelancer, {
@@ -264,7 +264,7 @@ describe("File-First Discovery application shell", () => {
     const user = userEvent.setup();
     const application = createTestApplication();
     const freelancer =
-      await application.identities.createDevelopmentFreelancer({
+      await application.identities.establishFreelancer({
         displayName: "Ada",
       });
     const created = await application.rooms.create(freelancer, {
@@ -357,7 +357,7 @@ describe("File-First Discovery application shell", () => {
       },
     });
     const freelancer =
-      await application.identities.createDevelopmentFreelancer({
+      await application.identities.establishFreelancer({
         displayName: "Ada",
       });
     const created = await application.rooms.create(freelancer, {
@@ -444,7 +444,7 @@ describe("File-First Discovery application shell", () => {
     localStorage.setItem("project-interviewer.locale", "en");
     const application = createTestApplication();
     const freelancer =
-      await application.identities.createDevelopmentFreelancer({
+      await application.identities.establishFreelancer({
         displayName: "Ada",
       });
     const created = await application.rooms.create(freelancer, {
@@ -629,7 +629,7 @@ describe("File-First Discovery application shell", () => {
     localStorage.setItem("project-interviewer.locale", "en");
     const application = createTestApplication();
     const freelancer =
-      await application.identities.createDevelopmentFreelancer({
+      await application.identities.establishFreelancer({
         displayName: "Ada",
       });
     const created = await application.rooms.create(freelancer, {
@@ -804,7 +804,7 @@ describe("File-First Discovery application shell", () => {
     localStorage.setItem("project-interviewer.locale", "en");
     const application = createTestApplication();
     const freelancer =
-      await application.identities.createDevelopmentFreelancer({
+      await application.identities.establishFreelancer({
         displayName: "Ada",
       });
     const archived = await application.rooms.create(freelancer, {
@@ -873,7 +873,7 @@ describe("File-First Discovery application shell", () => {
     );
     const application = createTestApplication();
     const freelancer =
-      await application.identities.createDevelopmentFreelancer({
+      await application.identities.establishFreelancer({
         displayName: "Ada",
       });
     const created = await application.rooms.create(freelancer, {

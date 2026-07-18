@@ -135,7 +135,7 @@ const createBriefHarness = async (overrides?: {
   };
   const app = createProjectInterviewer(dependencies);
   const freelancer =
-    await app.identities.createDevelopmentFreelancer({
+    await app.identities.establishFreelancer({
       displayName: "Ada",
     });
   const created = await app.rooms.create(freelancer, {
@@ -814,7 +814,7 @@ describe("Project Brief public service", () => {
       },
     });
     const actor =
-      await restored.identities.resumeDevelopmentFreelancer(
+      await restored.identities.resumeFreelancer(
         freelancer.freelancerId,
       );
     const generated = await restored.briefs.generate(
@@ -928,7 +928,7 @@ describe("Project Brief public service", () => {
       initialState: archivedState,
     });
     const restoredFreelancer =
-      await restored.identities.resumeDevelopmentFreelancer(
+      await restored.identities.resumeFreelancer(
         freelancer.freelancerId,
       );
     await expect(

@@ -94,10 +94,10 @@ export const createLocalApplication = async (): Promise<{
     .inspectState()
     .freelancers.find(({ id }) => id === savedFreelancerId);
   const freelancer = existingFreelancer
-    ? await application.identities.resumeDevelopmentFreelancer(
+    ? await application.identities.resumeFreelancer(
         existingFreelancer.id,
       )
-    : await application.identities.createDevelopmentFreelancer({
+    : await application.identities.establishFreelancer({
         displayName: "Local Freelancer",
       });
 

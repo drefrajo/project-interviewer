@@ -25,6 +25,7 @@ import {
   redactModelText,
   redactSegments,
 } from "./material-safety";
+import { normalizeSafeSharedResource } from "./shared-resource-safety";
 import {
   createDiscoveryInterviewCoordinator,
   type DiscoveryInterviewState,
@@ -681,69 +682,9 @@ export const createProjectInterviewer = (
     SharedResource,
     "id" | "roomId" | "order" | "createdAt" | "updatedAt"
   > => {
-    const label = input.label.trim();
-    const url = input.url?.trim() || undefined;
-    const note = input.note?.trim() || undefined;
-    const accountIdentifier =
-      input.accountIdentifier?.trim() || undefined;
-    if (!label || (!url && !note)) {
-      throw new ValidationError(
-        "A Shared Resource needs a label and a URL or non-secret note.",
-      );
-    }
-    if (url) {
-      let parsed: URL;
-      try {
-        parsed = new URL(url);
-      } catch {
-        throw new ValidationError(
-          "Shared Resource URLs must be valid HTTP or HTTPS links.",
-        );
-      }
-      if (!["http:", "https:"].includes(parsed.protocol)) {
-        throw new ValidationError(
-          "Shared Resource URLs must be valid HTTP or HTTPS links.",
-        );
-      }
-      const secretQueryName =
-        /^(?:api[-_]?key|access[-_]?token|auth[-_]?token|password|passwd|pwd|secret|token)$/iu;
-      if (
-        parsed.password ||
-        [...parsed.searchParams].some(
-          ([name, value]) =>
-            value.trim() && secretQueryName.test(name),
-        )
-      ) {
-        throw new ValidationError(
-          "Shared Resource URLs cannot contain passwords, API keys, tokens, or other secrets.",
-        );
-      }
-    }
-    const combined = [label, url, note, accountIdentifier]
-      .filter(Boolean)
-      .join("\n");
-    if (
-      findSuspectedSecrets([
-        {
-          text: combined,
-          locator: {
-            kind: "paragraph",
-            label: "Shared Resource",
-            paragraph: 1,
-          },
-        },
-      ]).length
-    ) {
-      throw new ValidationError(
-        "Shared Resources cannot contain passwords, API keys, tokens, or other suspected secrets.",
-      );
-    }
-    return {
-      label,
-      ...(url ? { url } : {}),
-      ...(note ? { note } : {}),
-      ...(accountIdentifier ? { accountIdentifier } : {}),
-    };
+    const result = normalizeSafeSharedResource(input);
+    if (!result.accepted) throw new ValidationError(result.reason);
+    return result.value;
   };
 
   const toProjectMaterialView = (
@@ -1657,7 +1598,7 @@ export const createProjectInterviewer = (
 
   return {
     identities: {
-      async createDevelopmentFreelancer(input: {
+      async establishFreelancer(input: {
         displayName: string;
       }): Promise<FreelancerActor> {
         const displayName = input.displayName.trim();
@@ -1680,7 +1621,7 @@ export const createProjectInterviewer = (
         };
       },
 
-      async resumeDevelopmentFreelancer(
+      async resumeFreelancer(
         freelancerId: string,
       ): Promise<FreelancerActor> {
         if (!state.freelancers.some(({ id }) => id === freelancerId)) {

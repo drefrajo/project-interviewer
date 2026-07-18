@@ -101,7 +101,7 @@ const createDependencies = (options?: {
 
 const createRoom = async (dependencies: ProjectInterviewerDependencies) => {
   const app = createProjectInterviewer(dependencies);
-  const freelancer = await app.identities.createDevelopmentFreelancer({
+  const freelancer = await app.identities.establishFreelancer({
     displayName: "Ada",
   });
   const created = await app.rooms.create(freelancer, {
@@ -155,7 +155,7 @@ describe("Project Material public service", () => {
     };
     const second = createProjectInterviewer(secondDependencies);
     const secondFreelancer =
-      await second.identities.resumeDevelopmentFreelancer(
+      await second.identities.resumeFreelancer(
         freelancer.freelancerId,
       );
     await second.projectHome.lifecycle.delete(
@@ -222,7 +222,7 @@ describe("Project Material public service", () => {
     };
     const second = createProjectInterviewer(secondDependencies);
     const secondFreelancer =
-      await second.identities.resumeDevelopmentFreelancer(
+      await second.identities.resumeFreelancer(
         freelancer.freelancerId,
       );
     await second.projectHome.lifecycle.delete(
@@ -427,7 +427,7 @@ describe("Project Material public service", () => {
       errorCode: "interrupted_processing",
     });
     const restoredFreelancer =
-      await restored.identities.resumeDevelopmentFreelancer(
+      await restored.identities.resumeFreelancer(
         freelancer.freelancerId,
       );
     await expect(
@@ -774,7 +774,7 @@ describe("Project Material public service", () => {
   it("enforces format, signature, count, size, and room authorization before accepting bytes", async () => {
     const { dependencies } = createDependencies();
     const { app, freelancer, room } = await createRoom(dependencies);
-    const other = await app.identities.createDevelopmentFreelancer({
+    const other = await app.identities.establishFreelancer({
       displayName: "Grace",
     });
 

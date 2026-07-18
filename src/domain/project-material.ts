@@ -136,7 +136,7 @@ export interface ProjectMaterial {
   name: string;
   size: number;
   declaredContentType: string;
-  actualContentType?: string;
+  actualContentType?: string | undefined;
   fileReference: string;
   uploaderKind: RoomActor["kind"];
   uploaderId: string;
@@ -146,10 +146,10 @@ export interface ProjectMaterial {
   retryAvailable: boolean;
   includeSuspectedSecrets: boolean;
   suspectedSecrets: SuspectedSecret[];
-  extraction?: Omit<MaterialExtraction, "segments">;
-  analysis?: FileAnalysis;
+  extraction?: Omit<MaterialExtraction, "segments"> | undefined;
+  analysis?: FileAnalysis | undefined;
   analysisVersions: FileAnalysis[];
-  failureCode?: string;
+  failureCode?: string | undefined;
   createdAt: number;
   updatedAt: number;
 }
@@ -168,7 +168,7 @@ export interface AnalysisFeedback {
   materialId: string;
   explanation: string;
   actorKind: RoomActor["kind"];
-  deviceId?: string;
+  deviceId?: string | undefined;
   locator: SourceLocator;
   createdAt: number;
 }
@@ -194,7 +194,7 @@ export interface ContextPackRevision {
     | "analysis_feedback_added"
     | "material_removed"
     | "continued_without_material";
-  subjectMaterialId?: string;
+  subjectMaterialId?: string | undefined;
   globalProjectSummary: string;
   likelyProjectType: string | null;
   notableSignals: FileAnalysis["signals"];
