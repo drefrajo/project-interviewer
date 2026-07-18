@@ -4,7 +4,7 @@ import type {
   GenericQueryCtx,
 } from "convex/server";
 import type { GenericId } from "convex/values";
-import { assertRoomWritablePhase } from "./production-boundaries";
+import { assertRoomWritablePhase } from "./production_boundaries";
 
 type ReadContext =
   | GenericQueryCtx<GenericDataModel>

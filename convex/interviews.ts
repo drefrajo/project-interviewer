@@ -4,10 +4,10 @@ import {
   requireClientRoom,
   requireRoomActorFromSession,
   requireWritableClientRoom,
-} from "./lib/server-authorization";
-import { asRecord } from "./lib/commit-values";
+} from "./lib/server_authorization";
+import { asRecord } from "./lib/commit_values";
 import { recordAudit } from "./lib/audit";
-import { enforceRateLimit } from "./lib/rate-limit";
+import { enforceRateLimit } from "./lib/rate_limit";
 
 const clientArgs = {
   roomId: v.id("projectRooms"),

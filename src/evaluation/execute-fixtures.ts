@@ -22,8 +22,8 @@ import { localBriefGenerator } from "../local/local-brief-adapter";
 import {
   decideIdempotentOperation,
   enforceUploadQuota,
-} from "../../convex/lib/production-boundaries";
-import { decideRateLimit } from "../../convex/lib/rate-limit-policy";
+} from "../../convex/lib/production_boundaries";
+import { decideRateLimit } from "../../convex/lib/rate_limit_policy";
 import {
   safeOperationalMetadata,
 } from "../infrastructure/production-contract";

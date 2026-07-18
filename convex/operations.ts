@@ -6,12 +6,12 @@ import { v } from "convex/values";
 import {
   decideIdempotentOperation,
   enforceOperationConcurrency,
-} from "./lib/production-boundaries";
+} from "./lib/production_boundaries";
 import {
   requireRoomActorFromSession,
   requireWritableRoomActorFromSession,
-} from "./lib/server-authorization";
-import { cancelOperationAndRecoverAggregate } from "./lib/operation-cancellation";
+} from "./lib/server_authorization";
+import { cancelOperationAndRecoverAggregate } from "./lib/operation_cancellation";
 
 export const begin = mutationGeneric({
   args: {

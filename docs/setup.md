@@ -12,15 +12,22 @@ development and production.
 
 ```sh
 bun install
-bunx convex dev
+bunx convex dev --once
 ```
+
+   On the first run, Convex writes the selected deployment URLs to
+   `.env.local`. The push can stop on a missing server environment variable;
+   that is expected until the next step is complete.
 
 2. Configure that deployment from `.env.convex.example`. For local use, set
    `SITE_URL=http://localhost:5173`, use the `CONVEX_SITE_URL` printed by
    Convex, and provide development OAuth and OpenRouter credentials/models.
 
-3. Copy `.env.local.example` to `.env.local`, fill in the public deployment
-   URLs, then run Vite in another terminal:
+3. Start the Convex watcher, then run Vite in another terminal:
+
+```sh
+bun run convex:dev
+```
 
 ```sh
 bun run dev

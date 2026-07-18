@@ -6,19 +6,19 @@ import { v } from "convex/values";
 import {
   enforceUploadQuota,
   validateStoredUpload,
-} from "./lib/production-boundaries";
+} from "./lib/production_boundaries";
 import {
   requireFreelancerRoom,
   requireRoomActor,
   requireRoomActorFromSession,
   requireWritableRoomActor,
-} from "./lib/server-authorization";
+} from "./lib/server_authorization";
 import type { GenericId } from "convex/values";
-import { sourceLocatorValidator } from "./lib/value-validators";
-import { rebuildContextPack } from "./lib/context-pack-commit";
-import { asRecord } from "./lib/commit-values";
-import { internal } from "./typed-api";
-import { clientMaterialDto } from "./lib/public-dtos";
+import { sourceLocatorValidator } from "./lib/value_validators";
+import { rebuildContextPack } from "./lib/context_pack_commit";
+import { asRecord } from "./lib/commit_values";
+import { internal } from "./typed_api";
+import { clientMaterialDto } from "./lib/public_dtos";
 import { recordAudit } from "./lib/audit";
 
 const actorValidator = v.union(

@@ -6,9 +6,9 @@ import { v, type GenericId } from "convex/values";
 import {
   requireClientRoom,
   requireFreelancerRoom,
-} from "./lib/server-authorization";
-import { enforceRateLimit } from "./lib/rate-limit";
-import { clientRoomDto } from "./lib/public-dtos";
+} from "./lib/server_authorization";
+import { enforceRateLimit } from "./lib/rate_limit";
+import { clientRoomDto } from "./lib/public_dtos";
 import { recordAudit } from "./lib/audit";
 
 const languageValidator = v.union(v.literal("en"), v.literal("de"));

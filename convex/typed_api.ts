@@ -17,7 +17,7 @@ import type * as interviews from "./interviews";
 import type * as invites from "./invites";
 import type * as materials from "./materials";
 import type * as operations from "./operations";
-import type * as projectHome from "./project-home";
+import type * as projectHome from "./project_home";
 import type * as rooms from "./rooms";
 import type * as search from "./search";
 import type * as workflows from "./workflows";
@@ -29,7 +29,7 @@ type FullApi = ApiFromModules<{
   invites: typeof invites;
   materials: typeof materials;
   operations: typeof operations;
-  "project-home": typeof projectHome;
+  "project_home": typeof projectHome;
   rooms: typeof rooms;
   search: typeof search;
   workflows: typeof workflows;

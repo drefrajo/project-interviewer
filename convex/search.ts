@@ -11,7 +11,7 @@ import {
 } from "../src/application/staged-material-retrieval";
 import {
   requireRoomActorFromSession,
-} from "./lib/server-authorization";
+} from "./lib/server_authorization";
 
 const getForClientReference = makeFunctionReference<
   "query",

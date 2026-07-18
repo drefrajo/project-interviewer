@@ -3,7 +3,7 @@ import type {
   GenericMutationCtx,
 } from "convex/server";
 import type { GenericId } from "convex/values";
-import { decideRateLimit } from "./rate-limit-policy";
+import { decideRateLimit } from "./rate_limit_policy";
 
 export const enforceRateLimit = async (
   context: GenericMutationCtx<GenericDataModel>,

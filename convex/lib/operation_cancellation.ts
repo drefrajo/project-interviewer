@@ -6,7 +6,7 @@ import {
   type GenericMutationCtx,
 } from "convex/server";
 import type { GenericId } from "convex/values";
-import { cancelledAggregateKind } from "./production-boundaries";
+import { cancelledAggregateKind } from "./production_boundaries";
 
 const workflowComponent = componentsGeneric()
   .workflow as unknown as WorkflowComponentApi;

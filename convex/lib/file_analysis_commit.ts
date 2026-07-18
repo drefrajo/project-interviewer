@@ -3,9 +3,9 @@ import type {
   GenericMutationCtx,
 } from "convex/server";
 import type { GenericId, Value } from "convex/values";
-import type { AiOperationResult } from "./ai-contract";
-import { asRecord, asString, asStrings } from "./commit-values";
-import { rebuildContextPack } from "./context-pack-commit";
+import type { AiOperationResult } from "./ai_contract";
+import { asRecord, asString, asStrings } from "./commit_values";
+import { rebuildContextPack } from "./context_pack_commit";
 
 export const commitFileAnalysis = async (
   context: GenericMutationCtx<GenericDataModel>,

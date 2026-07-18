@@ -11,10 +11,10 @@ import {
   PURGE_BATCH_SIZE,
   PURGE_BATCH_TABLES,
   PURGE_STALE_AFTER_MS,
-} from "./lib/production-boundaries";
-import { requireFreelancerRoom } from "./lib/server-authorization";
+} from "./lib/production_boundaries";
+import { requireFreelancerRoom } from "./lib/server_authorization";
 import { recordAudit } from "./lib/audit";
-import { cancelOperationAndRecoverAggregate } from "./lib/operation-cancellation";
+import { cancelOperationAndRecoverAggregate } from "./lib/operation_cancellation";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

@@ -3,10 +3,10 @@ import type {
   GenericMutationCtx,
 } from "convex/server";
 import type { GenericId } from "convex/values";
-import type { AiOperationResult } from "./ai-contract";
-import { asRecord, asString } from "./commit-values";
-import { validateEvidenceSources } from "./evidence-validation";
-import { canCommitBriefSnapshot } from "./production-boundaries";
+import type { AiOperationResult } from "./ai_contract";
+import { asRecord, asString } from "./commit_values";
+import { validateEvidenceSources } from "./evidence_validation";
+import { canCommitBriefSnapshot } from "./production_boundaries";
 import { serializeProjectBriefMarkdown } from "../../src/domain/project-brief-markdown";
 import type { BriefDraft } from "../../src/domain/project-brief";
 

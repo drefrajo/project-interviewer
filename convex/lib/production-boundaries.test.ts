@@ -12,8 +12,8 @@ import {
   PURGE_BATCH_TABLES,
   PURGE_TABLE_ORDER,
   validateStoredUpload,
-} from "./production-boundaries";
-import { decideRateLimit } from "./rate-limit-policy";
+} from "./production_boundaries";
+import { decideRateLimit } from "./rate_limit_policy";
 
 describe("Convex production boundaries", () => {
   it("throttles repeated mutations and resets only after the bounded window", () => {

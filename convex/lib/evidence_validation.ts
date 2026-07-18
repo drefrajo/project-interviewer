@@ -3,7 +3,7 @@ import type {
   GenericMutationCtx,
 } from "convex/server";
 import type { GenericId, Value } from "convex/values";
-import { asRecord, asString } from "./commit-values";
+import { asRecord, asString } from "./commit_values";
 
 export const validateEvidenceSources = async (
   context: GenericMutationCtx<GenericDataModel>,

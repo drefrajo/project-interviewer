@@ -15,19 +15,19 @@ import type {
   AiOperationResult,
   DomainOperationArguments,
   DomainOperationKind,
-} from "./lib/ai-contract";
-import { commitBrief } from "./lib/brief-commit";
-import { commitFileAnalysis } from "./lib/file-analysis-commit";
+} from "./lib/ai_contract";
+import { commitBrief } from "./lib/brief_commit";
+import { commitFileAnalysis } from "./lib/file_analysis_commit";
 import {
   commitInterviewPlanning,
   commitInterviewUpdate,
-} from "./lib/interview-commit";
-import { canCommitOperationResult } from "./lib/production-boundaries";
+} from "./lib/interview_commit";
+import { canCommitOperationResult } from "./lib/production_boundaries";
 import {
   requireWritableClientRoom,
   requireWritableFreelancerRoom,
   requireWritableRoomActor,
-} from "./lib/server-authorization";
+} from "./lib/server_authorization";
 
 const components = componentsGeneric();
 export const workflowManager = new WorkflowManager(

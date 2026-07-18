@@ -9,10 +9,10 @@ import {
   requireFreelancerRoom,
   requireRoomActorFromSession,
   requireWritableFreelancerRoom,
-} from "./lib/server-authorization";
+} from "./lib/server_authorization";
 import { normalizeSafeSharedResource } from "../src/domain/shared-resource-safety";
 import { recordAudit } from "./lib/audit";
-import { cancelOperationAndRecoverAggregate } from "./lib/operation-cancellation";
+import { cancelOperationAndRecoverAggregate } from "./lib/operation_cancellation";
 
 const resourceInput = {
   label: v.string(),

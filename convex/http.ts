@@ -8,7 +8,7 @@ import { authComponent, createAuth } from "./auth";
 import {
   createCapabilityToken,
   hashCapability,
-} from "./lib/capability-crypto";
+} from "./lib/capability_crypto";
 
 const http = httpRouter();
 

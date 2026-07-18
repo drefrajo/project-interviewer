@@ -5,7 +5,7 @@ import { passkey } from "@better-auth/passkey";
 import { betterAuth, type BetterAuthOptions } from "better-auth";
 import { componentsGeneric } from "convex/server";
 import authConfig from "./auth.config";
-import { authMethodGuard } from "./auth-method-guard";
+import { authMethodGuard } from "./auth_method_guard";
 
 const components = componentsGeneric();
 

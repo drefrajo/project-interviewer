@@ -8,10 +8,10 @@ import { v, type GenericId } from "convex/values";
 import {
   createCapabilityToken,
   hashCapability,
-} from "./lib/capability-crypto";
-import { requireFreelancerRoom } from "./lib/server-authorization";
+} from "./lib/capability_crypto";
+import { requireFreelancerRoom } from "./lib/server_authorization";
 import { recordAudit } from "./lib/audit";
-import { enforceRateLimit } from "./lib/rate-limit";
+import { enforceRateLimit } from "./lib/rate_limit";
 
 const createCapabilityRecordReference = makeFunctionReference<
   "mutation",

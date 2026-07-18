@@ -24,8 +24,8 @@ import {
 import type {
   AiOperationResult,
   DomainOperationKind,
-} from "./lib/ai-contract";
-import { internal } from "./typed-api";
+} from "./lib/ai_contract";
+import { internal } from "./typed_api";
 
 type DomainContext = {
   operation: {

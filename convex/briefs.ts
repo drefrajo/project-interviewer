@@ -17,15 +17,15 @@ import {
   replaceProjectBriefMarkdown,
   serializeProjectBriefMarkdown,
 } from "../src/domain/project-brief-markdown";
-import { briefSourceValidator } from "./lib/value-validators";
+import { briefSourceValidator } from "./lib/value_validators";
 import {
   requireFreelancerRoom,
   requireRoomActorFromSession,
   requireWritableClientRoom,
   requireWritableFreelancerRoom,
-} from "./lib/server-authorization";
+} from "./lib/server_authorization";
 import { recordAudit } from "./lib/audit";
-import { canCommitBriefSnapshot } from "./lib/production-boundaries";
+import { canCommitBriefSnapshot } from "./lib/production_boundaries";
 
 const roomActorArgs = {
   roomId: v.id("projectRooms"),

@@ -3,9 +3,9 @@ import type {
   GenericMutationCtx,
 } from "convex/server";
 import type { GenericId, Value } from "convex/values";
-import type { AiOperationResult } from "./ai-contract";
-import { asRecord, asString, asStrings } from "./commit-values";
-import { validateEvidenceSources } from "./evidence-validation";
+import type { AiOperationResult } from "./ai_contract";
+import { asRecord, asString, asStrings } from "./commit_values";
+import { validateEvidenceSources } from "./evidence_validation";
 
 const coverageAreas = (value: unknown) =>
   (Array.isArray(value) ? value : []).map((item, index) => {

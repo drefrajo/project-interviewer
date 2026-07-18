@@ -3,7 +3,7 @@ import type {
   FunctionReference,
   FunctionReturnType,
 } from "convex/server";
-import { api } from "../../convex/typed-api";
+import { api } from "../../convex/typed_api";
 import type {
   FreelancerActor,
   ProjectNextAction,
@@ -64,14 +64,14 @@ export const references = {
     revoke: api.invites.revokeCapability,
   },
   home: {
-    listResources: api["project-home"].listResources,
-    createResource: api["project-home"].createResource,
-    updateResource: api["project-home"].updateResource,
-    reorderResources: api["project-home"].reorderResources,
-    removeResource: api["project-home"].removeResource,
-    archive: api["project-home"].archiveRoom,
-    restore: api["project-home"].restoreRoom,
-    reopen: api["project-home"].reopenDiscovery,
+    listResources: api["project_home"].listResources,
+    createResource: api["project_home"].createResource,
+    updateResource: api["project_home"].updateResource,
+    reorderResources: api["project_home"].reorderResources,
+    removeResource: api["project_home"].removeResource,
+    archive: api["project_home"].archiveRoom,
+    restore: api["project_home"].restoreRoom,
+    reopen: api["project_home"].reopenDiscovery,
     delete: api.deletion.scheduleRoomDeletion,
     recover: api.deletion.recoverRoom,
   },
