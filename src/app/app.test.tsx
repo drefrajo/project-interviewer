@@ -1,14 +1,22 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, useRoutes } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createRoutes } from "./routes";
 import {
   createProjectInterviewer,
   type ProjectInterviewerDependencies,
 } from "../domain/project-interviewer";
+import {
+  localInterviewAgent,
+  localInterviewPlanner,
+  localInterviewReviewer,
+} from "../local/local-interview-adapters";
+import type { InterviewAgentDelta } from "../domain/discovery-interview";
 
-const createTestApplication = () => {
+const createTestApplication = (
+  overrides: Partial<ProjectInterviewerDependencies> = {},
+) => {
   let id = 0;
   let token = 0;
   const dependencies: ProjectInterviewerDependencies = {
@@ -19,6 +27,10 @@ const createTestApplication = () => {
     },
     clock: { now: () => 1_800_000_000_000 + id },
     inviteTokens: { hash: async (value) => `digest:${value}` },
+    interviewPlanner: localInterviewPlanner,
+    interviewAgent: localInterviewAgent,
+    interviewReviewer: localInterviewReviewer,
+    ...overrides,
   };
   return createProjectInterviewer(dependencies);
 };
@@ -238,5 +250,186 @@ describe("File-First Discovery application shell", () => {
       screen.getByRole("heading", { name: "Brief.txt" }),
     ).toBeInTheDocument();
     expect(screen.getAllByText(/paragraph 1/i).length).toBeGreaterThan(0);
+  });
+
+  it("runs the one-question Client interview from Project Home", async () => {
+    localStorage.setItem("project-interviewer.locale", "en");
+    const user = userEvent.setup();
+    const application = createTestApplication();
+    const freelancer =
+      await application.identities.createDevelopmentFreelancer({
+        displayName: "Ada",
+      });
+    const created = await application.rooms.create(freelancer, {
+      title: "Interview Room",
+      clientLabel: "Alpine",
+      projectDescription: "A self-service portal.",
+      briefLanguage: "en",
+      freelancerGuidance: "",
+    });
+    await application.materials.continueWithoutFiles(
+      freelancer,
+      created.room.id,
+    );
+    const routes = createRoutes(application, freelancer);
+    const TestRoutes = () => useRoutes(routes);
+    render(
+      <MemoryRouter initialEntries={["/invite/test-invite-1"]}>
+        <TestRoutes />
+      </MemoryRouter>,
+    );
+    await user.type(
+      await screen.findByLabelText(/your display name/i),
+      "Casey",
+    );
+    await user.click(screen.getByRole("checkbox"));
+    await user.click(
+      screen.getByRole("button", { name: /enter project room/i }),
+    );
+    await user.click(
+      await screen.findByRole("button", {
+        name: /start discovery interview/i,
+      }),
+    );
+
+    expect(
+      await screen.findByRole("heading", {
+        name: /who will use this product/i,
+      }),
+    ).toBeInTheDocument();
+    await user.type(
+      screen.getByLabelText(/your answer/i),
+      "Customers should submit service requests without calling support.",
+    );
+    await user.click(
+      screen.getByRole("button", {
+        name: /save answer and continue/i,
+      }),
+    );
+    expect(
+      await screen.findByRole("heading", {
+        name: /what must the first useful release include/i,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /accepted answers/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /^coverage$/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        name: /discovery findings/i,
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/client request:/i)).toBeInTheDocument();
+  });
+
+  it("shows the durable accepted answer while the next AI step is still running", async () => {
+    localStorage.setItem("project-interviewer.locale", "en");
+    let resolveAgent:
+      | ((delta: InterviewAgentDelta) => void)
+      | undefined;
+    const agentStarted = vi.fn();
+    const application = createTestApplication({
+      interviewAgent: {
+        advance: async ({ acceptedTurn }) => {
+          agentStarted();
+          return new Promise<InterviewAgentDelta>((resolve) => {
+            resolveAgent = resolve;
+          }).then((delta) => ({
+            ...delta,
+            coverageUpdates: delta.coverageUpdates.map((update) => ({
+              ...update,
+              evidence: [
+                { type: "turn" as const, turnId: acceptedTurn.id },
+              ],
+            })),
+          }));
+        },
+      },
+    });
+    const freelancer =
+      await application.identities.createDevelopmentFreelancer({
+        displayName: "Ada",
+      });
+    const created = await application.rooms.create(freelancer, {
+      title: "Interview Room",
+      clientLabel: "Alpine",
+      projectDescription: "A self-service portal.",
+      briefLanguage: "en",
+      freelancerGuidance: "",
+    });
+    await application.materials.continueWithoutFiles(
+      freelancer,
+      created.room.id,
+    );
+    const routes = createRoutes(application, freelancer);
+    const TestRoutes = () => useRoutes(routes);
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={["/invite/test-invite-1"]}>
+        <TestRoutes />
+      </MemoryRouter>,
+    );
+    await user.type(
+      await screen.findByLabelText(/your display name/i),
+      "Casey",
+    );
+    await user.click(screen.getByRole("checkbox"));
+    await user.click(
+      screen.getByRole("button", { name: /enter project room/i }),
+    );
+    await user.click(
+      await screen.findByRole("button", {
+        name: /start discovery interview/i,
+      }),
+    );
+
+    const answer =
+      "Customers should submit service requests without calling support.";
+    await user.type(screen.getByLabelText(/your answer/i), answer);
+    await user.click(
+      screen.getByRole("button", {
+        name: /save answer and continue/i,
+      }),
+    );
+
+    await vi.waitFor(() => expect(agentStarted).toHaveBeenCalledOnce());
+    expect(await screen.findByText(answer)).toBeInTheDocument();
+    expect(
+      screen.getByText(/evaluating the accepted answer/i),
+    ).toBeInTheDocument();
+
+    resolveAgent?.({
+      coverageUpdates: [
+        {
+          id: "goals-users",
+          status: "sufficient",
+          evidence: [],
+          rationale: "The users and desired outcome are established.",
+          openQuestions: [],
+        },
+      ],
+      findings: [],
+      unresolvedTopics: [],
+      nextQuestion: {
+        text: "What must the first useful release include?",
+        coverageAreaId: "scope",
+        kind: "primary",
+        reason: "Scope remains uncovered.",
+      },
+      completionAssessment: {
+        proposeCompletion: false,
+        rationale: "Required coverage remains open.",
+      },
+      model: "agent-fixture",
+      provider: "test",
+    });
+    expect(
+      await screen.findByRole("heading", {
+        name: /what must the first useful release include/i,
+      }),
+    ).toBeInTheDocument();
   });
 });

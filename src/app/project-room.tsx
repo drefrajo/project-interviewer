@@ -26,6 +26,7 @@ import { TextField } from "./workspace";
 import { useI18n } from "./i18n";
 import { ProjectMaterialPanel } from "./project-material-panel";
 import { projectPhaseLabel } from "./project-phase-copy";
+import { DiscoveryInterviewPanel } from "./discovery-interview-panel";
 
 export const FreelancerProjectRoom = ({
   application,
@@ -337,14 +338,15 @@ const ProjectRoomHome = ({
       />
 
       <section className="home-grid">
-        <AvailabilityCard
+        <DiscoveryInterviewPanel
+          actor={actor}
+          application={application}
           available={sectionAvailability.interview}
-          id="interview"
-          title={t("interview")}
-          icon={<MessageCircleQuestion aria-hidden="true" />}
-        >
-          {t("interviewBody")}
-        </AvailabilityCard>
+          room={room}
+          {...(onReadinessChange
+            ? { onRoomChange: onReadinessChange }
+            : {})}
+        />
         <AvailabilityCard
           available={sectionAvailability.brief}
           id="brief"

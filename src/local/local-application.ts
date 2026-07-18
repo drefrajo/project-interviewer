@@ -12,6 +12,11 @@ import {
   localParser,
 } from "./local-material-adapters";
 import type { LocalMaterialFileStore } from "./local-material-adapters";
+import {
+  localInterviewAgent,
+  localInterviewPlanner,
+  localInterviewReviewer,
+} from "./local-interview-adapters";
 
 const STATE_KEY = "project-interviewer.local-state.v1";
 const FREELANCER_KEY = "project-interviewer.local-freelancer.v1";
@@ -73,6 +78,9 @@ export const createLocalApplication = async (): Promise<{
     parser: localParser,
     fileAnalyzer: localFileAnalyzer,
     embeddings: localEmbeddings,
+    interviewPlanner: localInterviewPlanner,
+    interviewAgent: localInterviewAgent,
+    interviewReviewer: localInterviewReviewer,
     ...(initialState ? { initialState } : {}),
     persist: (snapshot) =>
       localStorage.setItem(STATE_KEY, JSON.stringify(snapshot)),

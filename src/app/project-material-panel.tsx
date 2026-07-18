@@ -147,6 +147,9 @@ export const ProjectMaterialPanel = ({
         }),
       )
     ).filter((material) => material !== null);
+    if (accepted.length) {
+      onReadinessChange?.();
+    }
     const progressTimer = accepted.length
       ? beginProgressPolling()
       : undefined;

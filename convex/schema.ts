@@ -18,6 +18,91 @@ const materialState = v.union(
   v.literal("unsupported"),
   v.literal("failed"),
 );
+const sourceLocator = v.union(
+  v.object({
+    kind: v.literal("page"),
+    label: v.string(),
+    page: v.number(),
+  }),
+  v.object({
+    kind: v.literal("slide"),
+    label: v.string(),
+    slide: v.number(),
+  }),
+  v.object({
+    kind: v.literal("sheet"),
+    label: v.string(),
+    sheet: v.string(),
+    range: v.optional(v.string()),
+  }),
+  v.object({
+    kind: v.literal("image"),
+    label: v.string(),
+    image: v.number(),
+  }),
+  v.object({
+    kind: v.literal("paragraph"),
+    label: v.string(),
+    paragraph: v.optional(v.number()),
+  }),
+  v.object({
+    kind: v.literal("text_range"),
+    label: v.string(),
+    start: v.number(),
+    end: v.number(),
+  }),
+);
+const evidenceReference = v.union(
+  v.object({
+    type: v.literal("material"),
+    materialId: v.string(),
+    locator: sourceLocator,
+  }),
+  v.object({
+    type: v.literal("turn"),
+    turnId: v.string(),
+  }),
+  v.object({
+    type: v.literal("correction"),
+    correctionId: v.string(),
+  }),
+  v.object({
+    type: v.literal("analysis_feedback"),
+    feedbackId: v.string(),
+  }),
+  v.object({
+    type: v.literal("model_inference"),
+    description: v.string(),
+  }),
+);
+const interviewQuestion = v.object({
+  id: v.string(),
+  text: v.string(),
+  coverageAreaId: v.string(),
+  kind: v.union(
+    v.literal("primary"),
+    v.literal("follow_up"),
+    v.literal("final_anything_else"),
+  ),
+  reason: v.string(),
+  askedAt: v.number(),
+});
+const coverageArea = v.object({
+  id: v.string(),
+  label: v.string(),
+  rubric: v.string(),
+  status: v.union(
+    v.literal("uncovered"),
+    v.literal("partial"),
+    v.literal("sufficient"),
+    v.literal("not_applicable"),
+  ),
+  evidence: v.array(evidenceReference),
+  rationale: v.string(),
+  openQuestions: v.array(v.string()),
+  required: v.boolean(),
+  vagueFollowupCount: v.optional(v.number()),
+});
 
 export default defineSchema({
   freelancerProfiles: defineTable({
@@ -187,6 +272,163 @@ export default defineSchema({
   })
     .index("by_room_revision", ["roomId", "revision"])
     .index("by_room_created", ["roomId", "createdAt"]),
+
+  discoveryInterviews: defineTable({
+    roomId: v.id("projectRooms"),
+    planId: v.string(),
+    language,
+    status: v.union(
+      v.literal("planning"),
+      v.literal("active"),
+      v.literal("paused"),
+      v.literal("retryable"),
+      v.literal("awaiting_confirmation"),
+      v.literal("completed"),
+      v.literal("completed_early"),
+    ),
+    currentQuestion: v.optional(interviewQuestion),
+    operationStatus: v.union(
+      v.literal("idle"),
+      v.literal("running"),
+      v.literal("retryable"),
+    ),
+    answerCount: v.number(),
+    unresolvedTopics: v.array(v.string()),
+    completionRationale: v.optional(v.string()),
+    incompleteReason: v.optional(v.string()),
+    reviewerBlockers: v.array(v.string()),
+    usageReviewTriggered: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_room", ["roomId"])
+    .index("by_room_status", ["roomId", "status"]),
+
+  interviewPlans: defineTable({
+    roomId: v.id("projectRooms"),
+    interviewId: v.id("discoveryInterviews"),
+    profileId: v.literal("software-project"),
+    profileVersion: v.string(),
+    language,
+    coverageAreas: v.array(coverageArea),
+    knownRisks: v.array(v.string()),
+    openGoals: v.array(v.string()),
+    model: v.string(),
+    provider: v.string(),
+    promptVersion: v.string(),
+    schemaVersion: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_interview", ["interviewId"])
+    .index("by_room", ["roomId", "createdAt"]),
+
+  interviewTurns: defineTable({
+    roomId: v.id("projectRooms"),
+    interviewId: v.id("discoveryInterviews"),
+    sequence: v.number(),
+    question: interviewQuestion,
+    answer: v.string(),
+    answerKind: v.union(v.literal("answer"), v.literal("skip")),
+    idempotencyKey: v.string(),
+    contextPackRevisionId: v.optional(v.id("contextPackRevisions")),
+    contextPackRevision: v.optional(v.number()),
+    acceptedAt: v.number(),
+  })
+    .index("by_interview_sequence", ["interviewId", "sequence"])
+    .index("by_interview_idempotency", [
+      "interviewId",
+      "idempotencyKey",
+    ]),
+
+  interviewCorrections: defineTable({
+    roomId: v.id("projectRooms"),
+    interviewId: v.id("discoveryInterviews"),
+    turnId: v.id("interviewTurns"),
+    correctedAnswer: v.string(),
+    reason: v.string(),
+    deviceHash: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_turn", ["turnId", "createdAt"])
+    .index("by_interview", ["interviewId", "createdAt"]),
+
+  discoveryFindings: defineTable({
+    roomId: v.id("projectRooms"),
+    interviewId: v.id("discoveryInterviews"),
+    findingType: v.union(
+      v.literal("candidate_requirement"),
+      v.literal("assumption"),
+      v.literal("risk"),
+      v.literal("gap"),
+      v.literal("contradiction"),
+    ),
+    statement: v.string(),
+    sources: v.array(evidenceReference),
+    status: v.union(
+      v.literal("active"),
+      v.literal("resolved"),
+      v.literal("explicitly_open"),
+      v.literal("needs_reassessment"),
+    ),
+    createdAt: v.number(),
+  })
+    .index("by_interview", ["interviewId", "createdAt"])
+    .index("by_room_type", ["roomId", "findingType"]),
+
+  interviewEvents: defineTable({
+    roomId: v.id("projectRooms"),
+    interviewId: v.id("discoveryInterviews"),
+    eventType: v.literal("project_material_added"),
+    materialId: v.id("projectMaterials"),
+    contextPackRevisionId: v.id("contextPackRevisions"),
+    contextPackRevision: v.number(),
+    handledAtTurnId: v.optional(v.id("interviewTurns")),
+    createdAt: v.number(),
+  })
+    .index("by_interview", ["interviewId", "createdAt"])
+    .index("by_material_context", [
+      "materialId",
+      "contextPackRevisionId",
+    ]),
+
+  interviewOperations: defineTable({
+    roomId: v.id("projectRooms"),
+    interviewId: v.id("discoveryInterviews"),
+    turnId: v.optional(v.id("interviewTurns")),
+    operationType: v.union(
+      v.literal("interview_planning"),
+      v.literal("interview_turn"),
+      v.literal("interview_review"),
+    ),
+    idempotencyKey: v.string(),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("running"),
+      v.literal("retryable"),
+      v.literal("succeeded"),
+      v.literal("failed"),
+    ),
+    stage: v.string(),
+    attemptCount: v.number(),
+    model: v.optional(v.string()),
+    provider: v.optional(v.string()),
+    promptVersion: v.string(),
+    schemaVersion: v.string(),
+    contextPackRevisionId: v.optional(v.id("contextPackRevisions")),
+    inputTokens: v.optional(v.number()),
+    outputTokens: v.optional(v.number()),
+    estimatedCostUsd: v.optional(v.number()),
+    latencyMs: v.optional(v.number()),
+    errorCode: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_interview", ["interviewId", "updatedAt"])
+    .index("by_interview_idempotency", [
+      "interviewId",
+      "idempotencyKey",
+    ]),
 
   durableOperations: defineTable({
     roomId: v.id("projectRooms"),

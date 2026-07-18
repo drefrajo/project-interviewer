@@ -24,6 +24,11 @@ import {
   redactModelText,
   redactSegments,
 } from "./material-safety";
+import {
+  createDiscoveryInterviewCoordinator,
+  type DiscoveryInterviewState,
+  type InterviewAdapters,
+} from "./discovery-interview";
 
 export type Language = "en" | "de";
 
@@ -130,7 +135,9 @@ interface FreelancerIdentity {
   createdAt: number;
 }
 
-export interface ProjectInterviewerSnapshot extends ProjectMaterialState {
+export interface ProjectInterviewerSnapshot
+  extends ProjectMaterialState,
+    DiscoveryInterviewState {
   freelancers: FreelancerIdentity[];
   rooms: ProjectRoom[];
   auditEvents: AuditEvent[];
@@ -191,6 +198,9 @@ export interface ProjectInterviewerDependencies {
   materialLimits?: Partial<MaterialLimits>;
   materialWorkerLimit?: number;
   materialChunkCharacters?: number;
+  interviewPlanner?: InterviewAdapters["planner"];
+  interviewAgent?: InterviewAdapters["agent"];
+  interviewReviewer?: InterviewAdapters["reviewer"];
   initialState?: ProjectInterviewerSnapshot;
   persist?: (snapshot: ProjectInterviewerSnapshot) => void;
 }
@@ -237,6 +247,15 @@ export const createProjectInterviewer = (
     materialChunks: initialState?.materialChunks ?? [],
     contextPackRevisions: initialState?.contextPackRevisions ?? [],
     durableOperations: initialState?.durableOperations ?? [],
+    discoveryInterviews: initialState?.discoveryInterviews ?? [],
+    interviewPlans: initialState?.interviewPlans ?? [],
+    interviewTurns: initialState?.interviewTurns ?? [],
+    interviewCorrections: initialState?.interviewCorrections ?? [],
+    discoveryFindings: initialState?.discoveryFindings ?? [],
+    interviewEvents: initialState?.interviewEvents ?? [],
+    respondingDeviceLeases:
+      initialState?.respondingDeviceLeases ?? [],
+    interviewOperations: initialState?.interviewOperations ?? [],
   });
   const materialLimits: MaterialLimits = {
     ...DEFAULT_MATERIAL_LIMITS,
@@ -811,6 +830,11 @@ export const createProjectInterviewer = (
         false,
         material.id,
       );
+      discoveryCoordinator.recordMaterialAdded({
+        roomId: room.id,
+        materialId: material.id,
+        contextPack,
+      });
       operation.status = "succeeded";
       operation.stage = "complete";
       operation.contextPackRevisionId = contextPack.id;
@@ -925,6 +949,136 @@ export const createProjectInterviewer = (
     );
     return promise;
   };
+
+  const searchEvidence = async (
+    roomId: string,
+    query: string,
+    requestedLimit = 5,
+  ): Promise<
+    Array<{
+      materialId: string;
+      text: string;
+      locator: ProjectMaterialState["materialChunks"][number]["locator"];
+      score: number;
+    }>
+  > => {
+    if (!dependencies.embeddings) {
+      throw new Error("Embedding adapter is not configured.");
+    }
+    const [queryVector = []] = await dependencies.embeddings.embed([
+      query,
+    ]);
+    const finiteLimit = Number.isFinite(requestedLimit)
+      ? Math.floor(requestedLimit)
+      : 5;
+    const limit = Math.max(0, Math.min(finiteLimit, 20));
+    return state.materialChunks
+      .filter((chunk) => chunk.roomId === roomId && chunk.active)
+      .map((chunk) => ({
+        materialId: chunk.materialId,
+        text: chunk.text,
+        locator: copy(chunk.locator),
+        score:
+          fullTextScore(query, chunk.text) * 2 +
+          cosineSimilarity(queryVector, chunk.vector),
+      }))
+      .filter(({ score }) => score > 0)
+      .sort((left, right) => right.score - left.score)
+      .slice(0, limit);
+  };
+
+  const discoveryCoordinator =
+    createDiscoveryInterviewCoordinator({
+      state,
+      ids: dependencies.ids,
+      clock: dependencies.clock,
+      ...(dependencies.interviewPlanner
+        ? { planner: dependencies.interviewPlanner }
+        : {}),
+      ...(dependencies.interviewAgent
+        ? { agent: dependencies.interviewAgent }
+        : {}),
+      ...(dependencies.interviewReviewer
+        ? { reviewer: dependencies.interviewReviewer }
+        : {}),
+      authorize: (actor, roomId) => {
+        const room = requireRoomActor(actor, roomId);
+        return {
+          id: room.id,
+          projectDescription: room.projectDescription,
+          freelancerGuidance: room.freelancerGuidance,
+          ...(room.client
+            ? {
+                clientInterviewLanguage:
+                  room.client.interviewLanguage,
+              }
+            : {}),
+          phase: room.phase,
+        };
+      },
+      latestContextPack: (roomId) =>
+        state.contextPackRevisions
+          .filter((revision) => revision.roomId === roomId)
+          .sort(
+            (left, right) => right.revision - left.revision,
+          )[0] ?? null,
+      contextPackById: (id) =>
+        state.contextPackRevisions.find(
+          (revision) => revision.id === id,
+        ) ?? null,
+      ...(dependencies.embeddings
+        ? {
+            retrieveEvidence: async (
+              roomId: string,
+              query: string,
+              requestedLimit = 5,
+            ) => searchEvidence(roomId, query, requestedLimit),
+            inspectEvidence: async (
+              roomId: string,
+              materialId: string,
+              requestedCharacters = 2_000,
+            ) => {
+              let remaining = Math.max(
+                0,
+                Math.min(Math.floor(requestedCharacters), 4_000),
+              );
+              const excerpts: Array<{
+                materialId: string;
+                text: string;
+                locator: ProjectMaterialState["materialChunks"][number]["locator"];
+              }> = [];
+              for (const chunk of state.materialChunks.filter(
+                (candidate) =>
+                  candidate.roomId === roomId &&
+                  candidate.materialId === materialId &&
+                  candidate.active,
+              )) {
+                if (remaining <= 0) break;
+                const text = chunk.text.slice(0, remaining);
+                remaining -= text.length;
+                excerpts.push({
+                  materialId,
+                  text,
+                  locator: copy(chunk.locator),
+                });
+              }
+              return excerpts;
+            },
+          }
+        : {}),
+      materialReady: (roomId) =>
+        state.rooms.find(({ id }) => id === roomId)
+          ?.interviewReadiness === "ready",
+      setRoomPhase: (roomId, phase) => {
+        const room = state.rooms.find(({ id }) => id === roomId);
+        if (room) {
+          room.phase = phase;
+          room.updatedAt = dependencies.clock.now();
+        }
+      },
+      persist,
+      audit,
+    });
 
   return {
     identities: {
@@ -1495,31 +1649,14 @@ export const createProjectInterviewer = (
         }>
       > {
         requireRoomActor(actor, roomId);
-        if (!dependencies.embeddings) {
-          throw new Error("Embedding adapter is not configured.");
-        }
-        const [queryVector = []] = await dependencies.embeddings.embed([
+        return searchEvidence(
+          roomId,
           input.query,
-        ]);
-        const requestedLimit = Number.isFinite(input.limit)
-          ? Math.floor(input.limit ?? 5)
-          : 5;
-        const limit = Math.max(0, Math.min(requestedLimit, 20));
-        return state.materialChunks
-          .filter((chunk) => chunk.roomId === roomId && chunk.active)
-          .map((chunk) => ({
-            materialId: chunk.materialId,
-            text: chunk.text,
-            locator: copy(chunk.locator),
-            score:
-              fullTextScore(input.query, chunk.text) * 2 +
-              cosineSimilarity(queryVector, chunk.vector),
-          }))
-          .filter(({ score }) => score > 0)
-          .sort((left, right) => right.score - left.score)
-          .slice(0, limit);
+          input.limit ?? 5,
+        );
       },
     },
+    interviews: discoveryCoordinator,
     inspectState: (): ProjectInterviewerSnapshot => copy(state),
   };
 };

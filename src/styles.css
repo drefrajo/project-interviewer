@@ -597,6 +597,76 @@ h2 {
   line-height: 1.5;
 }
 
+.interview-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  grid-column: 1 / -1;
+  padding: clamp(1.25rem, 3vw, 2rem);
+}
+
+.interview-panel > header {
+  max-width: 48rem;
+}
+
+.interview-question,
+.interview-confirmation,
+.interview-notice,
+.correction-form {
+  background: #f5f7f3;
+  border: 1px solid var(--line);
+  margin-top: 1.25rem;
+  padding: 1.25rem;
+}
+
+.interview-question h3 {
+  font-size: clamp(1.2rem, 3vw, 1.65rem);
+  line-height: 1.3;
+  margin: 0.25rem 0 1rem;
+}
+
+.interview-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.secondary-actions {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 1.25rem;
+}
+
+.interview-transcript,
+.interview-corrections,
+.interview-coverage,
+.interview-events,
+.interview-findings {
+  margin-top: 1.5rem;
+}
+
+.interview-transcript li {
+  border-top: 1px solid var(--line);
+  padding: 1rem 0;
+}
+
+.interview-coverage ul,
+.interview-events ol,
+.interview-findings ul {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.interview-coverage li {
+  display: flex;
+  justify-content: space-between;
+}
+
+.interview-findings li,
+.interview-events li {
+  border-left: 3px solid var(--line);
+  padding-left: 0.8rem;
+}
+
 .status-ready,
 .status-soon {
   font-size: 0.68rem;
