@@ -1,3 +1,5 @@
+import { AI_MODELS } from "./ai-model-configuration";
+
 export class EnvironmentConfigurationError extends Error {
   constructor(message: string) {
     super(message);
@@ -22,12 +24,6 @@ const convexServerVariables = [
   "GITHUB_CLIENT_SECRET",
   "OPENROUTER_API_KEY",
   "OPENROUTER_ALLOWED_PROVIDERS",
-  "AI_MODEL_FILE_ANALYZER",
-  "AI_MODEL_INTERVIEW_PLANNER",
-  "AI_MODEL_INTERVIEW_AGENT",
-  "AI_MODEL_INTERVIEW_REVIEWER",
-  "AI_MODEL_BRIEF_GENERATOR",
-  "AI_MODEL_EMBEDDINGS",
 ] as const;
 
 const publicSecretPattern = /^VITE_.*(?:API_KEY|SECRET|TOKEN|DEPLOY_KEY)$/;
@@ -118,20 +114,7 @@ export const readConvexServerEnvironment = (source: EnvironmentSource) => {
         .split(",")
         .map((provider) => provider.trim())
         .filter(Boolean),
-      models: {
-        file_analyzer: requireValue(source, "AI_MODEL_FILE_ANALYZER"),
-        interview_planner: requireValue(
-          source,
-          "AI_MODEL_INTERVIEW_PLANNER",
-        ),
-        interview_agent: requireValue(source, "AI_MODEL_INTERVIEW_AGENT"),
-        interview_reviewer: requireValue(
-          source,
-          "AI_MODEL_INTERVIEW_REVIEWER",
-        ),
-        brief_generator: requireValue(source, "AI_MODEL_BRIEF_GENERATOR"),
-        embeddings: requireValue(source, "AI_MODEL_EMBEDDINGS"),
-      },
+      models: AI_MODELS,
     },
   };
 };

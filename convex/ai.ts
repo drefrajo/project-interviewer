@@ -14,6 +14,7 @@ import {
   type AiRole,
 } from "../src/infrastructure/openai-compatible-adapter";
 import { AI_ROLE_PROMPTS } from "../src/infrastructure/ai-role-prompts";
+import { AI_MODELS } from "../src/infrastructure/ai-model-configuration";
 import { detectActualContentTypeFromBytes } from "../src/application/material-content-type";
 import { localParser } from "../src/local/local-material-adapters";
 import {
@@ -415,15 +416,6 @@ const requiredEnvironment = (name: string): string => {
   return value;
 };
 
-const configuredModels = (): Partial<Record<AiRole, string>> => ({
-  file_analyzer: requiredEnvironment("AI_MODEL_FILE_ANALYZER"),
-  interview_planner: requiredEnvironment("AI_MODEL_INTERVIEW_PLANNER"),
-  interview_agent: requiredEnvironment("AI_MODEL_INTERVIEW_AGENT"),
-  interview_reviewer: requiredEnvironment("AI_MODEL_INTERVIEW_REVIEWER"),
-  brief_generator: requiredEnvironment("AI_MODEL_BRIEF_GENERATOR"),
-  embeddings: requiredEnvironment("AI_MODEL_EMBEDDINGS"),
-});
-
 const createAdapter = () =>
   createOpenAiCompatibleAdapter({
     apiKey: requiredEnvironment("OPENROUTER_API_KEY"),
@@ -433,7 +425,7 @@ const createAdapter = () =>
       .split(",")
       .map((provider) => provider.trim())
       .filter(Boolean),
-    models: configuredModels(),
+    models: AI_MODELS,
   });
 
 const parseMaterial = async (

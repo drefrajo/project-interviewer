@@ -1,5 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { EMBEDDING_CONFIGURATION } from "../src/infrastructure/ai-model-configuration";
 
 const language = v.union(v.literal("en"), v.literal("de"));
 const projectPhase = v.union(
@@ -383,7 +384,7 @@ export default defineSchema({
     })
     .vectorIndex("by_embedding", {
       vectorField: "embedding",
-      dimensions: 1536,
+      dimensions: EMBEDDING_CONFIGURATION.dimensions,
       filterFields: ["roomId", "materialId", "active", "language"],
     }),
 

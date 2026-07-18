@@ -101,12 +101,6 @@ Create or select the deployment appropriate to the Vite mode:
    bunx convex env set GITHUB_CLIENT_SECRET your-github-client-secret
    bunx convex env set OPENROUTER_API_KEY your-openrouter-key
    bunx convex env set OPENROUTER_ALLOWED_PROVIDERS openai,anthropic
-   bunx convex env set AI_MODEL_FILE_ANALYZER openai/gpt-5-mini
-   bunx convex env set AI_MODEL_INTERVIEW_PLANNER openai/gpt-5
-   bunx convex env set AI_MODEL_INTERVIEW_AGENT openai/gpt-5
-   bunx convex env set AI_MODEL_INTERVIEW_REVIEWER anthropic/claude-sonnet-4
-   bunx convex env set AI_MODEL_BRIEF_GENERATOR openai/gpt-5
-   bunx convex env set AI_MODEL_EMBEDDINGS openai/text-embedding-3-small
    ```
 
    Use the exact `CONVEX_SITE_URL` printed for the deployment. These server
@@ -136,8 +130,12 @@ requires a real Freelancer authentication method.
 
 ## Configure OpenRouter
 
-Create an OpenRouter API key and choose models for all six roles in the Convex
-environment described by `.env.convex.example`.
+Create an OpenRouter API key and configure it in the Convex environment
+described by `.env.convex.example`. Model selection for all six roles is
+source-owned in `src/infrastructure/ai-model-configuration.ts`, so every
+environment runs the same reviewed model policy. The embedding model and vector
+dimensions are defined together because changing either requires re-embedding
+stored material and migrating the Convex vector index.
 `OPENROUTER_ALLOWED_PROVIDERS` is a comma-separated
 allowlist. Every request sends provider routing with zero-data-retention
 required, data collection denied, and fallbacks restricted to that allowlist.

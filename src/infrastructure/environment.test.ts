@@ -5,6 +5,7 @@ import {
   readDeploymentEnvironment,
   readApplicationEnvironment,
 } from "./environment";
+import { AI_MODELS } from "./ai-model-configuration";
 
 describe("application environment boundary", () => {
   it.each([
@@ -56,18 +57,13 @@ describe("application environment boundary", () => {
         GITHUB_CLIENT_SECRET: "github-secret",
         OPENROUTER_API_KEY: "openrouter-secret",
         OPENROUTER_ALLOWED_PROVIDERS: "openai,anthropic",
-        AI_MODEL_FILE_ANALYZER: "openai/gpt-5-mini",
-        AI_MODEL_INTERVIEW_PLANNER: "openai/gpt-5",
-        AI_MODEL_INTERVIEW_AGENT: "openai/gpt-5",
-        AI_MODEL_INTERVIEW_REVIEWER: "anthropic/claude-sonnet-4",
-        AI_MODEL_BRIEF_GENERATOR: "openai/gpt-5",
-        AI_MODEL_EMBEDDINGS: "openai/text-embedding-3-small",
       }),
     ).toMatchObject({
       convexSiteUrl: "https://example.convex.site",
       ai: {
         allowedProviders: ["openai", "anthropic"],
         baseUrl: "https://openrouter.ai/api/v1",
+        models: AI_MODELS,
       },
     });
   });
