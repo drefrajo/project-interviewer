@@ -84,6 +84,7 @@ export const createLocalApplication = async (): Promise<{
     interviewReviewer: localInterviewReviewer,
     briefGenerator: localBriefGenerator,
     ...(initialState ? { initialState } : {}),
+    loadLatestState: readSnapshot,
     persist: (snapshot) =>
       localStorage.setItem(STATE_KEY, JSON.stringify(snapshot)),
   });

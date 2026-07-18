@@ -211,7 +211,7 @@ describe("Project Room public service", () => {
     ).toEqual([
       expect.objectContaining({
         title: "Mobile Checkout",
-        nextAction: "Share Invite Link",
+        nextAction: "share_invite",
       }),
     ]);
   });

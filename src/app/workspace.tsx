@@ -1,38 +1,100 @@
 import { useEffect, useState, type FormEvent } from "react";
 import {
+  Archive,
   ArrowRight,
   FolderOpen,
   Plus,
+  RotateCcw,
   Search,
+  Trash2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type {
   Language,
+  ProjectNextAction,
   ProjectPhase,
   ProjectRoom,
+  ProjectRoomView,
 } from "../domain/project-interviewer";
 import type { RouteContext } from "./routes";
 import { useI18n } from "./i18n";
+import { projectNextActionLabel } from "./project-next-action";
 import { projectPhaseLabel } from "./project-phase-copy";
 
 export const Workspace = ({ application, freelancer }: RouteContext) => {
   const { locale, t } = useI18n();
   const navigate = useNavigate();
   const [rooms, setRooms] = useState<
-    Array<ProjectRoom & { nextAction: string }>
+    Array<ProjectRoom & { nextAction: ProjectNextAction }>
   >([]);
   const [creating, setCreating] = useState(false);
   const [search, setSearch] = useState("");
   const [phase, setPhase] = useState<ProjectPhase | "all">("all");
+  const [deletedRooms, setDeletedRooms] = useState<
+    Array<
+      ProjectRoomView & {
+        deletedAt: number;
+        purgeAfter: number;
+      }
+    >
+  >([]);
+  const [confirmingDelete, setConfirmingDelete] = useState("");
+  const lifecycleText =
+    locale === "de"
+      ? {
+          open: "Öffnen",
+          archive: "Archivieren",
+          restore: "Wiederherstellen",
+          remove: "Löschen",
+          confirmRemove: "Löschen und Zugriff widerrufen",
+          cancel: "Abbrechen",
+          deleted: "Kürzlich gelöscht",
+          deletedHint:
+            "Nur für Freelancer sichtbar. Räume können sieben Tage lang wiederhergestellt werden.",
+          recover: "Wiederherstellen",
+          purge: "Endgültige Löschung",
+        }
+      : {
+          open: "Open",
+          archive: "Archive",
+          restore: "Restore",
+          remove: "Delete",
+          confirmRemove: "Delete and revoke access",
+          cancel: "Cancel",
+          deleted: "Recently Deleted",
+          deletedHint:
+            "Freelancer-only. Rooms can be recovered for seven days.",
+          recover: "Recover",
+          purge: "Permanent deletion",
+        };
 
-  useEffect(() => {
-    void application.rooms
-      .list(freelancer, {
+  const reload = async () => {
+    const [active, deleted] = await Promise.all([
+      application.rooms.list(freelancer, {
         search,
         ...(phase === "all" ? {} : { phase }),
-      })
-      .then(setRooms);
+      }),
+      application.projectHome.lifecycle.listRecentlyDeleted(
+        freelancer,
+      ),
+    ]);
+    setRooms(active);
+    setDeletedRooms(deleted);
+  };
+
+  useEffect(() => {
+    void reload();
+    // The issued Freelancer identity is stable for this mounted route.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [application, freelancer, phase, search]);
+
+  const performLifecycle = async (
+    action: () => Promise<unknown>,
+  ) => {
+    await action();
+    setConfirmingDelete("");
+    await reload();
+  };
 
   const createRoom = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -167,24 +229,98 @@ export const Workspace = ({ application, freelancer }: RouteContext) => {
       <section aria-live="polite" className="room-grid">
         {rooms.length ? (
           rooms.map((room) => (
-            <button
-              className="room-card"
-              key={room.id}
-              onClick={() => navigate(`/rooms/${room.id}`)}
-            >
-              <div className="room-card-top">
-                <span className={`phase phase-${room.phase}`}>
-                  {projectPhaseLabel(room.phase, locale)}
+            <article className="room-card" key={room.id}>
+              <button
+                aria-label={`${lifecycleText.open} ${room.title}`}
+                className="room-card-open"
+                onClick={() => navigate(`/rooms/${room.id}`)}
+                type="button"
+              >
+                <div className="room-card-top">
+                  <span className={`phase phase-${room.phase}`}>
+                    {projectPhaseLabel(room.phase, locale)}
+                  </span>
+                  <span>{formatDate(room.lastActivityAt, locale)}</span>
+                </div>
+                <h2>{room.title}</h2>
+                <p>{room.clientLabel}</p>
+                <span className="next-action">
+                  {projectNextActionLabel(room.nextAction, locale)}{" "}
+                  <ArrowRight aria-hidden="true" size={15} />
                 </span>
-                <span>{formatDate(room.updatedAt, locale)}</span>
+              </button>
+              <div className="room-card-actions">
+                {room.phase === "archived" ? (
+                  <button
+                    aria-label={`${lifecycleText.restore} ${room.title}`}
+                    className="button ghost"
+                    onClick={() =>
+                      void performLifecycle(() =>
+                        application.projectHome.lifecycle.restoreArchived(
+                          freelancer,
+                          room.id,
+                        ),
+                      )
+                    }
+                    type="button"
+                  >
+                    <RotateCcw aria-hidden="true" size={15} />
+                    {lifecycleText.restore}
+                  </button>
+                ) : (
+                  <button
+                    aria-label={`${lifecycleText.archive} ${room.title}`}
+                    className="button ghost"
+                    onClick={() =>
+                      void performLifecycle(() =>
+                        application.projectHome.lifecycle.archive(
+                          freelancer,
+                          room.id,
+                        ),
+                      )
+                    }
+                    type="button"
+                  >
+                    <Archive aria-hidden="true" size={15} />
+                    {lifecycleText.archive}
+                  </button>
+                )}
+                <button
+                  aria-label={`${lifecycleText.remove} ${room.title}`}
+                  className="button ghost danger"
+                  onClick={() => setConfirmingDelete(room.id)}
+                  type="button"
+                >
+                  <Trash2 aria-hidden="true" size={15} />
+                  {lifecycleText.remove}
+                </button>
               </div>
-              <h2>{room.title}</h2>
-              <p>{room.clientLabel}</p>
-              <span className="next-action">
-                {nextActionLabel(room.phase, locale)}{" "}
-                <ArrowRight aria-hidden="true" size={15} />
-              </span>
-            </button>
+              {confirmingDelete === room.id ? (
+                <div className="room-delete-confirmation" role="alert">
+                  <button
+                    className="button danger"
+                    onClick={() =>
+                      void performLifecycle(() =>
+                        application.projectHome.lifecycle.delete(
+                          freelancer,
+                          room.id,
+                        ),
+                      )
+                    }
+                    type="button"
+                  >
+                    {lifecycleText.confirmRemove}
+                  </button>
+                  <button
+                    className="button ghost"
+                    onClick={() => setConfirmingDelete("")}
+                    type="button"
+                  >
+                    {lifecycleText.cancel}
+                  </button>
+                </div>
+              ) : null}
+            </article>
           ))
         ) : (
           <div className="empty-state">
@@ -194,6 +330,52 @@ export const Workspace = ({ application, freelancer }: RouteContext) => {
           </div>
         )}
       </section>
+
+      {deletedRooms.length ? (
+        <section
+          aria-labelledby="recently-deleted-heading"
+          className="recently-deleted"
+        >
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">{lifecycleText.deleted}</p>
+              <h2 id="recently-deleted-heading">
+                {lifecycleText.deleted}
+              </h2>
+              <p>{lifecycleText.deletedHint}</p>
+            </div>
+          </div>
+          <div className="recently-deleted-list">
+            {deletedRooms.map((room) => (
+              <article key={room.id}>
+                <div>
+                  <h3>{room.title}</h3>
+                  <p>
+                    {lifecycleText.purge}:{" "}
+                    {formatDate(room.purgeAfter, locale)}
+                  </p>
+                </div>
+                <button
+                  aria-label={`${lifecycleText.recover} ${room.title}`}
+                  className="button ghost"
+                  onClick={() =>
+                    void performLifecycle(() =>
+                      application.projectHome.lifecycle.recover(
+                        freelancer,
+                        room.id,
+                      ),
+                    )
+                  }
+                  type="button"
+                >
+                  <RotateCcw aria-hidden="true" size={15} />
+                  {lifecycleText.recover}
+                </button>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </main>
   );
 };
@@ -212,26 +394,6 @@ export const TextField = ({
     <input name={name} required={required} />
   </label>
 );
-
-const nextActionLabel = (phase: ProjectPhase, locale: Language): string =>
-  ({
-    en: {
-      setup: "Share Invite Link",
-      discovery: "Continue discovery",
-      freelancer_review: "Review Brief Draft",
-      client_review: "Wait for Client review",
-      approved: "Open Project Home",
-      archived: "Restore Project Room",
-    },
-    de: {
-      setup: "Einladungslink teilen",
-      discovery: "Klärung fortsetzen",
-      freelancer_review: "Briefentwurf prüfen",
-      client_review: "Auf Client-Prüfung warten",
-      approved: "Projektübersicht öffnen",
-      archived: "Projektraum wiederherstellen",
-    },
-  })[locale][phase];
 
 const formatDate = (timestamp: number, locale: Language) =>
   new Intl.DateTimeFormat(locale === "de" ? "de-DE" : "en", {

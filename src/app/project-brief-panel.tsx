@@ -242,11 +242,13 @@ const reviewStatusNames = {
     awaiting_client: "Awaiting Client review",
     change_requested: "Change requested",
     approved: "Approved",
+    invalidated: "Invalidated by reopened discovery",
   },
   de: {
     awaiting_client: "Client-Prüfung ausstehend",
     change_requested: "Änderung angefordert",
     approved: "Freigegeben",
+    invalidated: "Durch erneute Klärung ungültig",
   },
 } as const;
 

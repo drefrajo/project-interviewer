@@ -13,11 +13,14 @@ import {
   MessageCircleQuestion,
   Share2,
 } from "lucide-react";
-import { useLocation, useParams } from "react-router-dom";
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
 import type {
   Language,
   ProjectInterviewer,
-  ProjectPhase,
   ProjectRoomView,
   RoomActor,
 } from "../domain/project-interviewer";
@@ -28,6 +31,8 @@ import { ProjectMaterialPanel } from "./project-material-panel";
 import { projectPhaseLabel } from "./project-phase-copy";
 import { DiscoveryInterviewPanel } from "./discovery-interview-panel";
 import { ProjectBriefPanel } from "./project-brief-panel";
+import { SharedResourcesPanel } from "./shared-resources-panel";
+import { projectNextActionLabelFor } from "./project-next-action";
 
 export const FreelancerProjectRoom = ({
   application,
@@ -104,6 +109,22 @@ export const ClientEntry = ({
       .then(setAccess)
       .catch(() => setError(t("invalidInvite")));
   }, [application, deviceId, inviteToken, t]);
+
+  useEffect(() => {
+    if (!access || access.onboardingRequired) return;
+    const timer = window.setInterval(() => {
+      void application.rooms
+        .get(access.actor, access.room.id)
+        .then((room) => {
+          setError("");
+          setAccess((current) =>
+            current ? { ...current, room } : current,
+          );
+        })
+        .catch(() => setError(t("invalidInvite")));
+    }, 500);
+    return () => window.clearInterval(timer);
+  }, [access, application, t]);
 
   if (error) {
     return (
@@ -315,7 +336,9 @@ const ProjectRoomHome = ({
         </div>
         <div className="next-step">
           <span>{t("nextStep")}</span>
-          <strong>{nextActionFor(room.phase, locale)}</strong>
+          <strong>
+            {projectNextActionLabelFor(room.phase, actorKind, locale)}
+          </strong>
         </div>
       </section>
 
@@ -330,9 +353,19 @@ const ProjectRoomHome = ({
         </section>
       ) : null}
 
+      <ProjectLifecycleControls
+        actor={actor}
+        application={application}
+        room={room}
+        {...(onReadinessChange
+          ? { onRoomChange: onReadinessChange }
+          : {})}
+      />
+
       <ProjectMaterialPanel
         actor={actor}
         application={application}
+        readOnly={room.phase === "archived"}
         room={room}
         {...(materialFileStore ? { materialFileStore } : {})}
         {...(onReadinessChange ? { onReadinessChange } : {})}
@@ -343,6 +376,7 @@ const ProjectRoomHome = ({
           actor={actor}
           application={application}
           available={sectionAvailability.interview}
+          readOnly={room.phase === "archived"}
           room={room}
           {...(onReadinessChange
             ? { onRoomChange: onReadinessChange }
@@ -356,48 +390,18 @@ const ProjectRoomHome = ({
             ? { onRoomChange: onReadinessChange }
             : {})}
         />
-        <AvailabilityCard
-          available
-          id="resources"
-          title={t("resources")}
-          icon={<Link2 aria-hidden="true" />}
-        >
-          {t("resourcesBody")}
-        </AvailabilityCard>
+        <SharedResourcesPanel
+          actor={actor}
+          application={application}
+          readOnly={
+            room.phase === "archived" && actor.kind === "client"
+          }
+          roomId={room.id}
+        />
       </section>
     </div>
   </main>
   );
-};
-
-const AvailabilityCard = ({
-  id,
-  title,
-  icon,
-  available = false,
-  children,
-}: {
-  id: string;
-  title: string;
-  icon: ReactNode;
-  available?: boolean;
-  children: ReactNode;
-}) => (
-  <article className="availability-card" id={id}>
-    <div className="card-icon">{icon}</div>
-    <div>
-      <span className={available ? "status-ready" : "status-soon"}>
-        <AvailabilityLabel available={available} />
-      </span>
-      <h2>{title}</h2>
-      <p>{children}</p>
-    </div>
-  </article>
-);
-
-const AvailabilityLabel = ({ available }: { available: boolean }) => {
-  const { t } = useI18n();
-  return <>{available ? t("available") : t("notAvailable")}</>;
 };
 
 const Loading = ({ label }: { label: string }) => (
@@ -409,6 +413,167 @@ const Loading = ({ label }: { label: string }) => (
   </main>
 );
 
+const ProjectLifecycleControls = ({
+  application,
+  actor,
+  room,
+  onRoomChange,
+}: {
+  application: ProjectInterviewer;
+  actor: RoomActor;
+  room: ProjectRoomView;
+  onRoomChange?(): void;
+}) => {
+  const { locale } = useI18n();
+  const navigate = useNavigate();
+  const [busy, setBusy] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [error, setError] = useState("");
+  if (actor.kind !== "freelancer") return null;
+  const text =
+    locale === "de"
+      ? {
+          archive: "Projektraum archivieren",
+          restore: "Projektraum wiederherstellen",
+          remove: "Projektraum löschen",
+          confirm:
+            "Der Zugriff endet sofort. Der Raum kann sieben Tage lang wiederhergestellt werden.",
+          confirmRemove: "Löschen und Zugriff widerrufen",
+          cancel: "Abbrechen",
+          reopen: "Klärung erneut öffnen",
+        }
+      : {
+          archive: "Archive Project Room",
+          restore: "Restore Project Room",
+          remove: "Delete Project Room",
+          confirm:
+            "Access ends immediately. You can recover this room for seven days.",
+          confirmRemove: "Delete and revoke access",
+          cancel: "Cancel",
+          reopen: "Reopen discovery",
+        };
+  const perform = async (action: () => Promise<unknown>) => {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      await action();
+      onRoomChange?.();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const canReopen = [
+    "freelancer_review",
+    "client_review",
+    "approved",
+  ].includes(room.phase);
+  return (
+    <section
+      aria-label={
+        locale === "de"
+          ? "Projektraum-Lebenszyklus"
+          : "Project Room lifecycle"
+      }
+      className="lifecycle-controls"
+    >
+      {error ? <p role="alert">{error}</p> : null}
+      <div className="lifecycle-actions">
+        {room.phase === "archived" ? (
+          <button
+            className="button primary"
+            disabled={busy}
+            onClick={() =>
+              void perform(() =>
+                application.projectHome.lifecycle.restoreArchived(
+                  actor,
+                  room.id,
+                ),
+              )
+            }
+            type="button"
+          >
+            {text.restore}
+          </button>
+        ) : (
+          <button
+            className="button ghost"
+            disabled={busy}
+            onClick={() =>
+              void perform(() =>
+                application.projectHome.lifecycle.archive(
+                  actor,
+                  room.id,
+                ),
+              )
+            }
+            type="button"
+          >
+            {text.archive}
+          </button>
+        )}
+        {canReopen ? (
+          <button
+            className="button ghost"
+            disabled={busy}
+            onClick={() =>
+              void perform(() =>
+                application.projectHome.lifecycle.reopenDiscovery(
+                  actor,
+                  room.id,
+                ),
+              )
+            }
+            type="button"
+          >
+            {text.reopen}
+          </button>
+        ) : null}
+        <button
+          className="button ghost danger"
+          disabled={busy}
+          onClick={() => setConfirmingDelete(true)}
+          type="button"
+        >
+          {text.remove}
+        </button>
+      </div>
+      {confirmingDelete ? (
+        <div className="delete-confirmation" role="alert">
+          <p>{text.confirm}</p>
+          <div className="lifecycle-actions">
+            <button
+              className="button danger"
+              disabled={busy}
+              onClick={() =>
+                void perform(async () => {
+                  await application.projectHome.lifecycle.delete(
+                    actor,
+                    room.id,
+                  );
+                  navigate("/");
+                })
+              }
+              type="button"
+            >
+              {text.confirmRemove}
+            </button>
+            <button
+              className="button ghost"
+              onClick={() => setConfirmingDelete(false)}
+              type="button"
+            >
+              {text.cancel}
+            </button>
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
+};
+
 const getOrCreateDeviceId = (): string => {
   const key = "project-interviewer.device-id";
   const existing = localStorage.getItem(key);
@@ -417,26 +582,6 @@ const getOrCreateDeviceId = (): string => {
   localStorage.setItem(key, id);
   return id;
 };
-
-const nextActionFor = (phase: ProjectPhase, locale: Language): string =>
-  ({
-    en: {
-      setup: "Share the Invite Link",
-      discovery: "Continue the Discovery Interview",
-      freelancer_review: "Review the Brief Draft",
-      client_review: "Review the Project Brief",
-      approved: "Use the approved Project Home",
-      archived: "Read-only archived Project Home",
-    },
-    de: {
-      setup: "Einladungslink teilen",
-      discovery: "Klärungsinterview fortsetzen",
-      freelancer_review: "Briefentwurf prüfen",
-      client_review: "Projektbrief prüfen",
-      approved: "Freigegebene Projektübersicht nutzen",
-      archived: "Archivierte Projektübersicht (nur Lesen)",
-    },
-  })[locale][phase];
 
 const availabilityFor = (room: ProjectRoomView) => ({
   material: true,

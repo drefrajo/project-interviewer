@@ -24,12 +24,14 @@ export const ProjectMaterialPanel = ({
   application,
   actor,
   room,
+  readOnly,
   materialFileStore,
   onReadinessChange,
 }: {
   application: ProjectInterviewer;
   actor: RoomActor;
   room: ProjectRoomView;
+  readOnly: boolean;
   materialFileStore?: RouteContext["materialFileStore"];
   onReadinessChange?(): void;
 }) => {
@@ -282,7 +284,7 @@ export const ProjectMaterialPanel = ({
           <h2 id="project-material-heading">{t("material")}</h2>
           <p>{t("materialPanelIntro")}</p>
         </div>
-        <label className={`button primary file-button ${!materialFileStore ? "disabled" : ""}`}>
+        {!readOnly ? <label className={`button primary file-button ${!materialFileStore ? "disabled" : ""}`}>
           <FileUp aria-hidden="true" size={18} />
           {t("addMaterial")}
           <input
@@ -293,7 +295,7 @@ export const ProjectMaterialPanel = ({
             onChange={upload}
             type="file"
           />
-        </label>
+        </label> : null}
       </div>
 
       <p className="material-limits">{t("materialLimits")}</p>
@@ -393,7 +395,8 @@ export const ProjectMaterialPanel = ({
                     ))}
                   </ul>
                   {!material.includeSuspectedSecrets &&
-                  material.canIncludeSuspectedSecrets ? (
+                  material.canIncludeSuspectedSecrets &&
+                  !readOnly ? (
                     <>
                       <label className="check-row compact">
                         <input
@@ -431,7 +434,7 @@ export const ProjectMaterialPanel = ({
               </div>
             ) : null}
 
-            {material.state === "analyzed" ? (
+            {material.state === "analyzed" && !readOnly ? (
               <div className="feedback-form">
                 <label className="field">
                   <span>{t("analysisFeedback")}</span>
@@ -480,7 +483,7 @@ export const ProjectMaterialPanel = ({
               </div>
             ) : null}
 
-            <div className="material-actions">
+            {!readOnly ? <div className="material-actions">
               {material.retryAvailable ? (
                 <button
                   className="button ghost"
@@ -499,16 +502,16 @@ export const ProjectMaterialPanel = ({
                   <Trash2 aria-hidden="true" size={15} /> {t("remove")}
                 </button>
               ) : null}
-            </div>
+            </div> : null}
           </article>
         ))}
       </div>
 
-      {(!materials.length && !uploadingFiles.length) ||
+      {!readOnly && ((!materials.length && !uploadingFiles.length) ||
       (room.interviewReadiness === "waiting_for_material" &&
         materials.every(({ state }) =>
           ["analyzed", "unsupported", "failed"].includes(state),
-        )) ? (
+        ))) ? (
         <div className="no-material">
           <p>{t("noMaterialYet")}</p>
           <button

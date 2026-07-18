@@ -624,4 +624,322 @@ describe("File-First Discovery application shell", () => {
       }),
     );
   });
+
+  it("lets the Freelancer publish Shared Resources that the Client sees in the phase-aware Project Home", async () => {
+    localStorage.setItem("project-interviewer.locale", "en");
+    const application = createTestApplication();
+    const freelancer =
+      await application.identities.createDevelopmentFreelancer({
+        displayName: "Ada",
+      });
+    const created = await application.rooms.create(freelancer, {
+      title: "Resource Room",
+      clientLabel: "Alpine",
+      projectDescription: "A client portal.",
+      briefLanguage: "en",
+      freelancerGuidance: "",
+    });
+    const access = await application.clientAccess.resolveInvite(
+      created.inviteToken,
+      { deviceId: "client-device" },
+    );
+    await application.clientAccess.onboard(access.actor, {
+      displayName: "Casey",
+      interviewLanguage: "en",
+      acknowledgedDisclosure: true,
+    });
+    const routes = createRoutes(application, freelancer);
+    const TestRoutes = () => useRoutes(routes);
+    const user = userEvent.setup();
+    const rendered = render(
+      <MemoryRouter initialEntries={[`/rooms/${created.room.id}`]}>
+        <TestRoutes />
+      </MemoryRouter>,
+    );
+
+    await user.type(
+      await screen.findByLabelText(/resource label/i),
+      "Staging application",
+    );
+    await user.type(
+      screen.getByLabelText(/resource url/i),
+      "https://staging.example.test",
+    );
+    await user.type(
+      screen.getByLabelText(/non-secret note/i),
+      "Demo data resets nightly.",
+    );
+    await user.click(
+      screen.getByRole("button", { name: /add shared resource/i }),
+    );
+    await vi.waitFor(async () =>
+      expect(
+        await application.projectHome.resources.list(
+          freelancer,
+          created.room.id,
+        ),
+      ).toHaveLength(1),
+    );
+    expect(
+      await screen.findByRole("link", {
+        name: /staging application/i,
+      }),
+    ).toHaveAttribute("href", "https://staging.example.test");
+    await vi.waitFor(() =>
+      expect(
+        screen.getByRole("button", {
+          name: /add shared resource/i,
+        }),
+      ).toBeEnabled(),
+    );
+    await user.type(
+      screen.getByLabelText(/resource label/i),
+      "Project handbook",
+    );
+    await user.type(
+      screen.getByLabelText(/non-secret note/i),
+      "Read before handover.",
+    );
+    await user.click(
+      screen.getByRole("button", { name: /add shared resource/i }),
+    );
+    await vi.waitFor(async () =>
+      expect(
+        await application.projectHome.resources.list(
+          freelancer,
+          created.room.id,
+        ),
+      ).toHaveLength(2),
+    );
+    expect(
+      (
+        await application.projectHome.resources.list(
+          freelancer,
+          created.room.id,
+        )
+      ).map(({ label }) => label),
+    ).toEqual(["Staging application", "Project handbook"]);
+    await user.click(
+      await screen.findByRole("button", {
+        name: /move up: project handbook/i,
+      }),
+    );
+    const resourceList = document.querySelector<HTMLElement>(
+      ".shared-resource-list",
+    )!;
+    expect(
+      within(resourceList)
+        .getAllByRole("article")
+        .map((article) => article.textContent),
+    ).toEqual([
+      expect.stringContaining("Project handbook"),
+      expect.stringContaining("Staging application"),
+    ]);
+    await user.click(
+      screen.getByRole("button", {
+        name: /edit: staging application/i,
+      }),
+    );
+    const stagingEditor = screen
+      .getByRole("button", { name: /save shared resource/i })
+      .closest("form")!;
+    const note = within(stagingEditor).getByLabelText(
+      /non-secret note/i,
+    );
+    await user.clear(note);
+    await user.type(note, "Demo data resets every morning.");
+    await user.click(
+      within(stagingEditor).getByRole("button", {
+        name: /save shared resource/i,
+      }),
+    );
+    await user.click(
+      screen.getByRole("button", {
+        name: /remove: project handbook/i,
+      }),
+    );
+    expect(
+      screen.queryByText(/read before handover/i),
+    ).not.toBeInTheDocument();
+
+    rendered.unmount();
+    localStorage.setItem(
+      "project-interviewer.device-id",
+      "client-device",
+    );
+    render(
+      <MemoryRouter initialEntries={["/invite/test-invite-1"]}>
+        <TestRoutes />
+      </MemoryRouter>,
+    );
+    expect(
+      await screen.findByRole("link", {
+        name: /staging application/i,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/demo data resets every morning/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /add shared resource/i }),
+    ).not.toBeInTheDocument();
+    await application.projectHome.resources.create(
+      freelancer,
+      created.room.id,
+      {
+        label: "Live status",
+        note: "Appears while the Client home stays open.",
+      },
+    );
+    expect(
+      await screen.findByText(
+        /appears while the client home stays open/i,
+        {},
+        { timeout: 1_500 },
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("supports archive restore and Recently Deleted recovery from the Freelancer Workspace", async () => {
+    localStorage.setItem("project-interviewer.locale", "en");
+    const application = createTestApplication();
+    const freelancer =
+      await application.identities.createDevelopmentFreelancer({
+        displayName: "Ada",
+      });
+    const archived = await application.rooms.create(freelancer, {
+      title: "Archived room",
+      clientLabel: "Alpine",
+      projectDescription: "Retain this room.",
+      briefLanguage: "en",
+      freelancerGuidance: "",
+    });
+    const deleted = await application.rooms.create(freelancer, {
+      title: "Deleted room",
+      clientLabel: "Beacon",
+      projectDescription: "Recover this room.",
+      briefLanguage: "en",
+      freelancerGuidance: "",
+    });
+    await application.projectHome.lifecycle.archive(
+      freelancer,
+      archived.room.id,
+    );
+    await application.projectHome.lifecycle.delete(
+      freelancer,
+      deleted.room.id,
+    );
+    const routes = createRoutes(application, freelancer);
+    const TestRoutes = () => useRoutes(routes);
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={["/"]}>
+        <TestRoutes />
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: /recently deleted/i }),
+    ).toBeInTheDocument();
+    await user.click(
+      screen.getByRole("button", {
+        name: /restore archived room/i,
+      }),
+    );
+    expect(
+      await screen.findByText("Setup", { selector: ".phase" }),
+    ).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole("button", {
+        name: /recover deleted room/i,
+      }),
+    );
+    expect(
+      await screen.findByRole("heading", { name: "Deleted room" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/deleted room/i, {
+        selector: ".recently-deleted-list *",
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("reacts to archive and deletion while the Client Project Home remains mounted", async () => {
+    localStorage.setItem("project-interviewer.locale", "en");
+    localStorage.setItem(
+      "project-interviewer.device-id",
+      "client-device",
+    );
+    const application = createTestApplication();
+    const freelancer =
+      await application.identities.createDevelopmentFreelancer({
+        displayName: "Ada",
+      });
+    const created = await application.rooms.create(freelancer, {
+      title: "Archived Client Home",
+      clientLabel: "Alpine",
+      projectDescription: "A retained home.",
+      briefLanguage: "en",
+      freelancerGuidance: "",
+    });
+    const access = await application.clientAccess.resolveInvite(
+      created.inviteToken,
+      { deviceId: "client-device" },
+    );
+    await application.clientAccess.onboard(access.actor, {
+      displayName: "Casey",
+      interviewLanguage: "en",
+      acknowledgedDisclosure: true,
+    });
+    const routes = createRoutes(application, freelancer);
+    const TestRoutes = () => useRoutes(routes);
+    render(
+      <MemoryRouter initialEntries={["/invite/test-invite-1"]}>
+        <TestRoutes />
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByRole("heading", {
+        name: /archived client home/i,
+      }),
+    ).toBeInTheDocument();
+    await application.projectHome.lifecycle.archive(
+      freelancer,
+      created.room.id,
+    );
+    expect(
+      await screen.findByText(
+        /archived project home is read-only/i,
+        {},
+        { timeout: 1_500 },
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/add project material/i),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", {
+        name: /start discovery interview/i,
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /add shared resource/i }),
+    ).not.toBeInTheDocument();
+    await application.projectHome.lifecycle.delete(
+      freelancer,
+      created.room.id,
+    );
+    expect(
+      await screen.findByRole(
+        "heading",
+        { name: /project room unavailable/i },
+        { timeout: 1_500 },
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/a retained home/i),
+    ).not.toBeInTheDocument();
+  });
 });

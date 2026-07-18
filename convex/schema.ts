@@ -244,6 +244,17 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index("by_room", ["roomId"]),
 
+  sharedResources: defineTable({
+    roomId: v.id("projectRooms"),
+    label: v.string(),
+    url: v.optional(v.string()),
+    note: v.optional(v.string()),
+    accountIdentifier: v.optional(v.string()),
+    order: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_room_order", ["roomId", "order"]),
+
   respondingDeviceLeases: defineTable({
     roomId: v.id("projectRooms"),
     interviewId: v.optional(v.string()),
@@ -487,6 +498,7 @@ export default defineSchema({
       v.literal("retryable"),
       v.literal("succeeded"),
       v.literal("failed"),
+      v.literal("cancelled"),
     ),
     stage: v.string(),
     attemptCount: v.number(),
@@ -532,6 +544,7 @@ export default defineSchema({
       v.literal("awaiting_client"),
       v.literal("change_requested"),
       v.literal("approved"),
+      v.literal("invalidated"),
     ),
     sections: v.array(briefSection),
     sentAt: v.number(),
@@ -576,6 +589,7 @@ export default defineSchema({
       v.literal("running"),
       v.literal("retryable"),
       v.literal("succeeded"),
+      v.literal("cancelled"),
     ),
     stage: v.union(
       v.literal("generating"),
@@ -636,4 +650,18 @@ export default defineSchema({
     action: v.string(),
     createdAt: v.number(),
   }).index("by_room", ["roomId", "createdAt"]),
+
+  deletionRecoveryRecords: defineTable({
+    roomId: v.id("projectRooms"),
+    deletedAt: v.number(),
+    purgeAfter: v.number(),
+    status: v.union(
+      v.literal("recoverable"),
+      v.literal("recovered"),
+    ),
+    activeMaterialIds: v.array(v.string()),
+    recoveredAt: v.optional(v.number()),
+  })
+    .index("by_room", ["roomId", "deletedAt"])
+    .index("by_purge_after", ["status", "purgeAfter"]),
 });

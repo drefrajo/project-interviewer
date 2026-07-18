@@ -177,7 +177,8 @@ export interface InterviewOperation {
     | "running"
     | "retryable"
     | "succeeded"
-    | "failed";
+    | "failed"
+    | "cancelled";
   stage: string;
   attemptCount: number;
   model?: string;
@@ -403,6 +404,8 @@ export class InterviewStateError extends Error {
   }
 }
 
+class CancelledInterviewOperationError extends InterviewStateError {}
+
 interface CoordinatorDependencies extends InterviewAdapters {
   state: DiscoveryInterviewState;
   ids: { next(prefix: string): string };
@@ -435,6 +438,8 @@ interface CoordinatorDependencies extends InterviewAdapters {
   >;
   materialReady(roomId: string): boolean;
   setRoomPhase(roomId: string, phase: ProjectPhase): void;
+  touchRoom(roomId: string): void;
+  synchronize(): void;
   persist(): void;
   audit(actor: RoomActor, roomId: string, action: string): void;
 }
@@ -448,6 +453,25 @@ export const createDiscoveryInterviewCoordinator = (
     string,
     Promise<DiscoveryInterviewView>
   >();
+  const throwIfCancelled = (
+    operation: InterviewOperation,
+    expectedAttempt?: number,
+  ): void => {
+    dependencies.synchronize();
+    const current = dependencies.state.interviewOperations.find(
+      ({ id }) => id === operation.id,
+    );
+    if (
+      !current ||
+      operation.status === "cancelled" ||
+      (expectedAttempt !== undefined &&
+        operation.attemptCount !== expectedAttempt)
+    ) {
+      throw new CancelledInterviewOperationError(
+        "The Interview operation was cancelled.",
+      );
+    }
+  };
 
   for (const operation of dependencies.state.interviewOperations) {
     if (["pending", "running"].includes(operation.status)) {
@@ -469,7 +493,12 @@ export const createDiscoveryInterviewCoordinator = (
     actor: RoomActor,
     roomId: string,
   ): ClientActor => {
-    dependencies.authorize(actor, roomId);
+    const room = dependencies.authorize(actor, roomId);
+    if (room.phase === "archived") {
+      throw new InterviewStateError(
+        "Archived Project Rooms are read-only.",
+      );
+    }
     if (actor.kind !== "client") {
       throw new InterviewStateError(
         "Only the Client may control the Discovery Interview.",
@@ -689,6 +718,7 @@ export const createDiscoveryInterviewCoordinator = (
     try {
       for (let attempt = 0; attempt < 2; attempt += 1) {
         operation.attemptCount += 1;
+        const operationAttempt = operation.attemptCount;
         const startedAt = dependencies.clock.now();
         draft = await dependencies.planner.plan({
           language: interview.language,
@@ -700,6 +730,7 @@ export const createDiscoveryInterviewCoordinator = (
             ? { repairErrors: [validationError] }
             : {}),
         });
+        throwIfCancelled(operation, operationAttempt);
         operation.model = draft.model;
         operation.provider = draft.provider;
         recordModelUsage(operation, draft, startedAt);
@@ -707,6 +738,7 @@ export const createDiscoveryInterviewCoordinator = (
         if (!validationError) break;
       }
     } catch {
+      throwIfCancelled(operation);
       validationError = "Interview Planner provider failed.";
     }
     if (!draft || validationError) {
@@ -819,6 +851,7 @@ export const createDiscoveryInterviewCoordinator = (
     try {
       for (let attempt = 0; attempt < 2; attempt += 1) {
         operation.attemptCount += 1;
+        const operationAttempt = operation.attemptCount;
         const startedAt = dependencies.clock.now();
         review = await dependencies.reviewer.review({
           language: interview.language,
@@ -840,6 +873,7 @@ export const createDiscoveryInterviewCoordinator = (
             ? { repairErrors: [validationError] }
             : {}),
         });
+        throwIfCancelled(operation, operationAttempt);
         operation.model = review.model;
         operation.provider = review.provider;
         recordModelUsage(operation, review, startedAt);
@@ -854,6 +888,7 @@ export const createDiscoveryInterviewCoordinator = (
         if (!validationError) break;
       }
     } catch {
+      throwIfCancelled(operation);
       validationError = "Interview Reviewer provider failed.";
     }
     operation.status = validationError ? "retryable" : "succeeded";
@@ -897,6 +932,7 @@ export const createDiscoveryInterviewCoordinator = (
       );
     for (let attempt = 0; attempt < 2; attempt += 1) {
       operation.attemptCount += 1;
+      const operationAttempt = operation.attemptCount;
       const startedAt = dependencies.clock.now();
       draft = await dependencies.agent.advance({
         language: interview.language,
@@ -963,6 +999,7 @@ export const createDiscoveryInterviewCoordinator = (
           ? { repairErrors: [validationError] }
           : {}),
       });
+      throwIfCancelled(operation, operationAttempt);
       operation.model = draft.model;
       operation.provider = draft.provider;
       recordModelUsage(operation, draft, startedAt);
@@ -1087,6 +1124,7 @@ export const createDiscoveryInterviewCoordinator = (
         ],
         contextPack: acceptedContextPack,
       });
+      throwIfCancelled(operation);
     }
     Object.assign(plan, stagedPlan);
     for (const staged of stagedExistingFindings) {
@@ -1189,7 +1227,11 @@ export const createDiscoveryInterviewCoordinator = (
       interview,
       turn,
       operation,
-    ).catch(() => {
+    ).catch((error: unknown) => {
+      if (error instanceof CancelledInterviewOperationError) {
+        throw error;
+      }
+      throwIfCancelled(operation);
       operation.status = "retryable";
       operation.stage = "complete";
       operation.errorCode = "interview_reasoning_failed";
@@ -1279,6 +1321,7 @@ export const createDiscoveryInterviewCoordinator = (
       acceptedAt: now,
     };
     dependencies.state.interviewTurns.push(turn);
+    dependencies.touchRoom(roomId);
     delete interview.currentQuestion;
     interview.operationStatus = "running";
     interview.updatedAt = now;
@@ -1495,7 +1538,7 @@ export const createDiscoveryInterviewCoordinator = (
         .filter(
           (candidate) =>
             candidate.interviewId === interview.id &&
-            candidate.status === "retryable" &&
+            ["retryable", "cancelled"].includes(candidate.status) &&
             Boolean(candidate.turnId),
         )
         .sort(
@@ -1504,7 +1547,7 @@ export const createDiscoveryInterviewCoordinator = (
       if (!operation) {
         throw new InterviewStateError("Interview operation is missing.");
       }
-      if (operation.status !== "retryable") {
+      if (!["retryable", "cancelled"].includes(operation.status)) {
         throw new InterviewStateError(
           "The Interview operation is not retryable.",
         );
@@ -1547,6 +1590,7 @@ export const createDiscoveryInterviewCoordinator = (
       }
       interview.status = "paused";
       interview.updatedAt = dependencies.clock.now();
+      dependencies.touchRoom(roomId);
       dependencies.persist();
       return toView(client, interview);
     },
@@ -1565,6 +1609,7 @@ export const createDiscoveryInterviewCoordinator = (
       }
       interview.status = "active";
       interview.updatedAt = dependencies.clock.now();
+      dependencies.touchRoom(roomId);
       dependencies.persist();
       return toView(client, interview);
     },

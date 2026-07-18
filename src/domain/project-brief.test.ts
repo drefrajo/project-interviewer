@@ -210,6 +210,49 @@ const createBriefHarness = async (overrides?: {
 };
 
 describe("Project Brief public service", () => {
+  it("prevents a deleted room's in-flight Brief Generator from committing a late draft", async () => {
+    let releaseGeneration:
+      | ((draft: BriefGeneratorDraft) => void)
+      | undefined;
+    let generatorInput:
+      | Parameters<
+          NonNullable<
+            ProjectBriefAdapters["generator"]
+          >["generate"]
+        >[0]
+      | undefined;
+    const { app, freelancer, room } = await createBriefHarness({
+      generator: {
+        generate: async (input) => {
+          generatorInput = input;
+          return new Promise<BriefGeneratorDraft>((resolve) => {
+            releaseGeneration = resolve;
+          });
+        },
+      },
+    });
+    const pending = app.briefs.generate(freelancer, room.id, {
+      idempotencyKey: "delete-during-generation",
+    });
+    const cancelled = expect(pending).rejects.toThrow(/cancelled/i);
+    await vi.waitFor(() =>
+      expect(
+        app.inspectState().briefOperations.at(-1)?.status,
+      ).toBe("running"),
+    );
+
+    await app.projectHome.lifecycle.delete(freelancer, room.id);
+    releaseGeneration?.(draftFromInput(generatorInput!));
+    await cancelled;
+
+    const deleted = app.inspectState();
+    expect(deleted.briefDrafts).toEqual([]);
+    expect(deleted.briefOperations.at(-1)).toMatchObject({
+      status: "cancelled",
+      errorCode: "project_room_deleted",
+    });
+  });
+
   it("persists one idempotent generation operation before AI work and validates the complete default structure", async () => {
     let resolveGeneration:
       | ((draft: BriefGeneratorDraft) => void)
@@ -511,6 +554,9 @@ describe("Project Brief public service", () => {
       generated.draft!.sections
         .find(({ id }) => id === "functional-requirements")!
         .items[0]!;
+    const activityBeforeEdit = (
+      await app.rooms.get(freelancer, room.id)
+    ).lastActivityAt;
 
     const editedSection = await app.briefs.updateSection(
       freelancer,
@@ -525,6 +571,9 @@ describe("Project Brief public service", () => {
         ({ id }) => id === "executive-summary",
       )?.content,
     ).toBe("A focused portal for Alpine.");
+    expect(
+      (await app.rooms.get(freelancer, room.id)).lastActivityAt,
+    ).toBeGreaterThan(activityBeforeEdit);
     const sourceTrimmed = await app.briefs.updateSection(
       freelancer,
       room.id,

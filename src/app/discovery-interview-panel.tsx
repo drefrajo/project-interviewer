@@ -110,16 +110,19 @@ export const DiscoveryInterviewPanel = ({
   actor,
   room,
   available,
+  readOnly,
   onRoomChange,
 }: {
   application: ProjectInterviewer;
   actor: RoomActor;
   room: ProjectRoomView;
   available: boolean;
+  readOnly: boolean;
   onRoomChange?(): void;
 }) => {
   const { locale } = useI18n();
   const text = copy[locale];
+  const canRespond = actor.kind === "client" && !readOnly;
   const [interview, setInterview] =
     useState<DiscoveryInterviewView | null>();
   const [answer, setAnswer] = useState("");
@@ -151,7 +154,7 @@ export const DiscoveryInterviewPanel = ({
     const poll = async () => {
       try {
         if (
-          actor.kind === "client" &&
+          canRespond &&
           interview.respondingDevice
         ) {
           await application.interviews.heartbeat(actor, room.id);
@@ -165,7 +168,7 @@ export const DiscoveryInterviewPanel = ({
     };
     const timer = window.setInterval(() => void poll(), 1_500);
     return () => window.clearInterval(timer);
-  }, [actor, application, interview, refresh, room.id]);
+  }, [actor, application, canRespond, interview, refresh, room.id]);
 
   useEffect(() => {
     if (wasResponding.current && interview?.respondingDevice === false) {
@@ -320,7 +323,7 @@ export const DiscoveryInterviewPanel = ({
         <p role="status">{text.processing}</p>
       ) : null}
       {interview === null ? (
-        actor.kind === "client" ? (
+        canRespond ? (
           <button
             className="button primary"
             disabled={busy}
@@ -341,7 +344,7 @@ export const DiscoveryInterviewPanel = ({
         <>
           {actor.kind === "freelancer" ? (
             <p className="interview-notice">{text.freelancer}</p>
-          ) : !interview.respondingDevice ? (
+          ) : canRespond && !interview.respondingDevice ? (
             <div className="interview-notice" role="status">
               <p>{text.observer}</p>
               <button
@@ -383,7 +386,7 @@ export const DiscoveryInterviewPanel = ({
 
           {!available &&
           interview.status === "active" &&
-          actor.kind === "client" &&
+          canRespond &&
           interview.respondingDevice ? (
             <p className="interview-notice" role="status">
               {text.checkingMaterial}
@@ -441,7 +444,7 @@ export const DiscoveryInterviewPanel = ({
           ) : null}
 
           {interview.status === "retryable" &&
-          actor.kind === "client" &&
+          canRespond &&
           interview.respondingDevice ? (
             <button
               className="button primary"
@@ -457,7 +460,7 @@ export const DiscoveryInterviewPanel = ({
           ) : null}
 
           {interview.status === "paused" &&
-          actor.kind === "client" &&
+          canRespond &&
           interview.respondingDevice ? (
             <button
               className="button primary"
@@ -475,7 +478,7 @@ export const DiscoveryInterviewPanel = ({
           {interview.status === "awaiting_confirmation" ? (
             <div className="interview-confirmation">
               <p>{text.confirmReady}</p>
-              {actor.kind === "client" && interview.respondingDevice ? (
+              {canRespond && interview.respondingDevice ? (
                 <div className="interview-actions">
                   <button
                     className="button primary"
@@ -522,7 +525,7 @@ export const DiscoveryInterviewPanel = ({
           {interview.status === "active" &&
           interview.currentQuestion &&
           available &&
-          actor.kind === "client" &&
+          canRespond &&
           interview.respondingDevice ? (
             <form className="interview-question" onSubmit={submit}>
               <p className="eyebrow">
@@ -564,7 +567,7 @@ export const DiscoveryInterviewPanel = ({
             </div>
           ) : null}
 
-          {actor.kind === "client" &&
+          {canRespond &&
           interview.respondingDevice &&
           interview.status === "active" ? (
             <div className="interview-actions secondary-actions">
@@ -614,7 +617,7 @@ export const DiscoveryInterviewPanel = ({
                           : "Superseded by an immutable Client correction; the original answer remains visible."}
                       </small>
                     ) : null}
-                    {actor.kind === "client" &&
+                    {canRespond &&
                     interview.respondingDevice &&
                     interview.operationStatus !== "running" &&
                     !["completed", "completed_early"].includes(
@@ -702,7 +705,7 @@ export const DiscoveryInterviewPanel = ({
           ) : null}
 
           {correctingTurnId &&
-          actor.kind === "client" &&
+          canRespond &&
           interview.respondingDevice ? (
             <form className="correction-form" onSubmit={addCorrection}>
               <h3>{text.correct}</h3>

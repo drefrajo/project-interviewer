@@ -46,6 +46,42 @@ export type ProjectPhase =
   | "approved"
   | "archived";
 
+export type ProjectNextAction =
+  | "share_invite"
+  | "continue_discovery"
+  | "review_brief_draft"
+  | "review_project_brief"
+  | "wait_for_client_review"
+  | "use_project_home"
+  | "restore_project_room"
+  | "view_archived_project_home";
+
+export const projectNextActionFor = (
+  phase: ProjectPhase,
+  actorKind: RoomActor["kind"],
+): ProjectNextAction => {
+  if (phase === "archived") {
+    return actorKind === "client"
+      ? "view_archived_project_home"
+      : "restore_project_room";
+  }
+  if (phase === "client_review") {
+    return actorKind === "client"
+      ? "review_project_brief"
+      : "wait_for_client_review";
+  }
+  const actions: Record<
+    Exclude<ProjectPhase, "archived" | "client_review">,
+    ProjectNextAction
+  > = {
+    setup: "share_invite",
+    discovery: "continue_discovery",
+    freelancer_review: "review_brief_draft",
+    approved: "use_project_home",
+  };
+  return actions[phase];
+};
+
 export interface FreelancerActor {
   kind: "freelancer";
   freelancerId: string;
@@ -73,6 +109,10 @@ export interface ProjectRoom {
   freelancerGuidance: string;
   phase: ProjectPhase;
   interviewReadiness: "waiting_for_material" | "ready";
+  lastActivityAt: number;
+  archivedFromPhase?: Exclude<ProjectPhase, "archived">;
+  deletedAt?: number;
+  purgeAfter?: number;
   createdAt: number;
   updatedAt: number;
   invite: {
@@ -97,6 +137,7 @@ export type ProjectRoomView = Pick<
   | "discoveryProfileId"
   | "phase"
   | "interviewReadiness"
+  | "lastActivityAt"
   | "createdAt"
   | "updatedAt"
   | "client"
@@ -109,6 +150,35 @@ export interface AuditEvent {
   deviceId?: string;
   action: string;
   createdAt: number;
+}
+
+export interface SharedResource {
+  id: string;
+  roomId: string;
+  label: string;
+  url?: string;
+  note?: string;
+  accountIdentifier?: string;
+  order: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface SharedResourceInput {
+  label: string;
+  url?: string;
+  note?: string;
+  accountIdentifier?: string;
+}
+
+export interface DeletionRecoveryRecord {
+  id: string;
+  roomId: string;
+  deletedAt: number;
+  purgeAfter: number;
+  status: "recoverable" | "recovered";
+  activeMaterialIds: string[];
+  recoveredAt?: number;
 }
 
 export interface DurableOperation {
@@ -147,6 +217,8 @@ export interface ProjectInterviewerSnapshot
     ProjectBriefState {
   freelancers: FreelancerIdentity[];
   rooms: ProjectRoom[];
+  sharedResources: SharedResource[];
+  deletionRecoveryRecords: DeletionRecoveryRecord[];
   auditEvents: AuditEvent[];
   durableOperations: DurableOperation[];
 }
@@ -209,7 +281,9 @@ export interface ProjectInterviewerDependencies {
   interviewAgent?: InterviewAdapters["agent"];
   interviewReviewer?: InterviewAdapters["reviewer"];
   briefGenerator?: ProjectBriefAdapters["generator"];
+  deletionRecoveryMs?: number;
   initialState?: ProjectInterviewerSnapshot;
+  loadLatestState?: () => ProjectInterviewerSnapshot | undefined;
   persist?: (snapshot: ProjectInterviewerSnapshot) => void;
 }
 
@@ -237,19 +311,19 @@ export class ValidationError extends Error {
 
 const copy = <T>(value: T): T => structuredClone(value);
 
-export const createProjectInterviewer = (
-  dependencies: ProjectInterviewerDependencies,
-) => {
-  const initialState = dependencies.initialState;
-  const state: ProjectInterviewerSnapshot = copy({
-    ...(
-      initialState ?? {
+const snapshotWithDefaults = (
+  initialState?: ProjectInterviewerSnapshot,
+): ProjectInterviewerSnapshot =>
+  copy({
+    ...(initialState ?? {
       freelancers: [],
       rooms: [],
       auditEvents: [],
-      }
-    ),
+    }),
     projectMaterials: initialState?.projectMaterials ?? [],
+    sharedResources: initialState?.sharedResources ?? [],
+    deletionRecoveryRecords:
+      initialState?.deletionRecoveryRecords ?? [],
     materialSegments: initialState?.materialSegments ?? [],
     analysisFeedback: initialState?.analysisFeedback ?? [],
     materialChunks: initialState?.materialChunks ?? [],
@@ -269,11 +343,27 @@ export const createProjectInterviewer = (
     briefChangeRequests: initialState?.briefChangeRequests ?? [],
     briefOperations: initialState?.briefOperations ?? [],
   });
+
+export const createProjectInterviewer = (
+  dependencies: ProjectInterviewerDependencies,
+) => {
+  const initialState = dependencies.initialState;
+  const state = snapshotWithDefaults(initialState);
   const materialLimits: MaterialLimits = {
     ...DEFAULT_MATERIAL_LIMITS,
     ...dependencies.materialLimits,
   };
+  const deletionRecoveryMs = Math.max(
+    1,
+    Math.floor(
+      dependencies.deletionRecoveryMs ??
+        7 * 24 * 60 * 60 * 1_000,
+    ),
+  );
   if (initialState) {
+    for (const room of state.rooms) {
+      room.lastActivityAt ??= room.updatedAt;
+    }
     for (const material of state.projectMaterials) {
       material.analysisVersions ??= material.analysis
         ? [copy(material.analysis)]
@@ -348,32 +438,112 @@ export const createProjectInterviewer = (
     }
   >();
 
-  const persist = () => dependencies.persist?.(copy(state));
+  let lastPersistedState = JSON.stringify(state);
+  const persist = () => {
+    const snapshot = copy(state);
+    dependencies.persist?.(snapshot);
+    lastPersistedState = JSON.stringify(snapshot);
+  };
+
+  const synchronize = (): void => {
+    const latest = dependencies.loadLatestState?.();
+    if (!latest) return;
+    const incoming = snapshotWithDefaults(latest);
+    const serializedIncoming = JSON.stringify(incoming);
+    if (serializedIncoming === lastPersistedState) return;
+    for (const key of Object.keys(state) as Array<
+      keyof ProjectInterviewerSnapshot
+    >) {
+      const currentRecords = state[key] as unknown[];
+      const incomingRecords = incoming[key] as unknown[];
+      const recordsHaveIds = [...currentRecords, ...incomingRecords].every(
+        (record) =>
+          typeof record === "object" &&
+          record !== null &&
+          "id" in record &&
+          typeof record.id === "string",
+      );
+      if (!recordsHaveIds) {
+        currentRecords.splice(
+          0,
+          currentRecords.length,
+          ...copy(incomingRecords),
+        );
+        continue;
+      }
+      const incomingIds = new Set(
+        incomingRecords.map(
+          (record) => (record as { id: string }).id,
+        ),
+      );
+      for (let index = currentRecords.length - 1; index >= 0; index -= 1) {
+        const record = currentRecords[index] as { id: string };
+        if (!incomingIds.has(record.id)) currentRecords.splice(index, 1);
+      }
+      for (const incomingRecord of incomingRecords as Array<
+        { id: string } & Record<string, unknown>
+      >) {
+        const existing = currentRecords.find(
+          (record) =>
+            (record as { id: string }).id === incomingRecord.id,
+        ) as Record<string, unknown> | undefined;
+        if (!existing) {
+          currentRecords.push(copy(incomingRecord));
+          continue;
+        }
+        for (const property of Object.keys(existing)) {
+          delete existing[property];
+        }
+        Object.assign(existing, copy(incomingRecord));
+      }
+    }
+    for (const room of state.rooms) {
+      room.lastActivityAt ??= room.updatedAt;
+    }
+    lastPersistedState = serializedIncoming;
+  };
+
+  const touchRoom = (roomId: string): void => {
+    const room = state.rooms.find(({ id }) => id === roomId);
+    if (room) {
+      const now = dependencies.clock.now();
+      room.lastActivityAt = now;
+      room.updatedAt = now;
+    }
+  };
 
   const audit = (
     actor: RoomActor,
     roomId: string,
     action: string,
   ): void => {
+    const createdAt = dependencies.clock.now();
     state.auditEvents.push({
       id: dependencies.ids.next("audit"),
       roomId,
       actorKind: actor.kind,
       ...(actor.kind === "client" ? { deviceId: actor.deviceId } : {}),
       action,
-      createdAt: dependencies.clock.now(),
+      createdAt,
     });
+    const room = state.rooms.find(({ id }) => id === roomId);
+    if (room) {
+      room.lastActivityAt = createdAt;
+      room.updatedAt = createdAt;
+    }
   };
 
   const requireFreelancerRoom = (
     actor: FreelancerActor,
     roomId: string,
+    includeDeleted = false,
   ): ProjectRoom => {
     requireFreelancer(actor);
     const room = state.rooms.find(
       (candidate) =>
         candidate.id === roomId &&
-        candidate.freelancerId === actor.freelancerId,
+        candidate.freelancerId === actor.freelancerId &&
+        (includeDeleted || candidate.deletedAt === undefined),
     );
     if (!room) {
       throw new AuthorizationError();
@@ -382,6 +552,7 @@ export const createProjectInterviewer = (
   };
 
   const requireFreelancer = (actor: FreelancerActor): void => {
+    synchronize();
     if (
       freelancerSessions.get(actor.sessionId) !== actor.freelancerId ||
       !state.freelancers.some(({ id }) => id === actor.freelancerId)
@@ -391,6 +562,7 @@ export const createProjectInterviewer = (
   };
 
   const requireRoomActor = (actor: RoomActor, roomId: string): ProjectRoom => {
+    synchronize();
     if (actor.kind === "freelancer") {
       return requireFreelancerRoom(actor, roomId);
     }
@@ -404,7 +576,8 @@ export const createProjectInterviewer = (
         session.tokenHash === candidate.invite.tokenHash &&
         actor.roomId === roomId &&
         candidate.invite.status === "active" &&
-        candidate.invite.version === actor.inviteVersion,
+        candidate.invite.version === actor.inviteVersion &&
+        candidate.deletedAt === undefined,
     );
     if (!room) {
       throw new AuthorizationError();
@@ -412,13 +585,74 @@ export const createProjectInterviewer = (
     return room;
   };
 
+  const requireWritableRoomActor = (
+    actor: RoomActor,
+    roomId: string,
+  ): ProjectRoom => {
+    const room = requireRoomActor(actor, roomId);
+    if (room.phase === "archived") {
+      throw new ValidationError(
+        "Archived Project Rooms are read-only.",
+      );
+    }
+    return room;
+  };
+
+  const requireSharedResourceManager = (
+    actor: RoomActor,
+    roomId: string,
+  ): ProjectRoom => {
+    if (actor.kind !== "freelancer") {
+      throw new AuthorizationError(
+        "Only the Freelancer can manage Shared Resources.",
+      );
+    }
+    return requireFreelancerRoom(actor, roomId);
+  };
+
+  const purgeRoomRecords = (roomId: string): void => {
+    const collections: Array<Array<{ roomId: string }>> = [
+      state.projectMaterials,
+      state.materialSegments,
+      state.analysisFeedback,
+      state.materialChunks,
+      state.contextPackRevisions,
+      state.durableOperations,
+      state.discoveryInterviews,
+      state.interviewPlans,
+      state.interviewTurns,
+      state.interviewCorrections,
+      state.discoveryFindings,
+      state.interviewEvents,
+      state.respondingDeviceLeases,
+      state.interviewOperations,
+      state.briefDrafts,
+      state.reviewVersions,
+      state.briefChangeRequests,
+      state.briefOperations,
+      state.sharedResources,
+      state.auditEvents,
+      state.deletionRecoveryRecords,
+    ];
+    for (const collection of collections) {
+      for (let index = collection.length - 1; index >= 0; index -= 1) {
+        if (collection[index]?.roomId === roomId) {
+          collection.splice(index, 1);
+        }
+      }
+    }
+  };
+
   const findRoomByInvite = async (
     token: string,
   ): Promise<ProjectRoom | undefined> => {
+    synchronize();
     const tokenHash = await dependencies.inviteTokens.hash(token);
+    synchronize();
     return state.rooms.find(
       (room) =>
         room.invite.status === "active" &&
+        room.deletedAt === undefined &&
         room.invite.tokenHash === tokenHash,
     );
   };
@@ -432,6 +666,7 @@ export const createProjectInterviewer = (
     discoveryProfileId: room.discoveryProfileId,
     phase: room.phase,
     interviewReadiness: room.interviewReadiness,
+    lastActivityAt: room.lastActivityAt,
     createdAt: room.createdAt,
     updatedAt: room.updatedAt,
     freelancerDisplayName:
@@ -439,6 +674,77 @@ export const createProjectInterviewer = (
         ?.displayName ?? "Freelancer",
     ...(room.client ? { client: copy(room.client) } : {}),
   });
+
+  const normalizeSharedResourceInput = (
+    input: SharedResourceInput,
+  ): Omit<
+    SharedResource,
+    "id" | "roomId" | "order" | "createdAt" | "updatedAt"
+  > => {
+    const label = input.label.trim();
+    const url = input.url?.trim() || undefined;
+    const note = input.note?.trim() || undefined;
+    const accountIdentifier =
+      input.accountIdentifier?.trim() || undefined;
+    if (!label || (!url && !note)) {
+      throw new ValidationError(
+        "A Shared Resource needs a label and a URL or non-secret note.",
+      );
+    }
+    if (url) {
+      let parsed: URL;
+      try {
+        parsed = new URL(url);
+      } catch {
+        throw new ValidationError(
+          "Shared Resource URLs must be valid HTTP or HTTPS links.",
+        );
+      }
+      if (!["http:", "https:"].includes(parsed.protocol)) {
+        throw new ValidationError(
+          "Shared Resource URLs must be valid HTTP or HTTPS links.",
+        );
+      }
+      const secretQueryName =
+        /^(?:api[-_]?key|access[-_]?token|auth[-_]?token|password|passwd|pwd|secret|token)$/iu;
+      if (
+        parsed.password ||
+        [...parsed.searchParams].some(
+          ([name, value]) =>
+            value.trim() && secretQueryName.test(name),
+        )
+      ) {
+        throw new ValidationError(
+          "Shared Resource URLs cannot contain passwords, API keys, tokens, or other secrets.",
+        );
+      }
+    }
+    const combined = [label, url, note, accountIdentifier]
+      .filter(Boolean)
+      .join("\n");
+    if (
+      findSuspectedSecrets([
+        {
+          text: combined,
+          locator: {
+            kind: "paragraph",
+            label: "Shared Resource",
+            paragraph: 1,
+          },
+        },
+      ]).length
+    ) {
+      throw new ValidationError(
+        "Shared Resources cannot contain passwords, API keys, tokens, or other suspected secrets.",
+      );
+    }
+    return {
+      label,
+      ...(url ? { url } : {}),
+      ...(note ? { note } : {}),
+      ...(accountIdentifier ? { accountIdentifier } : {}),
+    };
+  };
 
   const toProjectMaterialView = (
     material: ProjectMaterial,
@@ -497,7 +803,9 @@ export const createProjectInterviewer = (
       )
         ? "ready"
         : "waiting_for_material";
-    room.updatedAt = dependencies.clock.now();
+    const now = dependencies.clock.now();
+    room.updatedAt = now;
+    room.lastActivityAt = now;
   };
 
   const createContextPackRevision = (
@@ -624,11 +932,30 @@ export const createProjectInterviewer = (
     }
   };
 
-  const ensureMaterialActive = (material: ProjectMaterial): void => {
-    if (!material.active) {
+  const ensureMaterialActive = (
+    material: ProjectMaterial,
+    operation: DurableOperation,
+    operationAttempt: number,
+  ): void => {
+    synchronize();
+    if (
+      !material.active ||
+      materialProcessingWasCancelled(
+        operation,
+        operationAttempt,
+      )
+    ) {
       throw new Error("Project Material was removed during processing.");
     }
   };
+
+  const materialProcessingWasCancelled = (
+    operation: DurableOperation,
+    expectedAttempt: number,
+  ): boolean =>
+    !state.durableOperations.some(({ id }) => id === operation.id) ||
+    operation.status === "cancelled" ||
+    operation.attemptCount !== expectedAttempt;
 
   const executeMaterialProcessing = async (
     actor: RoomActor,
@@ -639,6 +966,7 @@ export const createProjectInterviewer = (
   ): Promise<ProjectMaterialView> => {
     operation.status = "running";
     operation.attemptCount += 1;
+    const operationAttempt = operation.attemptCount;
     operation.stage = "extracting_content";
     operation.updatedAt = dependencies.clock.now();
     material.state = "processing";
@@ -663,22 +991,24 @@ export const createProjectInterviewer = (
           uploaderId: material.uploaderId,
         },
       );
-      ensureMaterialActive(material);
+      ensureMaterialActive(material, operation, operationAttempt);
       const actualContentType = await dependencies.contentInspector.detect({
         name: material.name,
         declaredContentType: material.declaredContentType,
         bytes,
       });
-      ensureMaterialActive(material);
+      ensureMaterialActive(material, operation, operationAttempt);
       validateMaterialContentType(material.name, actualContentType);
       material.actualContentType = actualContentType;
+      material.updatedAt = dependencies.clock.now();
+      persist();
       const extraction = await dependencies.parser.extract({
         name: material.name,
         contentType:
           material.actualContentType ?? material.declaredContentType,
         bytes,
       });
-      ensureMaterialActive(material);
+      ensureMaterialActive(material, operation, operationAttempt);
       if (!extraction.segments.length && !material.declaredContentType.startsWith("image/")) {
         throw new Error("No extractable content was found.");
       }
@@ -739,7 +1069,7 @@ export const createProjectInterviewer = (
             ? { repairErrors: [validationError] }
             : {}),
         });
-        ensureMaterialActive(material);
+        ensureMaterialActive(material, operation, operationAttempt);
         operation.model = draft.model;
         operation.provider = draft.provider;
         try {
@@ -772,7 +1102,7 @@ export const createProjectInterviewer = (
       const vectors = await dependencies.embeddings.embed(
         chunkedSegments.map(({ text }) => text),
       );
-      ensureMaterialActive(material);
+      ensureMaterialActive(material, operation, operationAttempt);
 
       state.materialSegments = state.materialSegments.filter(
         (segment) => segment.materialId !== material.id,
@@ -863,6 +1193,15 @@ export const createProjectInterviewer = (
       persist();
       return toProjectMaterialView(material, actor);
     } catch (error) {
+      synchronize();
+      if (
+        materialProcessingWasCancelled(
+          operation,
+          operationAttempt,
+        )
+      ) {
+        return toProjectMaterialView(material, actor);
+      }
       state.materialSegments = state.materialSegments.filter(
         (segment) => segment.materialId !== material.id,
       );
@@ -1093,10 +1432,14 @@ export const createProjectInterviewer = (
         const room = state.rooms.find(({ id }) => id === roomId);
         if (room) {
           room.phase = phase;
-          room.updatedAt = dependencies.clock.now();
+          const now = dependencies.clock.now();
+          room.updatedAt = now;
+          room.lastActivityAt = now;
         }
       },
       persist,
+      touchRoom,
+      synchronize,
       audit,
     });
 
@@ -1301,9 +1644,13 @@ export const createProjectInterviewer = (
       const room = state.rooms.find(({ id }) => id === roomId);
       if (room) {
         room.phase = phase;
-        room.updatedAt = dependencies.clock.now();
+        const now = dependencies.clock.now();
+        room.updatedAt = now;
+        room.lastActivityAt = now;
       }
     },
+    touchRoom,
+    synchronize,
     persist,
     audit,
   });
@@ -1374,6 +1721,7 @@ export const createProjectInterviewer = (
           freelancerGuidance: input.freelancerGuidance.trim(),
           phase: "setup",
           interviewReadiness: "waiting_for_material",
+          lastActivityAt: now,
           createdAt: now,
           updatedAt: now,
           invite: {
@@ -1382,6 +1730,7 @@ export const createProjectInterviewer = (
             version: 1,
           },
         };
+        requireFreelancer(actor);
         state.rooms.push(room);
         audit(actor, room.id, "project_room.created");
         persist();
@@ -1395,11 +1744,12 @@ export const createProjectInterviewer = (
       async list(
         actor: FreelancerActor,
         filters: { search?: string; phase?: ProjectPhase } = {},
-      ): Promise<Array<ProjectRoom & { nextAction: string }>> {
+      ): Promise<Array<ProjectRoom & { nextAction: ProjectNextAction }>> {
         requireFreelancer(actor);
         const search = filters.search?.trim().toLocaleLowerCase() ?? "";
         return state.rooms
           .filter((room) => room.freelancerId === actor.freelancerId)
+          .filter((room) => room.deletedAt === undefined)
           .filter((room) => !filters.phase || room.phase === filters.phase)
           .filter(
             (room) =>
@@ -1408,11 +1758,511 @@ export const createProjectInterviewer = (
                 .toLocaleLowerCase()
                 .includes(search),
           )
-          .sort((a, b) => b.updatedAt - a.updatedAt)
+          .sort(
+            (a, b) => b.lastActivityAt - a.lastActivityAt,
+          )
           .map((room) => ({
             ...copy(room),
-            nextAction: nextActionFor(room),
+            nextAction: projectNextActionFor(
+              room.phase,
+              actor.kind,
+            ),
           }));
+      },
+    },
+    projectHome: {
+      async get(actor: RoomActor, roomId: string) {
+        const room = requireRoomActor(actor, roomId);
+        return {
+          room: toProjectRoomView(room),
+          readOnly:
+            room.phase === "archived" && actor.kind === "client",
+          nextAction: projectNextActionFor(room.phase, actor.kind),
+          resources: copy(
+            state.sharedResources
+              .filter((resource) => resource.roomId === roomId)
+              .sort((left, right) => left.order - right.order),
+          ),
+          approvedVersions: copy(
+            state.reviewVersions
+              .filter(
+                (version) =>
+                  version.roomId === roomId &&
+                  version.status === "approved",
+              )
+              .sort((left, right) => right.version - left.version),
+          ),
+        };
+      },
+
+      resources: {
+        async list(
+          actor: RoomActor,
+          roomId: string,
+        ): Promise<SharedResource[]> {
+          requireRoomActor(actor, roomId);
+          return copy(
+            state.sharedResources
+              .filter((resource) => resource.roomId === roomId)
+              .sort((left, right) => left.order - right.order),
+          );
+        },
+
+        async create(
+          actor: RoomActor,
+          roomId: string,
+          input: SharedResourceInput,
+        ): Promise<SharedResource> {
+          requireSharedResourceManager(actor, roomId);
+          const normalized = normalizeSharedResourceInput(input);
+          const now = dependencies.clock.now();
+          const resource: SharedResource = {
+            id: dependencies.ids.next("shared_resource"),
+            roomId,
+            ...normalized,
+            order: state.sharedResources.filter(
+              (candidate) => candidate.roomId === roomId,
+            ).length,
+            createdAt: now,
+            updatedAt: now,
+          };
+          state.sharedResources.push(resource);
+          audit(actor, roomId, "shared_resource.created");
+          persist();
+          return copy(resource);
+        },
+
+        async update(
+          actor: RoomActor,
+          roomId: string,
+          resourceId: string,
+          input: SharedResourceInput,
+        ): Promise<SharedResource> {
+          requireSharedResourceManager(actor, roomId);
+          const resource = state.sharedResources.find(
+            (candidate) =>
+              candidate.id === resourceId &&
+              candidate.roomId === roomId,
+          );
+          if (!resource) throw new AuthorizationError();
+          const normalized = normalizeSharedResourceInput(input);
+          delete resource.url;
+          delete resource.note;
+          delete resource.accountIdentifier;
+          Object.assign(
+            resource,
+            normalized,
+            { updatedAt: dependencies.clock.now() },
+          );
+          audit(actor, roomId, "shared_resource.updated");
+          persist();
+          return copy(resource);
+        },
+
+        async reorder(
+          actor: RoomActor,
+          roomId: string,
+          resourceIds: string[],
+        ): Promise<SharedResource[]> {
+          requireSharedResourceManager(actor, roomId);
+          const resources = state.sharedResources.filter(
+            (resource) => resource.roomId === roomId,
+          );
+          if (
+            resourceIds.length !== resources.length ||
+            new Set(resourceIds).size !== resources.length ||
+            resources.some(
+              ({ id }) => !resourceIds.includes(id),
+            )
+          ) {
+            throw new ValidationError(
+              "Reordering requires every Shared Resource in this Project Room exactly once.",
+            );
+          }
+          const now = dependencies.clock.now();
+          for (const resource of resources) {
+            resource.order = resourceIds.indexOf(resource.id);
+            resource.updatedAt = now;
+          }
+          audit(actor, roomId, "shared_resource.reordered");
+          persist();
+          return copy(
+            resources.sort((left, right) => left.order - right.order),
+          );
+        },
+
+        async remove(
+          actor: RoomActor,
+          roomId: string,
+          resourceId: string,
+        ): Promise<void> {
+          requireSharedResourceManager(actor, roomId);
+          const resource = state.sharedResources.find(
+            (candidate) =>
+              candidate.id === resourceId &&
+              candidate.roomId === roomId,
+          );
+          if (!resource) throw new AuthorizationError();
+          state.sharedResources = state.sharedResources.filter(
+            ({ id }) => id !== resource.id,
+          );
+          state.sharedResources
+            .filter((candidate) => candidate.roomId === roomId)
+            .sort((left, right) => left.order - right.order)
+            .forEach((candidate, order) => {
+              candidate.order = order;
+              candidate.updatedAt = dependencies.clock.now();
+            });
+          audit(actor, roomId, "shared_resource.removed");
+          persist();
+        },
+      },
+      lifecycle: {
+        async archive(
+          actor: FreelancerActor,
+          roomId: string,
+        ): Promise<ProjectRoomView> {
+          const room = requireFreelancerRoom(actor, roomId);
+          if (room.phase === "archived") {
+            throw new ValidationError(
+              "The Project Room is already archived.",
+            );
+          }
+          room.archivedFromPhase = room.phase;
+          room.phase = "archived";
+          const now = dependencies.clock.now();
+          room.updatedAt = now;
+          room.lastActivityAt = now;
+          audit(actor, roomId, "project_room.archived");
+          persist();
+          return toProjectRoomView(room);
+        },
+
+        async restoreArchived(
+          actor: FreelancerActor,
+          roomId: string,
+        ): Promise<ProjectRoomView> {
+          const room = requireFreelancerRoom(actor, roomId);
+          if (
+            room.phase !== "archived" ||
+            !room.archivedFromPhase
+          ) {
+            throw new ValidationError(
+              "Only an archived Project Room can be restored.",
+            );
+          }
+          room.phase = room.archivedFromPhase;
+          delete room.archivedFromPhase;
+          const now = dependencies.clock.now();
+          room.updatedAt = now;
+          room.lastActivityAt = now;
+          audit(actor, roomId, "project_room.restored_from_archive");
+          persist();
+          return toProjectRoomView(room);
+        },
+
+        async delete(
+          actor: FreelancerActor,
+          roomId: string,
+        ): Promise<{
+          roomId: string;
+          deletedAt: number;
+          purgeAfter: number;
+        }> {
+          const room = requireFreelancerRoom(actor, roomId);
+          const deletedAt = dependencies.clock.now();
+          const purgeAfter =
+            deletedAt + deletionRecoveryMs;
+          const activeMaterialIds = state.projectMaterials
+            .filter(
+              (material) =>
+                material.roomId === roomId && material.active,
+            )
+            .map(({ id }) => id);
+          room.deletedAt = deletedAt;
+          room.purgeAfter = purgeAfter;
+          room.invite.status = "revoked";
+          room.updatedAt = deletedAt;
+          room.lastActivityAt = deletedAt;
+          for (const operation of state.durableOperations) {
+            if (
+              operation.roomId === roomId &&
+              ["pending", "running", "retryable"].includes(
+                operation.status,
+              )
+            ) {
+              operation.status = "cancelled";
+              operation.stage = "complete";
+              operation.errorCode = "project_room_deleted";
+              operation.updatedAt = deletedAt;
+            }
+          }
+          for (const operation of state.interviewOperations) {
+            if (
+              operation.roomId === roomId &&
+              !["succeeded", "failed", "cancelled"].includes(
+                operation.status,
+              )
+            ) {
+              operation.status = "cancelled";
+              operation.stage = "complete";
+              operation.errorCode = "project_room_deleted";
+              operation.updatedAt = deletedAt;
+            }
+          }
+          for (const operation of state.briefOperations) {
+            if (
+              operation.roomId === roomId &&
+              !["succeeded", "cancelled"].includes(operation.status)
+            ) {
+              operation.status = "cancelled";
+              operation.stage = "complete";
+              operation.errorCode = "project_room_deleted";
+              operation.updatedAt = deletedAt;
+            }
+          }
+          for (const material of state.projectMaterials) {
+            if (material.roomId === roomId) {
+              material.active = false;
+              material.retryAvailable = false;
+              material.updatedAt = deletedAt;
+            }
+          }
+          state.deletionRecoveryRecords.push({
+            id: dependencies.ids.next("deletion_recovery"),
+            roomId,
+            deletedAt,
+            purgeAfter,
+            status: "recoverable",
+            activeMaterialIds,
+          });
+          audit(actor, roomId, "project_room.deleted");
+          persist();
+          return { roomId, deletedAt, purgeAfter };
+        },
+
+        async listRecentlyDeleted(
+          actor: FreelancerActor,
+        ): Promise<
+          Array<
+            ProjectRoomView & {
+              deletedAt: number;
+              purgeAfter: number;
+            }
+          >
+        > {
+          requireFreelancer(actor);
+          return state.rooms
+            .filter(
+              (room) =>
+                room.freelancerId === actor.freelancerId &&
+                room.deletedAt !== undefined &&
+                room.purgeAfter !== undefined,
+            )
+            .sort(
+              (left, right) =>
+                (right.deletedAt ?? 0) -
+                (left.deletedAt ?? 0),
+            )
+            .map((room) => ({
+              ...toProjectRoomView(room),
+              deletedAt: room.deletedAt!,
+              purgeAfter: room.purgeAfter!,
+            }));
+        },
+
+        async recover(
+          actor: FreelancerActor,
+          roomId: string,
+        ): Promise<ProjectRoomView> {
+          const room = requireFreelancerRoom(actor, roomId, true);
+          if (
+            room.deletedAt === undefined ||
+            room.purgeAfter === undefined
+          ) {
+            throw new ValidationError(
+              "Only a recently deleted Project Room can be recovered.",
+            );
+          }
+          const now = dependencies.clock.now();
+          if (now >= room.purgeAfter) {
+            throw new ValidationError(
+              "The Project Room recovery period has ended.",
+            );
+          }
+          const record = state.deletionRecoveryRecords
+            .filter(
+              (candidate) =>
+                candidate.roomId === roomId &&
+                candidate.status === "recoverable",
+            )
+            .sort(
+              (left, right) =>
+                right.deletedAt - left.deletedAt,
+            )[0];
+          if (record) {
+            record.status = "recovered";
+            record.recoveredAt = now;
+          }
+          delete room.deletedAt;
+          delete room.purgeAfter;
+          room.invite.status = "active";
+          for (const material of state.projectMaterials) {
+            if (material.roomId === roomId) {
+              const shouldReactivate =
+                record?.activeMaterialIds.includes(material.id) ??
+                material.active;
+              material.active = shouldReactivate;
+              if (
+                shouldReactivate &&
+                material.state === "processing"
+              ) {
+                material.state = "failed";
+                material.stage = "complete";
+                material.retryAvailable = true;
+                material.failureCode = "interrupted_processing";
+              }
+              material.updatedAt = now;
+            }
+          }
+          const cancelledInterviewIds = new Set(
+            state.interviewOperations
+              .filter(
+                (operation) =>
+                  operation.roomId === roomId &&
+                  operation.status === "cancelled",
+              )
+              .map(({ interviewId }) => interviewId),
+          );
+          for (const interview of state.discoveryInterviews) {
+            if (cancelledInterviewIds.has(interview.id)) {
+              interview.status = "retryable";
+              interview.operationStatus = "retryable";
+              interview.updatedAt = now;
+            }
+          }
+          room.updatedAt = now;
+          room.lastActivityAt = now;
+          audit(actor, roomId, "project_room.recovered");
+          persist();
+          return toProjectRoomView(room);
+        },
+
+        async reopenDiscovery(
+          actor: FreelancerActor,
+          roomId: string,
+        ): Promise<void> {
+          const room = requireFreelancerRoom(actor, roomId);
+          if (room.phase === "archived") {
+            throw new ValidationError(
+              "Restore the archived Project Room before reopening discovery.",
+            );
+          }
+          const interview = state.discoveryInterviews.find(
+            (candidate) => candidate.roomId === roomId,
+          );
+          if (
+            !interview ||
+            !["completed", "completed_early"].includes(
+              interview.status,
+            )
+          ) {
+            throw new ValidationError(
+              "Only completed discovery can be reopened.",
+            );
+          }
+          const plan = state.interviewPlans.find(
+            (candidate) => candidate.id === interview.planId,
+          );
+          if (!plan) {
+            throw new ValidationError(
+              "The existing Interview Plan is unavailable.",
+            );
+          }
+          const area =
+            plan.coverageAreas.find(
+              ({ status }) =>
+                status === "uncovered" || status === "partial",
+            ) ?? plan.coverageAreas[0];
+          if (!area) {
+            throw new ValidationError(
+              "The existing Interview Plan has no Coverage Areas.",
+            );
+          }
+          const now = dependencies.clock.now();
+          interview.status = "active";
+          interview.operationStatus = "idle";
+          interview.currentQuestion = {
+            id: dependencies.ids.next("question"),
+            text:
+              interview.language === "de"
+                ? `Die Klärung wurde wieder geöffnet. Was sollten wir bei „${area.label}“ als Nächstes ergänzen oder korrigieren?`
+                : `Discovery was reopened. What should we add or correct next for “${area.label}”?`,
+            coverageAreaId: area.id,
+            kind: "follow_up",
+            reason:
+              "The Freelancer reopened discovery to continue the existing Interview Plan.",
+            askedAt: now,
+          };
+          delete interview.completionRationale;
+          delete interview.incompleteReason;
+          interview.reviewerBlockers = [];
+          interview.updatedAt = now;
+          plan.updatedAt = now;
+          for (const review of state.reviewVersions) {
+            if (
+              review.roomId === roomId &&
+              review.status !== "approved"
+            ) {
+              review.status = "invalidated";
+            }
+          }
+          room.phase = "discovery";
+          room.updatedAt = now;
+          room.lastActivityAt = now;
+          audit(actor, roomId, "interview.reopened");
+          persist();
+        },
+
+        async purgeExpired(): Promise<string[]> {
+          synchronize();
+          const now = dependencies.clock.now();
+          const expired = state.rooms.filter(
+            (room) =>
+              room.deletedAt !== undefined &&
+              room.purgeAfter !== undefined &&
+              room.purgeAfter <= now,
+          );
+          const purged: string[] = [];
+          for (const room of expired) {
+            const materials = state.projectMaterials.filter(
+              (material) => material.roomId === room.id,
+            );
+            await Promise.all(
+              materials.map((material) =>
+                dependencies.materialFiles?.remove(
+                  material.fileReference,
+                  {
+                    roomId: material.roomId,
+                    uploaderId: material.uploaderId,
+                  },
+                ),
+              ),
+            );
+            purgeRoomRecords(room.id);
+            state.rooms = state.rooms.filter(
+              (record) => record.id !== room.id,
+            );
+            for (const [sessionId, session] of clientSessions) {
+              if (session.roomId === room.id) {
+                clientSessions.delete(sessionId);
+              }
+            }
+            purged.push(room.id);
+          }
+          if (purged.length) persist();
+          return purged;
+        },
       },
     },
     clientAccess: {
@@ -1476,8 +2326,10 @@ export const createProjectInterviewer = (
           interviewLanguage: input.interviewLanguage,
           acknowledgedAt: dependencies.clock.now(),
         };
-        room.phase = "discovery";
-        room.updatedAt = dependencies.clock.now();
+        if (room.phase !== "archived") room.phase = "discovery";
+        const now = dependencies.clock.now();
+        room.updatedAt = now;
+        room.lastActivityAt = now;
         audit(actor, room.id, "client.onboarded");
         persist();
         return toProjectRoomView(room);
@@ -1487,10 +2339,13 @@ export const createProjectInterviewer = (
         actor: FreelancerActor,
         roomId: string,
       ): Promise<{ inviteToken: string; inviteVersion: number }> {
-        const room = requireFreelancerRoom(actor, roomId);
+        requireFreelancerRoom(actor, roomId);
         const inviteToken = dependencies.ids.inviteToken();
+        const tokenHash =
+          await dependencies.inviteTokens.hash(inviteToken);
+        const room = requireFreelancerRoom(actor, roomId);
         room.invite = {
-          tokenHash: await dependencies.inviteTokens.hash(inviteToken),
+          tokenHash,
           status: "active",
           version: room.invite.version + 1,
         };
@@ -1527,7 +2382,7 @@ export const createProjectInterviewer = (
           uploader: RoomActor["kind"];
         },
       ): Promise<ProjectMaterialView> {
-        const room = requireRoomActor(actor, roomId);
+        const room = requireWritableRoomActor(actor, roomId);
         if (input.uploader !== actor.kind) {
           throw new AuthorizationError();
         }
@@ -1548,7 +2403,8 @@ export const createProjectInterviewer = (
             declaredContentType: input.declaredContentType,
           },
         );
-        validateMaterialInput(room, {
+        const currentRoom = requireWritableRoomActor(actor, roomId);
+        validateMaterialInput(currentRoom, {
           ...input,
           size: stored.size,
           ...(stored.contentType
@@ -1579,8 +2435,8 @@ export const createProjectInterviewer = (
           updatedAt: now,
         };
         state.projectMaterials.push(material);
-        room.interviewReadiness = "waiting_for_material";
-        room.updatedAt = dependencies.clock.now();
+        currentRoom.interviewReadiness = "waiting_for_material";
+        currentRoom.updatedAt = dependencies.clock.now();
         audit(actor, roomId, "project_material.uploaded");
         persist();
         return toProjectMaterialView(material, actor);
@@ -1591,7 +2447,7 @@ export const createProjectInterviewer = (
         roomId: string,
         materialId: string,
       ): Promise<ProjectMaterialView> {
-        const room = requireRoomActor(actor, roomId);
+        const room = requireWritableRoomActor(actor, roomId);
         const material = requireMaterial(actor, roomId, materialId);
         return processMaterial(
           actor,
@@ -1606,7 +2462,7 @@ export const createProjectInterviewer = (
         roomId: string,
         materialId: string,
       ): Promise<ProjectMaterialView> {
-        const room = requireRoomActor(actor, roomId);
+        const room = requireWritableRoomActor(actor, roomId);
         const material = requireMaterial(actor, roomId, materialId);
         if (material.state !== "failed") {
           throw new ValidationError(
@@ -1627,7 +2483,7 @@ export const createProjectInterviewer = (
         materialId: string,
         input: { acknowledgedProviderDisclosure: boolean },
       ): Promise<ProjectMaterialView> {
-        const room = requireRoomActor(actor, roomId);
+        const room = requireWritableRoomActor(actor, roomId);
         const material = requireMaterial(actor, roomId, materialId);
         if (!input.acknowledgedProviderDisclosure) {
           throw new ValidationError(
@@ -1664,7 +2520,7 @@ export const createProjectInterviewer = (
         materialId: string,
         input: { explanation: string; locator: SourceLocator },
       ): Promise<AnalysisFeedback> {
-        const room = requireRoomActor(actor, roomId);
+        const room = requireWritableRoomActor(actor, roomId);
         const material = requireMaterial(actor, roomId, materialId);
         if (material.state !== "analyzed") {
           throw new ValidationError(
@@ -1709,6 +2565,7 @@ export const createProjectInterviewer = (
           false,
           material.id,
         );
+        touchRoom(roomId);
         persist();
         return copy(feedback);
       },
@@ -1731,7 +2588,7 @@ export const createProjectInterviewer = (
         roomId: string,
         materialId: string,
       ): Promise<ContextPackRevision> {
-        const room = requireRoomActor(actor, roomId);
+        const room = requireWritableRoomActor(actor, roomId);
         const removalKey = `${roomId}:${materialId}`;
         const existingRemoval =
           materialRemovalPromises.get(removalKey);
@@ -1775,6 +2632,7 @@ export const createProjectInterviewer = (
               .filter(([key]) => key.includes(`:${materialId}:`))
               .map(([, promise]) => promise);
             await Promise.all(inFlight);
+            requireWritableRoomActor(actor, roomId);
             await dependencies.materialFiles?.remove(
               material.fileReference,
               {
@@ -1782,6 +2640,7 @@ export const createProjectInterviewer = (
                 uploaderId: material.uploaderId,
               },
             );
+            requireWritableRoomActor(actor, roomId);
             material.active = false;
             material.updatedAt = dependencies.clock.now();
             for (const segment of state.materialSegments) {
@@ -1820,7 +2679,7 @@ export const createProjectInterviewer = (
         actor: RoomActor,
         roomId: string,
       ): Promise<ContextPackRevision> {
-        const room = requireRoomActor(actor, roomId);
+        const room = requireWritableRoomActor(actor, roomId);
         if (
           state.projectMaterials.some(
             (material) =>
@@ -1834,7 +2693,9 @@ export const createProjectInterviewer = (
           );
         }
         room.interviewReadiness = "ready";
-        room.updatedAt = dependencies.clock.now();
+        const now = dependencies.clock.now();
+        room.updatedAt = now;
+        room.lastActivityAt = now;
         const hasGuidance = Boolean(room.freelancerGuidance.trim());
         const activeAnalyzed = state.projectMaterials.some(
           (material) =>
@@ -1888,18 +2749,6 @@ export const createProjectInterviewer = (
     briefs: briefCoordinator,
     inspectState: (): ProjectInterviewerSnapshot => copy(state),
   };
-};
-
-const nextActionFor = (room: ProjectRoom): string => {
-  const actions: Record<ProjectPhase, string> = {
-    setup: "Share Invite Link",
-    discovery: "Continue discovery",
-    freelancer_review: "Review Brief Draft",
-    client_review: "Wait for Client review",
-    approved: "Open Project Home",
-    archived: "Restore Project Room",
-  };
-  return actions[room.phase];
 };
 
 const chunkMaterialSegment = (

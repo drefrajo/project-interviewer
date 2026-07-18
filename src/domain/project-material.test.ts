@@ -4,6 +4,7 @@ import {
   ValidationError,
   createProjectInterviewer,
   type ProjectInterviewerDependencies,
+  type ProjectInterviewerSnapshot,
 } from "./project-interviewer";
 import type {
   FileAnalysisDraft,
@@ -114,6 +115,150 @@ const createRoom = async (dependencies: ProjectInterviewerDependencies) => {
 };
 
 describe("Project Material public service", () => {
+  it("rejects a stale cross-instance upload inspection that finishes after room deletion", async () => {
+    const { dependencies } = createDependencies();
+    let persisted: ProjectInterviewerSnapshot | undefined;
+    let releaseInspection:
+      | ((result: { size: number; contentType: string }) => void)
+      | undefined;
+    dependencies.loadLatestState = () => persisted;
+    dependencies.persist = (snapshot) => {
+      persisted = structuredClone(snapshot);
+    };
+    dependencies.materialFiles = {
+      ...dependencies.materialFiles!,
+      inspect: async () =>
+        new Promise((resolve) => {
+          releaseInspection = resolve;
+        }),
+    };
+    const { app, freelancer, room } = await createRoom(dependencies);
+    const pending = app.materials.accept(freelancer, room.id, {
+      name: "Brief.txt",
+      size: 74,
+      declaredContentType: "text/plain",
+      fileReference: "file-ref",
+      uploader: "freelancer",
+    });
+    const rejected = expect(pending).rejects.toBeInstanceOf(
+      AuthorizationError,
+    );
+    await vi.waitFor(() =>
+      expect(releaseInspection).toBeTypeOf("function"),
+    );
+
+    const { dependencies: secondDependencies } = createDependencies();
+    secondDependencies.initialState = persisted!;
+    secondDependencies.loadLatestState = () => persisted;
+    secondDependencies.persist = (snapshot) => {
+      persisted = structuredClone(snapshot);
+    };
+    const second = createProjectInterviewer(secondDependencies);
+    const secondFreelancer =
+      await second.identities.resumeDevelopmentFreelancer(
+        freelancer.freelancerId,
+      );
+    await second.projectHome.lifecycle.delete(
+      secondFreelancer,
+      room.id,
+    );
+    releaseInspection?.({
+      size: 74,
+      contentType: "text/plain",
+    });
+
+    await rejected;
+    expect(app.inspectState().projectMaterials).toEqual([]);
+    expect(app.inspectState().rooms[0]).toMatchObject({
+      deletedAt: expect.any(Number),
+      invite: { status: "revoked" },
+    });
+  });
+
+  it("prevents deleted-room file analysis from committing late and restores the material as retryable", async () => {
+    const { dependencies } = createDependencies();
+    let persisted: ProjectInterviewerSnapshot | undefined;
+    dependencies.loadLatestState = () => persisted;
+    dependencies.persist = (snapshot) => {
+      persisted = structuredClone(snapshot);
+    };
+    let releaseAnalysis:
+      | ((analysis: FileAnalysisDraft) => void)
+      | undefined;
+    dependencies.fileAnalyzer = {
+      analyze: async () =>
+        new Promise<FileAnalysisDraft>((resolve) => {
+          releaseAnalysis = resolve;
+        }),
+    };
+    const { app, freelancer, room } = await createRoom(dependencies);
+    const accepted = await app.materials.accept(
+      freelancer,
+      room.id,
+      {
+        name: "Brief.txt",
+        size: 74,
+        declaredContentType: "text/plain",
+        fileReference: "file-ref",
+        uploader: "freelancer",
+      },
+    );
+    const pending = app.materials.process(
+      freelancer,
+      room.id,
+      accepted.id,
+    );
+    await vi.waitFor(() =>
+      expect(
+        app.inspectState().durableOperations[0]?.status,
+      ).toBe("running"),
+    );
+
+    const { dependencies: secondDependencies } = createDependencies();
+    secondDependencies.initialState = persisted!;
+    secondDependencies.loadLatestState = () => persisted;
+    secondDependencies.persist = (snapshot) => {
+      persisted = structuredClone(snapshot);
+    };
+    const second = createProjectInterviewer(secondDependencies);
+    const secondFreelancer =
+      await second.identities.resumeDevelopmentFreelancer(
+        freelancer.freelancerId,
+      );
+    await second.projectHome.lifecycle.delete(
+      secondFreelancer,
+      room.id,
+    );
+    releaseAnalysis?.({
+      summary: "This late analysis must not be committed.",
+      summaryLanguage: "en",
+      primaryCategory: "brief",
+      secondaryCategories: [],
+      confidence: 1,
+      language: "en",
+      signals: [],
+      model: "delayed-analyzer",
+      provider: "test",
+    });
+    await pending;
+
+    expect(app.inspectState().projectMaterials[0]).toMatchObject({
+      active: false,
+      state: "processing",
+    });
+    expect(app.inspectState().durableOperations[0]).toMatchObject({
+      status: "cancelled",
+      errorCode: "project_room_deleted",
+    });
+    await app.projectHome.lifecycle.recover(freelancer, room.id);
+    expect(app.inspectState().projectMaterials[0]).toMatchObject({
+      active: true,
+      state: "failed",
+      retryAvailable: true,
+      failureCode: "interrupted_processing",
+    });
+  });
+
   it("canonicalizes source locators independently of object property order", () => {
     const canonical: SourceLocator = {
       kind: "paragraph",
@@ -406,11 +551,17 @@ describe("Project Material public service", () => {
       uploader: "freelancer",
     });
     await app.materials.process(freelancer, room.id, material.id);
+    const activityBeforeFeedback = (
+      await app.rooms.get(freelancer, room.id)
+    ).lastActivityAt;
 
     await app.materials.addFeedback(freelancer, room.id, material.id, {
       explanation: "October is only a preference, not a fixed deadline.",
       locator: { kind: "paragraph", label: "Paragraph 1" },
     });
+    expect(
+      (await app.rooms.get(freelancer, room.id)).lastActivityAt,
+    ).toBeGreaterThan(activityBeforeFeedback);
 
     expect(analyze).toHaveBeenCalledTimes(1);
     expect(await app.contextPacks.latest(freelancer, room.id)).toMatchObject({

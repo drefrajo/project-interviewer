@@ -196,7 +196,11 @@ export interface ReviewVersion {
   sourceDraftId: string;
   version: number;
   language: Language;
-  status: "awaiting_client" | "change_requested" | "approved";
+  status:
+    | "awaiting_client"
+    | "change_requested"
+    | "approved"
+    | "invalidated";
   sections: BriefSection[];
   sentAt: number;
   approval?: BriefApproval;
@@ -224,7 +228,7 @@ export interface BriefOperation {
   roomId: string;
   operationType: "brief_generation";
   idempotencyKey: string;
-  status: "running" | "retryable" | "succeeded";
+  status: "running" | "retryable" | "succeeded" | "cancelled";
   stage: "generating" | "validating" | "complete";
   attemptCount: number;
   model?: string;
@@ -316,11 +320,20 @@ interface CoordinatorDependencies {
     source: BriefSource,
   ): BriefEvidenceDetail | null;
   setRoomPhase(roomId: string, phase: ProjectPhase): void;
+  touchRoom(roomId: string): void;
+  synchronize(): void;
   persist(): void;
   audit(actor: RoomActor, roomId: string, action: string): void;
 }
 
 const copy = <T>(value: T): T => structuredClone(value);
+
+const generationWasCancelled = (
+  operation: BriefOperation,
+  expectedAttempt: number,
+): boolean =>
+  operation.status === "cancelled" ||
+  operation.attemptCount !== expectedAttempt;
 
 const activeDraft = (
   state: ProjectBriefState,
@@ -338,7 +351,11 @@ const latestReview = (
   roomId: string,
 ): ReviewVersion | undefined =>
   state.reviewVersions
-    .filter((version) => version.roomId === roomId)
+    .filter(
+      (version) =>
+        version.roomId === roomId &&
+        version.status !== "invalidated",
+    )
     .sort((left, right) => right.version - left.version)[0];
 
 const operationFor = (
@@ -369,10 +386,24 @@ const toView = (
         : null,
     visibleReviewVersion: review ?? null,
     reviewVersions: state.reviewVersions
-      .filter((version) => version.roomId === roomId)
+      .filter(
+        (version) =>
+          version.roomId === roomId &&
+          (actor.kind === "freelancer" ||
+            version.status !== "invalidated"),
+      )
       .sort((left, right) => right.version - left.version),
     changeRequests: state.briefChangeRequests
-      .filter((request) => request.roomId === roomId)
+      .filter(
+        (request) =>
+          request.roomId === roomId &&
+          (actor.kind === "freelancer" ||
+            state.reviewVersions.some(
+              (review) =>
+                review.id === request.reviewVersionId &&
+                review.status !== "invalidated",
+            )),
+      )
       .sort((left, right) => right.updatedAt - left.updatedAt),
     activeChangeRequest: changeRequest ?? null,
     operation: operationFor(state, roomId) ?? null,
@@ -742,6 +773,10 @@ export const createProjectBriefCoordinator = (
     string,
     Promise<ProjectBriefView>
   >();
+  const persistRoom = (roomId: string): void => {
+    dependencies.touchRoom(roomId);
+    dependencies.persist();
+  };
 
   const executeGeneration = async (
     actor: Extract<RoomActor, { kind: "freelancer" }>,
@@ -751,8 +786,9 @@ export const createProjectBriefCoordinator = (
     operation.status = "running";
     operation.stage = "generating";
     operation.attemptCount += 1;
+    const operationAttempt = operation.attemptCount;
     operation.updatedAt = dependencies.clock.now();
-    dependencies.persist();
+    persistRoom(room.id);
     try {
       const discovery = dependencies.discovery(room.id);
       if (
@@ -799,6 +835,19 @@ export const createProjectBriefCoordinator = (
             ? { repairErrors: [validationError] }
             : {}),
         });
+        dependencies.synchronize();
+        const currentOperation =
+          dependencies.state.briefOperations.find(
+            ({ id }) => id === operation.id,
+          );
+        if (
+          !currentOperation ||
+          generationWasCancelled(operation, operationAttempt)
+        ) {
+          throw new ProjectBriefStateError(
+            "Project Brief generation was cancelled.",
+          );
+        }
         operation.model = generated.model;
         operation.provider = generated.provider;
         operation.stage = "validating";
@@ -882,14 +931,26 @@ export const createProjectBriefCoordinator = (
       operation.updatedAt = dependencies.clock.now();
       delete operation.errorCode;
       dependencies.audit(actor, room.id, "project_brief.generated");
-      dependencies.persist();
+      persistRoom(room.id);
       return toView(dependencies.state, actor, room.id);
     } catch (error) {
+      dependencies.synchronize();
+      const currentOperation =
+        dependencies.state.briefOperations.find(
+          ({ id }) => id === operation.id,
+        );
+      if (
+        !currentOperation ||
+        generationWasCancelled(operation, operationAttempt)
+      ) {
+        dependencies.persist();
+        throw error;
+      }
       operation.status = "retryable";
       operation.stage = "complete";
       operation.errorCode = "brief_generation_failed";
       operation.updatedAt = dependencies.clock.now();
-      dependencies.persist();
+      persistRoom(room.id);
       throw error;
     }
   };
@@ -965,7 +1026,7 @@ export const createProjectBriefCoordinator = (
         };
       if (!existing) {
         dependencies.state.briefOperations.push(operation);
-        dependencies.persist();
+        persistRoom(roomId);
       }
       const promise = executeGeneration(actor, room, operation).finally(
         () => generationPromises.delete(roomId),
@@ -1040,7 +1101,7 @@ export const createProjectBriefCoordinator = (
         });
       }
       draft.updatedAt = dependencies.clock.now();
-      dependencies.persist();
+      persistRoom(roomId);
       return toView(dependencies.state, actor, roomId);
     },
 
@@ -1097,7 +1158,7 @@ export const createProjectBriefCoordinator = (
       });
       refreshWarnings(draft, discovery.findings, now);
       draft.updatedAt = now;
-      dependencies.persist();
+      persistRoom(roomId);
       return toView(dependencies.state, actor, roomId);
     },
 
@@ -1188,7 +1249,7 @@ export const createProjectBriefCoordinator = (
         dependencies.clock.now(),
       );
       draft.updatedAt = dependencies.clock.now();
-      dependencies.persist();
+      persistRoom(roomId);
       return toView(dependencies.state, actor, roomId);
     },
 
@@ -1222,7 +1283,7 @@ export const createProjectBriefCoordinator = (
         });
       }
       draft.updatedAt = dependencies.clock.now();
-      dependencies.persist();
+      persistRoom(roomId);
       return toView(dependencies.state, actor, roomId);
     },
 
@@ -1250,7 +1311,7 @@ export const createProjectBriefCoordinator = (
         dependencies.clock.now(),
       );
       draft.updatedAt = dependencies.clock.now();
-      dependencies.persist();
+      persistRoom(roomId);
       return toView(dependencies.state, actor, roomId);
     },
 
@@ -1280,7 +1341,7 @@ export const createProjectBriefCoordinator = (
       warning.note = input.note.trim();
       warning.updatedAt = dependencies.clock.now();
       draft.updatedAt = warning.updatedAt;
-      dependencies.persist();
+      persistRoom(roomId);
       return toView(dependencies.state, actor, roomId);
     },
 
@@ -1333,7 +1394,7 @@ export const createProjectBriefCoordinator = (
       draft.updatedAt = now;
       dependencies.setRoomPhase(roomId, "client_review");
       dependencies.audit(actor, roomId, "project_brief.sent");
-      dependencies.persist();
+      persistRoom(roomId);
       return toView(dependencies.state, actor, roomId);
     },
 
@@ -1384,7 +1445,7 @@ export const createProjectBriefCoordinator = (
         dependencies.state.briefChangeRequests.push(request);
       }
       dependencies.audit(actor, room.id, "change_request.saved");
-      dependencies.persist();
+      persistRoom(roomId);
       return toView(dependencies.state, actor, roomId);
     },
 
@@ -1447,7 +1508,7 @@ export const createProjectBriefCoordinator = (
         roomId,
         "change_request.acknowledged",
       );
-      dependencies.persist();
+      persistRoom(roomId);
       return toView(dependencies.state, actor, roomId);
     },
 
@@ -1493,7 +1554,7 @@ export const createProjectBriefCoordinator = (
       };
       dependencies.setRoomPhase(roomId, "approved");
       dependencies.audit(actor, roomId, "project_brief.approved");
-      dependencies.persist();
+      persistRoom(roomId);
       return toView(dependencies.state, actor, roomId);
     },
 
@@ -1542,7 +1603,7 @@ export const createProjectBriefCoordinator = (
       dependencies.state.briefDrafts.push(draft);
       dependencies.setRoomPhase(roomId, "freelancer_review");
       dependencies.audit(actor, roomId, "project_brief.reopened");
-      dependencies.persist();
+      persistRoom(roomId);
       return toView(dependencies.state, actor, roomId);
     },
 

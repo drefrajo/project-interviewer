@@ -209,6 +209,82 @@ const createInterviewHarness = async (overrides?: {
 };
 
 describe("Discovery Interview public service", () => {
+  it("prevents a deleted room's in-flight Interview Agent from committing late output", async () => {
+    let releaseAgent: (() => void) | undefined;
+    const agentGate = new Promise<void>((resolve) => {
+      releaseAgent = resolve;
+    });
+    const { app, freelancer, room, client } =
+      await createInterviewHarness({
+        agent: {
+          advance: async ({ acceptedTurn }) => {
+            await agentGate;
+            return {
+              coverageUpdates: [],
+              findings: [
+                {
+                  type: "candidate_requirement",
+                  statement: "This late finding must not be committed.",
+                  sources: [
+                    { type: "turn", turnId: acceptedTurn.id },
+                  ],
+                },
+              ],
+              unresolvedTopics: [],
+              nextQuestion: {
+                text: "This late question must not be committed.",
+                coverageAreaId: "goals-users",
+                kind: "primary",
+                reason: "Late output.",
+              },
+              completionAssessment: {
+                proposeCompletion: false,
+                rationale: "Late output.",
+              },
+              model: "delayed-agent",
+              provider: "test",
+            };
+          },
+        },
+      });
+    const started = await app.interviews.start(client, room.id);
+    const activityBeforeAnswer = (
+      await app.rooms.get(freelancer, room.id)
+    ).lastActivityAt;
+    const contextPack = await app.contextPacks.latest(client, room.id);
+    const pending = app.interviews.submitAnswer(client, room.id, {
+      questionId: started.currentQuestion!.id,
+      answer: "Accept this answer before deletion.",
+      idempotencyKey: "delete-during-agent",
+      contextPackRevisionId: contextPack?.id ?? null,
+    });
+    const cancelled = expect(pending).rejects.toThrow(/cancelled/i);
+    await vi.waitFor(() =>
+      expect(
+        app.inspectState().interviewOperations.at(-1)?.status,
+      ).toBe("running"),
+    );
+    expect(
+      (await app.rooms.get(freelancer, room.id)).lastActivityAt,
+    ).toBeGreaterThan(activityBeforeAnswer);
+
+    await app.projectHome.lifecycle.delete(freelancer, room.id);
+    releaseAgent?.();
+    await cancelled;
+
+    const deleted = app.inspectState();
+    expect(deleted.discoveryFindings).toEqual([]);
+    expect(deleted.interviewOperations.at(-1)).toMatchObject({
+      status: "cancelled",
+      errorCode: "project_room_deleted",
+    });
+    await app.projectHome.lifecycle.recover(freelancer, room.id);
+    expect(app.inspectState().discoveryInterviews[0]).toMatchObject({
+      status: "retryable",
+      operationStatus: "retryable",
+    });
+  });
+
   it("claims the Responding Device only when Start creates the plan and first question", async () => {
     const { app, room, client } = await createInterviewHarness();
 
@@ -964,10 +1040,22 @@ describe("Discovery Interview public service", () => {
       app.interviews.pause(freelancer, room.id),
     ).rejects.toThrow(/only the Client/i);
 
+    const activityBeforePause = (
+      await app.rooms.get(freelancer, room.id)
+    ).lastActivityAt;
     expect(
       (await app.interviews.pause(client, room.id)).status,
     ).toBe("paused");
+    expect(
+      (await app.rooms.get(freelancer, room.id)).lastActivityAt,
+    ).toBeGreaterThan(activityBeforePause);
+    const activityBeforeResume = (
+      await app.rooms.get(freelancer, room.id)
+    ).lastActivityAt;
     const resumed = await app.interviews.resume(client, room.id);
+    expect(
+      (await app.rooms.get(freelancer, room.id)).lastActivityAt,
+    ).toBeGreaterThan(activityBeforeResume);
     const contextPack = await app.contextPacks.latest(client, room.id);
     const afterSkip = await app.interviews.skip(client, room.id, {
       questionId: resumed.currentQuestion!.id,
