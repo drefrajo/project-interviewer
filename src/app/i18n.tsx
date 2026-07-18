@@ -76,8 +76,13 @@ export const UI_COPY = {
     welcome: "Welcome, {name}",
     nextStep: "Next step",
     inviteCreated: "Invite Link created",
-    inviteHint: "Copy it now. The secret is only shown in this browser response.",
+    inviteHint:
+      "This link remains available here until you rotate or revoke it.",
     inviteControls: "Invite Link access",
+    copyInvite: "Copy Invite Link",
+    inviteCopied: "Invite Link copied",
+    inviteUnavailable:
+      "This older Invite Link cannot be displayed again. Rotate it once to create a persistent link.",
     rotateInvite: "Rotate Invite Link",
     revokeInvite: "Revoke Invite Link",
     inviteRevoked: "Invite Link revoked. Existing Client sessions no longer have access.",
@@ -204,8 +209,12 @@ export const UI_COPY = {
     nextStep: "Nächster Schritt",
     inviteCreated: "Einladungslink erstellt",
     inviteHint:
-      "Kopieren Sie ihn jetzt. Das Geheimnis wird nur in dieser Browserantwort angezeigt.",
+      "Dieser Link bleibt hier verfügbar, bis Sie ihn erneuern oder widerrufen.",
     inviteControls: "Zugriff über Einladungslink",
+    copyInvite: "Einladungslink kopieren",
+    inviteCopied: "Einladungslink kopiert",
+    inviteUnavailable:
+      "Dieser ältere Einladungslink kann nicht erneut angezeigt werden. Erneuern Sie ihn einmal, um einen dauerhaft sichtbaren Link zu erstellen.",
     rotateInvite: "Einladungslink erneuern",
     revokeInvite: "Einladungslink widerrufen",
     inviteRevoked:

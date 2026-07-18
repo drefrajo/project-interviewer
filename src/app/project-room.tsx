@@ -7,6 +7,8 @@ import {
   type ReactNode,
 } from "react";
 import {
+  Check,
+  Copy,
   FileText,
   FolderOpen,
   Home,
@@ -631,8 +633,50 @@ const InviteLinkControls = ({
   const { t } = useI18n();
   const [inviteToken, setInviteToken] = useState(initialInviteToken);
   const [busy, setBusy] = useState(false);
-  const [revoked, setRevoked] = useState(false);
+  const [status, setStatus] = useState<
+    "loading" | "active" | "unavailable" | "revoked"
+  >(initialInviteToken ? "active" : "loading");
+  const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
+  const inviteLoadRevision = useRef(0);
+  useEffect(() => {
+    let active = true;
+    const loadInvite = () => {
+      const revision = ++inviteLoadRevision.current;
+      void application.clientAccess
+        .getInvite(actor, roomId)
+        .then((invite) => {
+          if (!active || revision !== inviteLoadRevision.current) return;
+          setStatus(invite.status);
+          setCopied(false);
+          if (invite.status === "active") {
+            setInviteToken(invite.inviteToken);
+          } else if (invite.status === "revoked") {
+            setInviteToken(undefined);
+          } else if (!initialInviteToken) {
+            setInviteToken(undefined);
+          }
+        })
+        .catch((cause: unknown) => {
+          if (!active || revision !== inviteLoadRevision.current) return;
+          setError(cause instanceof Error ? cause.message : String(cause));
+        });
+    };
+    const loadVisibleInvite = () => {
+      if (document.visibilityState === "visible") loadInvite();
+    };
+    loadInvite();
+    window.addEventListener("focus", loadInvite);
+    document.addEventListener("visibilitychange", loadVisibleInvite);
+    return () => {
+      active = false;
+      window.removeEventListener("focus", loadInvite);
+      document.removeEventListener("visibilitychange", loadVisibleInvite);
+    };
+  }, [actor, application, initialInviteToken, roomId]);
+  const inviteUrl = inviteToken
+    ? `${window.location.origin}/invite/${inviteToken}`
+    : undefined;
   const perform = async (action: () => Promise<void>) => {
     if (busy) return;
     setBusy(true);
@@ -658,23 +702,45 @@ const InviteLinkControls = ({
         {inviteToken ? (
           <>
             <p className="mb-3 text-sm leading-6 text-muted">{t("inviteHint")}</p>
-            <code className="block break-all rounded bg-white/70 p-3 text-sm text-ink">{`${window.location.origin}/invite/${inviteToken}`}</code>
+            <code className="block break-all rounded bg-white/70 p-3 text-sm text-ink">{inviteUrl}</code>
           </>
         ) : null}
-        {revoked ? <p className="mt-3 text-sm text-ink" role="status">{t("inviteRevoked")}</p> : null}
+        {status === "unavailable" && !inviteToken ? (
+          <p className="mt-3 text-sm text-ink" role="status">{t("inviteUnavailable")}</p>
+        ) : null}
+        {status === "revoked" ? <p className="mt-3 text-sm text-ink" role="status">{t("inviteRevoked")}</p> : null}
         {error ? <p className="mt-3 text-sm font-bold text-[#852f21]" role="alert">{error}</p> : null}
         <div className="mt-4 flex flex-wrap gap-3">
+          {inviteUrl ? (
+            <button
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-forest px-4 py-2 text-sm font-bold text-white hover:bg-[#174f3f]"
+              disabled={busy}
+              onClick={() =>
+                void perform(async () => {
+                  await navigator.clipboard.writeText(inviteUrl);
+                  setCopied(true);
+                })
+              }
+              type="button"
+            >
+              {copied ? <Check aria-hidden="true" className="size-4" /> : <Copy aria-hidden="true" className="size-4" />}
+              {copied ? t("inviteCopied") : t("copyInvite")}
+            </button>
+          ) : null}
           <button
             className="inline-flex min-h-11 items-center justify-center rounded-md border border-line bg-transparent px-4 py-2 text-sm font-bold text-ink hover:bg-white"
-            disabled={busy}
-            onClick={() =>
-              void perform(async () => {
-                const result = await application.clientAccess.rotateInvite(
-                  actor,
-                  roomId,
-                );
-                setInviteToken(result.inviteToken);
-                setRevoked(false);
+              disabled={busy}
+              onClick={() =>
+                void perform(async () => {
+                  inviteLoadRevision.current += 1;
+                  const result = await application.clientAccess.rotateInvite(
+                    actor,
+                    roomId,
+                  );
+                  inviteLoadRevision.current += 1;
+                  setInviteToken(result.inviteToken);
+                setStatus("active");
+                setCopied(false);
               })
             }
             type="button"
@@ -683,12 +749,15 @@ const InviteLinkControls = ({
           </button>
           <button
             className="inline-flex min-h-11 items-center justify-center rounded-md border border-[#e9b29e] bg-transparent px-4 py-2 text-sm font-bold text-[#852f21] hover:bg-white"
-            disabled={busy}
-            onClick={() =>
-              void perform(async () => {
-                await application.clientAccess.revokeInvite(actor, roomId);
-                setInviteToken(undefined);
-                setRevoked(true);
+              disabled={busy}
+              onClick={() =>
+                void perform(async () => {
+                  inviteLoadRevision.current += 1;
+                  await application.clientAccess.revokeInvite(actor, roomId);
+                  inviteLoadRevision.current += 1;
+                  setInviteToken(undefined);
+                setStatus("revoked");
+                setCopied(false);
               })
             }
             type="button"

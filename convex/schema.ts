@@ -228,6 +228,8 @@ export default defineSchema({
   inviteCapabilities: defineTable({
     roomId: v.id("projectRooms"),
     tokenHash: v.string(),
+    tokenCiphertext: v.optional(v.string()),
+    tokenIv: v.optional(v.string()),
     version: v.number(),
     status: v.union(v.literal("active"), v.literal("revoked")),
     createdAt: v.number(),

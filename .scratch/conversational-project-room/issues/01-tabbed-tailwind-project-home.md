@@ -34,3 +34,11 @@ Client-only no-material path in the UI, domain, and Convex.
 `bun run lint` is currently blocked by two unrelated unused imports in the
 in-progress Project Brief slice (`project-brief-panel.tsx` and
 `project-brief-markdown.ts`).
+
+## Comments
+
+- Follow-up: the authenticated Freelancer can now retrieve and copy the current
+  Invite Link whenever they reopen the Overview. Convex retains the token
+  encrypted and room-bound, clears it on rotation/revocation, and continues to
+  exchange only its hash. Pre-existing hash-only links remain valid but require
+  one rotation before Convex can display them again.

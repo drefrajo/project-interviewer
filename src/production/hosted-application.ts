@@ -282,6 +282,37 @@ export const createHostedApplication = (
       },
     },
     clientAccess: {
+      async getInvite(
+        _actor: FreelancerActor,
+        roomId: string,
+      ) {
+        const result = record(
+          await transport.action(references.invites.get, { roomId }),
+        );
+        const status = stringValue(result.status, "invite status");
+        const inviteVersion = numberValue(
+          result.version,
+          "invite version",
+        );
+        if (status === "active") {
+          return {
+            status: "active" as const,
+            inviteToken: stringValue(
+              result.token,
+              "invite capability",
+            ),
+            inviteVersion,
+          };
+        }
+        if (status === "unavailable") {
+          return { status: "unavailable" as const, inviteVersion };
+        }
+        if (status === "revoked") {
+          return { status: "revoked" as const, inviteVersion };
+        }
+        throw new Error("The hosted backend returned an invalid invite.");
+      },
+
       async resolveInvite(
         inviteToken: string,
         input: { deviceId?: string },

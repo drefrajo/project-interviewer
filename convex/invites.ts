@@ -1,6 +1,7 @@
 import {
   actionGeneric,
   internalMutationGeneric,
+  internalQueryGeneric,
   makeFunctionReference,
   mutationGeneric,
 } from "convex/server";
@@ -8,6 +9,8 @@ import { v, type GenericId } from "convex/values";
 import {
   createCapabilityToken,
   hashCapability,
+  openCapabilityToken,
+  sealCapabilityToken,
 } from "./lib/capability_crypto";
 import { requireFreelancerRoom } from "./lib/server_authorization";
 import { recordAudit } from "./lib/audit";
@@ -19,15 +22,42 @@ const createCapabilityRecordReference = makeFunctionReference<
     roomId: GenericId<"projectRooms">;
     authUserId: string;
     tokenHash: string;
+    tokenCiphertext: string;
+    tokenIv: string;
   },
   number
 >("invites:createCapabilityRecord");
+
+const currentCapabilityRecordReference = makeFunctionReference<
+  "query",
+  {
+    roomId: GenericId<"projectRooms">;
+    authUserId: string;
+  },
+  | {
+      status: "active" | "revoked";
+      version: number;
+      tokenCiphertext?: string;
+      tokenIv?: string;
+    }
+  | null
+>("invites:currentCapabilityRecord");
+
+const requiredEnvironment = (name: string): string => {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`Missing invite encryption environment variable: ${name}`);
+  }
+  return value;
+};
 
 export const createCapabilityRecord = internalMutationGeneric({
   args: {
     roomId: v.id("projectRooms"),
     authUserId: v.string(),
     tokenHash: v.string(),
+    tokenCiphertext: v.string(),
+    tokenIv: v.string(),
   },
   handler: async (context, args) => {
     const room = await context.db.get(args.roomId);
@@ -50,11 +80,15 @@ export const createCapabilityRecord = internalMutationGeneric({
       await context.db.patch(capability._id, {
         status: "revoked",
         revokedAt: now,
+        tokenCiphertext: undefined,
+        tokenIv: undefined,
       });
     }
     await context.db.insert("inviteCapabilities", {
       roomId: args.roomId,
       tokenHash: args.tokenHash,
+      tokenCiphertext: args.tokenCiphertext,
+      tokenIv: args.tokenIv,
       version,
       status: "active",
       createdAt: now,
@@ -70,6 +104,37 @@ export const createCapabilityRecord = internalMutationGeneric({
   },
 });
 
+export const currentCapabilityRecord = internalQueryGeneric({
+  args: {
+    roomId: v.id("projectRooms"),
+    authUserId: v.string(),
+  },
+  handler: async (context, args) => {
+    const room = await context.db.get(args.roomId);
+    if (!room || room.deletedAt) {
+      throw new Error("Room not found.");
+    }
+    const profile = await context.db.get(room.freelancerId);
+    if (!profile || profile.authUserId !== args.authUserId) {
+      throw new Error("Room access denied.");
+    }
+    const capability = await context.db
+      .query("inviteCapabilities")
+      .withIndex("by_room", (query) => query.eq("roomId", args.roomId))
+      .order("desc")
+      .first();
+    if (!capability) return null;
+    return {
+      status: capability.status,
+      version: capability.version,
+      ...(capability.tokenCiphertext
+        ? { tokenCiphertext: capability.tokenCiphertext }
+        : {}),
+      ...(capability.tokenIv ? { tokenIv: capability.tokenIv } : {}),
+    };
+  },
+});
+
 export const createCapability = actionGeneric({
   args: { roomId: v.id("projectRooms") },
   handler: async (context, args) => {
@@ -79,15 +144,73 @@ export const createCapability = actionGeneric({
     }
     const token = createCapabilityToken();
     const tokenHash = await hashCapability(token);
+    const sealed = await sealCapabilityToken(
+      token,
+      requiredEnvironment("BETTER_AUTH_SECRET"),
+      String(args.roomId),
+    );
     const version = await context.runMutation(
       createCapabilityRecordReference,
       {
         roomId: args.roomId,
         authUserId: identity.subject,
         tokenHash,
+        tokenCiphertext: sealed.ciphertext,
+        tokenIv: sealed.iv,
       },
     );
     return { token, version };
+  },
+});
+
+export const getCapability = actionGeneric({
+  args: { roomId: v.id("projectRooms") },
+  handler: async (context, args) => {
+    const identity = await context.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Authentication required.");
+    }
+    const capability = await context.runQuery(
+      currentCapabilityRecordReference,
+      {
+        roomId: args.roomId,
+        authUserId: identity.subject,
+      },
+    );
+    if (!capability) {
+      return { status: "revoked" as const, version: 0 };
+    }
+    if (capability.status === "revoked") {
+      return {
+        status: "revoked" as const,
+        version: capability.version,
+      };
+    }
+    if (!capability.tokenCiphertext || !capability.tokenIv) {
+      return {
+        status: "unavailable" as const,
+        version: capability.version,
+      };
+    }
+    try {
+      return {
+        status: "active" as const,
+        token: await openCapabilityToken(
+          {
+            ciphertext: capability.tokenCiphertext,
+            iv: capability.tokenIv,
+          },
+          requiredEnvironment("BETTER_AUTH_SECRET"),
+          String(args.roomId),
+        ),
+        version: capability.version,
+      };
+    } catch {
+      return {
+        status: "unavailable" as const,
+        version: capability.version,
+      };
+    }
   },
 });
 
@@ -162,6 +285,8 @@ export const revokeCapability = mutationGeneric({
       await context.db.patch(capability._id, {
         status: "revoked",
         revokedAt: now,
+        tokenCiphertext: undefined,
+        tokenIv: undefined,
       });
     }
     const sessions = await context.db

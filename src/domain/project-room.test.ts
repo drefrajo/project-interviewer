@@ -25,7 +25,7 @@ const dependencies = (): ProjectInterviewerDependencies => {
 };
 
 describe("Project Room public service", () => {
-  it("creates a canonical Project Room and returns the Invite Link secret only once", async () => {
+  it("keeps the Invite Link out of snapshots while letting its owner retrieve it", async () => {
     const app = createProjectInterviewer(dependencies());
     const freelancer = await app.identities.establishFreelancer({
       displayName: "Ada Freelancer",
@@ -58,6 +58,13 @@ describe("Project Room public service", () => {
     expect(JSON.stringify(app.inspectState())).not.toContain(
       "unguessable-client-capability-1",
     );
+    await expect(
+      app.clientAccess.getInvite(freelancer, created.room.id),
+    ).resolves.toEqual({
+      status: "active",
+      inviteToken: "unguessable-client-capability-1",
+      inviteVersion: 1,
+    });
   });
 
   it("onboards a Client once and resolves repeat visits to the same Project Home", async () => {
@@ -127,8 +134,21 @@ describe("Project Room public service", () => {
       app.clientAccess.resolveInvite(inviteToken, { deviceId: "old-device" }),
     ).rejects.toBeInstanceOf(AuthorizationError);
     expect(rotated.inviteVersion).toBe(2);
+    await expect(
+      app.clientAccess.getInvite(freelancer, room.id),
+    ).resolves.toEqual({
+      status: "active",
+      inviteToken: rotated.inviteToken,
+      inviteVersion: 2,
+    });
 
     await app.clientAccess.revokeInvite(freelancer, room.id);
+    await expect(
+      app.clientAccess.getInvite(freelancer, room.id),
+    ).resolves.toEqual({
+      status: "revoked",
+      inviteVersion: 2,
+    });
     await expect(
       app.clientAccess.resolveInvite(rotated.inviteToken, {
         deviceId: "new-device",
@@ -155,6 +175,9 @@ describe("Project Room public service", () => {
     await expect(app.rooms.get(grace, adaRoom.room.id)).rejects.toBeInstanceOf(
       AuthorizationError,
     );
+    await expect(
+      app.clientAccess.getInvite(grace, adaRoom.room.id),
+    ).rejects.toBeInstanceOf(AuthorizationError);
     expect(await app.rooms.get(ada, adaRoom.room.id)).toMatchObject({
       id: adaRoom.room.id,
     });

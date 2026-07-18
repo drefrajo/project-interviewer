@@ -63,6 +63,7 @@ export const references = {
   },
   invites: {
     create: api.invites.createCapability,
+    get: api.invites.getCapability,
     exchange: api.invites.exchangeCapabilityHash,
     revoke: api.invites.revokeCapability,
   },

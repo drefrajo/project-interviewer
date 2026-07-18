@@ -2,6 +2,7 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
   within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -132,6 +133,121 @@ describe("File-First Discovery application shell", () => {
       screen.getByRole("button", { name: /revoke invite link/i }),
     );
     expect(screen.getByText(/invite link revoked/i)).toBeInTheDocument();
+  });
+
+  it("shows the current Invite Link when the owner opens a room directly", async () => {
+    const application = createTestApplication();
+    const freelancer =
+      await application.identities.establishFreelancer({
+        displayName: "Ada",
+      });
+    const created = await application.rooms.create(freelancer, {
+      title: "Persistent Invite",
+      clientLabel: "Alpine",
+      projectDescription: "A portal for client service requests.",
+      briefLanguage: "en",
+      freelancerGuidance: "",
+    });
+    const routes = createRoutes(application, freelancer);
+    const TestRoutes = () => useRoutes(routes);
+
+    render(
+      <MemoryRouter initialEntries={[`/rooms/${created.room.id}`]}>
+        <TestRoutes />
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByText(/test-invite-1/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /copy invite link/i }),
+    ).toBeInTheDocument();
+
+    await application.clientAccess.rotateInvite(
+      freelancer,
+      created.room.id,
+    );
+    fireEvent.focus(window);
+
+    expect(
+      await screen.findByText(/test-invite-2/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/test-invite-1/)).not.toBeInTheDocument();
+  });
+
+  it("ignores an owner refresh that became stale during Invite Link rotation", async () => {
+    const user = userEvent.setup();
+    const application = createTestApplication();
+    const freelancer =
+      await application.identities.establishFreelancer({
+        displayName: "Ada",
+      });
+    const created = await application.rooms.create(freelancer, {
+      title: "Concurrent Invite",
+      clientLabel: "Alpine",
+      projectDescription: "A portal for client service requests.",
+      briefLanguage: "en",
+      freelancerGuidance: "",
+    });
+    const routes = createRoutes(application, freelancer);
+    const TestRoutes = () => useRoutes(routes);
+    render(
+      <MemoryRouter initialEntries={[`/rooms/${created.room.id}`]}>
+        <TestRoutes />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText(/test-invite-1/)).toBeInTheDocument();
+
+    let releaseRotation: () => void = () => {};
+    const rotationGate = new Promise<void>((resolve) => {
+      releaseRotation = resolve;
+    });
+    let releaseStaleRefresh: () => void = () => {};
+    const staleRefreshGate = new Promise<void>((resolve) => {
+      releaseStaleRefresh = resolve;
+    });
+    let staleRefreshCaptured: () => void = () => {};
+    const staleRefreshCapturedGate = new Promise<void>((resolve) => {
+      staleRefreshCaptured = resolve;
+    });
+    const rotateInvite =
+      application.clientAccess.rotateInvite.bind(
+        application.clientAccess,
+      );
+    vi.spyOn(
+      application.clientAccess,
+      "rotateInvite",
+    ).mockImplementation(async (...args) => {
+      await rotationGate;
+      return rotateInvite(...args);
+    });
+    const getInvite = application.clientAccess.getInvite.bind(
+      application.clientAccess,
+    );
+    vi.spyOn(
+      application.clientAccess,
+      "getInvite",
+    ).mockImplementationOnce(async (...args) => {
+      const stale = await getInvite(...args);
+      staleRefreshCaptured();
+      await staleRefreshGate;
+      return stale;
+    });
+
+    await user.click(
+      screen.getByRole("button", { name: /rotate invite link/i }),
+    );
+    fireEvent.focus(window);
+    await staleRefreshCapturedGate;
+    releaseRotation();
+    expect(await screen.findByText(/test-invite-2/)).toBeInTheDocument();
+    releaseStaleRefresh();
+
+    await waitFor(() => {
+      expect(screen.getByText(/test-invite-2/)).toBeInTheDocument();
+      expect(screen.queryByText(/test-invite-1/)).not.toBeInTheDocument();
+    });
   });
 
   it("shows disclosure onboarding once and returns the Client to Project Home", async () => {

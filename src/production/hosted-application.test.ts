@@ -89,6 +89,39 @@ describe("hosted application adapter", () => {
     });
   });
 
+  it("retrieves the current Invite Link for its authenticated owner", async () => {
+    const transport: HostedConvexTransport = {
+      query: vi.fn(),
+      mutation: vi.fn(),
+      action: vi.fn().mockResolvedValue({
+        status: "active",
+        token: "persistent-invite-token",
+        version: 3,
+      }),
+    };
+    const application = createHostedApplication(transport);
+
+    await expect(
+      application.clientAccess.getInvite(
+        {
+          kind: "freelancer",
+          freelancerId: "authenticated",
+          sessionId: "better-auth",
+        },
+        "room_1",
+      ),
+    ).resolves.toEqual({
+      status: "active",
+      inviteToken: "persistent-invite-token",
+      inviteVersion: 3,
+    });
+
+    expect(transport.action).toHaveBeenCalledWith(
+      expect.anything(),
+      { roomId: "room_1" },
+    );
+  });
+
   it("persists the single Markdown Project Brief document through Convex", async () => {
     const transport: HostedConvexTransport = {
       query: vi.fn().mockResolvedValue({

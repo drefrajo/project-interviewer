@@ -438,6 +438,10 @@ export const createProjectInterviewer = (
       tokenHash: string;
     }
   >();
+  const activeInviteTokens = new Map<
+    string,
+    { inviteToken: string; inviteVersion: number }
+  >();
 
   let lastPersistedState = JSON.stringify(state);
   const persist = () => {
@@ -1678,6 +1682,10 @@ export const createProjectInterviewer = (
         };
         requireFreelancer(actor);
         state.rooms.push(room);
+        activeInviteTokens.set(room.id, {
+          inviteToken,
+          inviteVersion: room.invite.version,
+        });
         audit(actor, room.id, "project_room.created");
         persist();
         return { room: copy(room), inviteToken };
@@ -2212,6 +2220,34 @@ export const createProjectInterviewer = (
       },
     },
     clientAccess: {
+      async getInvite(
+        actor: FreelancerActor,
+        roomId: string,
+      ): Promise<
+        | {
+            status: "active";
+            inviteToken: string;
+            inviteVersion: number;
+          }
+        | { status: "unavailable"; inviteVersion: number }
+        | { status: "revoked"; inviteVersion: number }
+      > {
+        const room = requireFreelancerRoom(actor, roomId);
+        if (room.invite.status === "revoked") {
+          return {
+            status: "revoked",
+            inviteVersion: room.invite.version,
+          };
+        }
+        const active = activeInviteTokens.get(room.id);
+        return active?.inviteVersion === room.invite.version
+          ? { status: "active", ...active }
+          : {
+              status: "unavailable",
+              inviteVersion: room.invite.version,
+            };
+      },
+
       async resolveInvite(
         inviteToken: string,
         input: { deviceId?: string },
@@ -2295,6 +2331,10 @@ export const createProjectInterviewer = (
           status: "active",
           version: room.invite.version + 1,
         };
+        activeInviteTokens.set(room.id, {
+          inviteToken,
+          inviteVersion: room.invite.version,
+        });
         room.updatedAt = dependencies.clock.now();
         audit(actor, room.id, "invite.rotated");
         persist();
@@ -2310,6 +2350,7 @@ export const createProjectInterviewer = (
       ): Promise<void> {
         const room = requireFreelancerRoom(actor, roomId);
         room.invite.status = "revoked";
+        activeInviteTokens.delete(room.id);
         room.updatedAt = dependencies.clock.now();
         audit(actor, room.id, "invite.revoked");
         persist();
