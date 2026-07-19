@@ -25,7 +25,10 @@ import {
   requireWritableFreelancerRoom,
 } from "./lib/server_authorization";
 import { recordAudit } from "./lib/audit";
-import { canCommitBriefSnapshot } from "./lib/production_boundaries";
+import {
+  canCommitBriefSnapshot,
+  canRetryWorkflow,
+} from "./lib/production_boundaries";
 
 const roomActorArgs = {
   roomId: v.id("projectRooms"),
@@ -391,7 +394,7 @@ export const beginGeneration = mutationGeneric({
     }
     const now = Date.now();
     if (existing) {
-      if (Number(existing.attemptCount) >= 2) {
+      if (!canRetryWorkflow(Number(existing.attemptCount))) {
         throw new Error("The Brief generation retry limit has been reached.");
       }
       await context.db.patch(existing._id, {

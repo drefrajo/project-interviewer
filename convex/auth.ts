@@ -6,32 +6,57 @@ import { betterAuth, type BetterAuthOptions } from "better-auth";
 import { componentsGeneric, queryGeneric } from "convex/server";
 import authConfig from "./auth.config";
 import { authMethodGuard } from "./auth_method_guard";
+import authSchema from "./betterAuth/schema";
 import { readOAuthProviderConfiguration } from "../src/infrastructure/oauth-provider-configuration";
 
 const components = componentsGeneric();
 
 export const authComponent = createClient(
   components.betterAuth as unknown as BetterAuthComponentApi,
+  {
+    local: {
+      schema: authSchema,
+    },
+  },
 );
 
-const requiredEnvironment = (name: string): string => {
-  const value = process.env[name];
+type EnvironmentSource = Readonly<
+  Record<string, string | undefined>
+>;
+
+const requiredEnvironment = (
+  source: EnvironmentSource,
+  name: string,
+): string => {
+  const value = source[name];
   if (!value) {
     throw new Error(`Missing Better Auth environment variable: ${name}`);
   }
   return value;
 };
 
-export const createAuth = (
-  context: Parameters<typeof authComponent.adapter>[0],
-) => {
-  const siteUrl = requiredEnvironment("SITE_URL");
-  const convexSiteUrl = requiredEnvironment("CONVEX_SITE_URL");
-  const oauth = readOAuthProviderConfiguration(process.env);
+const schemaGenerationEnvironment = {
+  SITE_URL: "http://localhost:5173",
+  CONVEX_SITE_URL: "http://127.0.0.1:3211",
+  BETTER_AUTH_SECRET: "schema-generation-secret-at-least-32-chars",
+  GOOGLE_CLIENT_ID: "schema-generation-client",
+  GOOGLE_CLIENT_SECRET: "schema-generation-secret",
+} satisfies EnvironmentSource;
 
-  const options = {
+export const createAuthOptions = (
+  context: Parameters<typeof authComponent.adapter>[0],
+  source: EnvironmentSource = schemaGenerationEnvironment,
+) => {
+  const siteUrl = requiredEnvironment(source, "SITE_URL");
+  const convexSiteUrl = requiredEnvironment(
+    source,
+    "CONVEX_SITE_URL",
+  );
+  const oauth = readOAuthProviderConfiguration(source);
+
+  return {
     appName: "Project Interviewer",
-    secret: requiredEnvironment("BETTER_AUTH_SECRET"),
+    secret: requiredEnvironment(source, "BETTER_AUTH_SECRET"),
     baseURL: convexSiteUrl,
     trustedOrigins: [siteUrl],
     rateLimit: {
@@ -66,9 +91,11 @@ export const createAuth = (
       convex({ authConfig }),
     ],
   } satisfies BetterAuthOptions;
-
-  return betterAuth(options);
 };
+
+export const createAuth = (
+  context: Parameters<typeof authComponent.adapter>[0],
+) => betterAuth(createAuthOptions(context, process.env));
 
 export const getProviderAvailability = queryGeneric({
   args: {},

@@ -373,7 +373,7 @@ const schemaNames: Record<DomainOperationKind, string> = {
   brief_generation: "project_brief",
 };
 
-const schemas = Object.fromEntries(
+export const aiOutputSchemas = Object.fromEntries(
   Object.entries(outputValidators).map(([kind, validator]) => [
     kind,
     {
@@ -389,7 +389,7 @@ const schemas = Object.fromEntries(
   { name: string; jsonSchema: Record<string, unknown> }
 >;
 
-const validateDomainOutput = (
+export const validateDomainOutput = (
   kind: DomainOperationKind,
   value: unknown,
 ) => {
@@ -570,7 +570,7 @@ export const executeDomainOperation = internalActionGeneric({
             markMaterialProgress,
           )
         : undefined;
-    const schema = schemas[args.kind];
+    const schema = aiOutputSchemas[args.kind];
     const evidence =
       parsed?.evidence ??
       JSON.stringify({

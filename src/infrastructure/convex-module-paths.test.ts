@@ -1,4 +1,4 @@
-import { readdirSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { extname, join, relative, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
@@ -48,5 +48,27 @@ describe("Convex module paths", () => {
     );
 
     expect(invalidPaths).toEqual([]);
+  });
+
+  it("keeps Invite Link encryption in Node behind rollout-safe action paths", () => {
+    const actionSource = readFileSync(
+      join(convexDirectory, "invite_actions.ts"),
+      "utf8",
+    );
+    const databaseSource = readFileSync(
+      join(convexDirectory, "invites.ts"),
+      "utf8",
+    );
+
+    expect(actionSource.trimStart()).toMatch(/^"use node";/);
+    expect(actionSource).toContain("sealCapabilityToken");
+    expect(databaseSource).not.toContain("sealCapabilityToken");
+    expect(databaseSource).toContain(
+      '"invite_actions:createCapability"',
+    );
+    expect(databaseSource).toContain(
+      '"invite_actions:getCapability"',
+    );
+    expect(databaseSource).toContain("context.runAction");
   });
 });

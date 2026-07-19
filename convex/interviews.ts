@@ -7,6 +7,7 @@ import {
 } from "./lib/server_authorization";
 import { asRecord } from "./lib/commit_values";
 import { recordAudit } from "./lib/audit";
+import { canRetryWorkflow } from "./lib/production_boundaries";
 import { enforceRateLimit } from "./lib/rate_limit";
 
 const clientArgs = {
@@ -804,7 +805,7 @@ export const retry = mutationGeneric({
     ) {
       throw new Error("No interrupted interview step can be retried.");
     }
-    if (Number(operation.attemptCount) >= 2) {
+    if (!canRetryWorkflow(Number(operation.attemptCount))) {
       throw new Error("The interview retry limit has been reached.");
     }
     const now = Date.now();

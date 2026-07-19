@@ -15,6 +15,7 @@ import type * as auth from "./auth";
 import type * as briefs from "./briefs";
 import type * as deletion from "./deletion";
 import type * as interviews from "./interviews";
+import type * as inviteActions from "./invite_actions";
 import type * as invites from "./invites";
 import type * as materials from "./materials";
 import type * as operations from "./operations";
@@ -28,6 +29,7 @@ type FullApi = ApiFromModules<{
   briefs: typeof briefs;
   deletion: typeof deletion;
   interviews: typeof interviews;
+  "invite_actions": typeof inviteActions;
   invites: typeof invites;
   materials: typeof materials;
   operations: typeof operations;

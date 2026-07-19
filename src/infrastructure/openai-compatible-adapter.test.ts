@@ -1,8 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  AiBoundaryRequestError,
   AiBoundaryValidationError,
   createOpenAiCompatibleAdapter,
+  normalizeProviderOptionalNulls,
+  toProviderStrictSchema,
 } from "./openai-compatible-adapter";
+import {
+  aiOutputSchemas,
+  validateDomainOutput,
+} from "../../convex/ai";
 
 const jsonResponse = (body: unknown) =>
   new Response(JSON.stringify(body), {
@@ -11,6 +18,242 @@ const jsonResponse = (body: unknown) =>
   });
 
 describe("OpenAI-compatible AI boundary", () => {
+  it("converts optional output fields into provider-compatible strict schema", async () => {
+    const requestBodies: Array<Record<string, unknown>> = [];
+    const fetcher = vi.fn(
+      async (_url: string | URL | Request, init?: RequestInit) => {
+        requestBodies.push(
+          JSON.parse(String(init?.body)) as Record<string, unknown>,
+        );
+        return jsonResponse({
+          model: "model",
+          provider: "provider",
+          choices: [
+            {
+              message: {
+                content:
+                  '{"label":"ready","optionalNote":null,"count":1}',
+              },
+            },
+          ],
+          usage: {},
+        });
+      },
+    );
+    const adapter = createOpenAiCompatibleAdapter(
+      {
+        apiKey: "secret",
+        baseUrl: "https://openrouter.ai/api/v1",
+        models: { interview_planner: "model" },
+      },
+      { fetch: fetcher },
+    );
+
+    await expect(
+      adapter.structuredChat({
+        role: "interview_planner",
+        messages: [{ role: "user", content: "Plan." }],
+        schema: {
+          name: "plan",
+          jsonSchema: {
+            $schema: "http://json-schema.org/draft-07/schema#",
+            type: "object",
+            properties: {
+              label: { type: "string" },
+              optionalNote: { type: "string" },
+              count: { type: "number", default: 0 },
+            },
+            required: ["label", "count"],
+            additionalProperties: false,
+          },
+        },
+        validate: (value) =>
+          typeof value === "object" &&
+          value !== null &&
+          !("optionalNote" in value)
+            ? {
+                ok: true as const,
+                value: value as { label: string; count: number },
+              }
+            : {
+                ok: false as const,
+                errors: ["optionalNote must be omitted when absent"],
+              },
+      }),
+    ).resolves.toMatchObject({
+      value: { label: "ready", count: 1 },
+    });
+
+    const responseFormat = requestBodies[0]?.response_format as {
+      json_schema?: {
+        schema?: Record<string, unknown>;
+      };
+    };
+    const strictSchema = responseFormat.json_schema?.schema;
+    expect(strictSchema).not.toHaveProperty("$schema");
+    expect(strictSchema).toMatchObject({
+      required: ["label", "optionalNote", "count"],
+      properties: {
+        optionalNote: {
+          anyOf: [{ type: "string" }, { type: "null" }],
+        },
+        count: { type: "number" },
+      },
+    });
+    expect(
+      (
+        strictSchema?.properties as Record<
+          string,
+          Record<string, unknown>
+        >
+      ).count,
+    ).not.toHaveProperty("default");
+  });
+
+  it("surfaces only allow-listed provider error categories", async () => {
+    const adapter = createOpenAiCompatibleAdapter(
+      {
+        apiKey: "secret-api-key",
+        baseUrl: "https://openrouter.ai/api/v1",
+        models: { interview_planner: "model" },
+      },
+      {
+        fetch: vi.fn(async () =>
+          new Response(
+            JSON.stringify({
+              error: {
+                code: 400,
+                message:
+                  "Invalid schema for private-client@example.com using sk-private-token-value.",
+                metadata: { error_type: "invalid_json_schema" },
+              },
+            }),
+            {
+              status: 400,
+              headers: { "content-type": "application/json" },
+            },
+          ),
+        ),
+      },
+    );
+
+    const operation = adapter.structuredChat({
+      role: "interview_planner",
+      messages: [{ role: "user", content: "Plan." }],
+      schema: { name: "plan", jsonSchema: { type: "object" } },
+      validate: () => ({ ok: false as const, errors: ["invalid"] }),
+    });
+
+    await expect(operation).rejects.toThrow(
+      /HTTP 400 \(invalid_json_schema\)/i,
+    );
+    await expect(operation).rejects.not.toThrow(
+      /private-client|sk-private|secret-api-key/i,
+    );
+  });
+
+  it("converts the real domain schemas to OpenAI strict JSON Schema", () => {
+    for (const { jsonSchema } of Object.values(aiOutputSchemas)) {
+      const strictSchema = toProviderStrictSchema(jsonSchema);
+      const serialized = JSON.stringify(strictSchema);
+      expect(serialized).not.toContain('"$schema"');
+      expect(serialized).not.toContain('"default"');
+      expect(serialized).not.toContain('"oneOf"');
+      expect(serialized).not.toContain('"allOf"');
+    }
+    expect(
+      JSON.stringify(
+        toProviderStrictSchema(
+          aiOutputSchemas.interview_turn.jsonSchema,
+        ),
+      ),
+    ).toContain('"anyOf"');
+  });
+
+  it("preserves explicit nulls while removing provider-only optional nulls", async () => {
+    const responseValue = {
+      status: "active",
+      nextQuestion: null,
+      unresolvedTopics: [],
+      coverageUpdates: [],
+      findings: [
+        {
+          type: "risk",
+          statement: "A grounded risk.",
+          sources: [{ type: "turn", turnId: "turn-1" }],
+          status: null,
+        },
+      ],
+      findingStatusUpdates: [],
+    };
+    const adapter = createOpenAiCompatibleAdapter(
+      {
+        apiKey: "secret",
+        baseUrl: "https://openrouter.ai/api/v1",
+        models: { interview_agent: "model" },
+      },
+      {
+        fetch: vi.fn(async () =>
+          jsonResponse({
+            model: "model",
+            provider: "provider",
+            choices: [
+              { message: { content: JSON.stringify(responseValue) } },
+            ],
+            usage: {},
+          }),
+        ),
+      },
+    );
+
+    await expect(
+      adapter.structuredChat({
+        role: "interview_agent",
+        messages: [{ role: "user", content: "Continue." }],
+        schema: aiOutputSchemas.interview_turn,
+        validate: (value) =>
+          validateDomainOutput("interview_turn", value),
+      }),
+    ).resolves.toMatchObject({
+      value: {
+        nextQuestion: null,
+        findings: [
+          {
+            sources: [{ type: "turn", turnId: "turn-1" }],
+          },
+        ],
+      },
+    });
+  });
+
+  it("does not guess between ambiguous non-discriminated union branches", () => {
+    expect(
+      normalizeProviderOptionalNulls(
+        { shared: null },
+        {
+          anyOf: [
+            {
+              type: "object",
+              properties: { shared: { type: "string" } },
+            },
+            {
+              type: "object",
+              properties: { shared: { type: "number" } },
+            },
+          ],
+        },
+      ),
+    ).toEqual({ shared: null });
+  });
+
+  it("rejects unsupported allOf output schemas before making a request", () => {
+    expect(() =>
+      toProviderStrictSchema({
+        allOf: [{ type: "object", properties: {} }],
+      }),
+    ).toThrow(AiBoundaryRequestError);
+  });
+
   it("enforces private routing and captures actual model/provider usage", async () => {
     const requestBodies: unknown[] = [];
     const fetcher = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {

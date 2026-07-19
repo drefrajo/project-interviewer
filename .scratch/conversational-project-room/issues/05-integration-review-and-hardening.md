@@ -40,3 +40,14 @@ perform Standards and Spec review against the feature specification.
 - `bun run verify` — 170 tests, 15 evaluation fixtures, all gates passed.
 - `git diff --check`
 - Production environment validation with non-secret placeholder Convex URLs.
+
+## Comments
+
+- Runtime follow-up: fixed three failures found in the development deployment.
+  OpenAI-compatible structured schemas are now converted to the provider's
+  strict subset and provider rejections expose only safe error categories;
+  Better Auth uses a local component schema containing the passkey model; and
+  Invite Link encryption runs in a Node action where HKDF is supported.
+- The captured failed interview-planning action was replayed successfully
+  against OpenRouter. The retry budget now permits one recovery attempt for
+  operations that had already exhausted the former two-attempt limit.

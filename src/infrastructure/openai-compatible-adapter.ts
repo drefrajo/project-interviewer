@@ -49,7 +49,7 @@ export class AiBoundaryValidationError extends Error {
   }
 }
 
-class AiBoundaryRequestError extends Error {
+export class AiBoundaryRequestError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "AiBoundaryRequestError";
@@ -75,6 +75,274 @@ const asRecord = (value: unknown): Record<string, unknown> =>
 const asNumber = (value: unknown): number =>
   typeof value === "number" && Number.isFinite(value) ? value : 0;
 
+const asSchemaRecord = (
+  value: unknown,
+): Readonly<Record<string, unknown>> =>
+  typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Readonly<Record<string, unknown>>)
+    : {};
+
+const nullableSchema = (
+  schema: Readonly<Record<string, unknown>>,
+): Readonly<Record<string, unknown>> => {
+  const variants = Array.isArray(schema.anyOf) ? schema.anyOf : [];
+  if (
+    schema.type === "null" ||
+    variants.some((variant) => asSchemaRecord(variant).type === "null")
+  ) {
+    return schema;
+  }
+  return { anyOf: [schema, { type: "null" }] };
+};
+
+const schemaAllowsNull = (
+  schema: Readonly<Record<string, unknown>>,
+): boolean => {
+  if (
+    schema.type === "null" ||
+    (Array.isArray(schema.type) && schema.type.includes("null")) ||
+    (Array.isArray(schema.enum) && schema.enum.includes(null))
+  ) {
+    return true;
+  }
+  return ["anyOf", "oneOf"].some((keyword) => {
+    const variants = schema[keyword];
+    return (
+      Array.isArray(variants) &&
+      variants.some((variant) => schemaAllowsNull(asSchemaRecord(variant)))
+    );
+  });
+};
+
+export const toProviderStrictSchema = (
+  schema: Readonly<Record<string, unknown>>,
+): Readonly<Record<string, unknown>> => {
+  const converted: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(schema)) {
+    if (key === "$schema" || key === "default") continue;
+    if (key === "properties") {
+      const properties = asSchemaRecord(value);
+      const previouslyRequired = new Set(
+        Array.isArray(schema.required)
+          ? schema.required.filter(
+              (item): item is string => typeof item === "string",
+            )
+          : [],
+      );
+      converted.properties = Object.fromEntries(
+        Object.entries(properties).map(([name, property]) => {
+          const strictProperty = toProviderStrictSchema(
+            asSchemaRecord(property),
+          );
+          return [
+            name,
+            previouslyRequired.has(name)
+              ? strictProperty
+              : nullableSchema(strictProperty),
+          ];
+        }),
+      );
+      converted.required = Object.keys(properties);
+      converted.additionalProperties = false;
+      continue;
+    }
+    if (key === "required" || key === "additionalProperties") continue;
+    if (key === "allOf") {
+      throw new AiBoundaryRequestError(
+        "AI output schema uses unsupported allOf composition.",
+      );
+    }
+    if ((key === "anyOf" || key === "oneOf") && Array.isArray(value)) {
+      const previous = Array.isArray(converted.anyOf)
+        ? converted.anyOf
+        : [];
+      converted.anyOf = [
+        ...previous,
+        ...value.map((variant) =>
+          toProviderStrictSchema(asSchemaRecord(variant)),
+        ),
+      ];
+      continue;
+    }
+    if (key === "items") {
+      converted.items = toProviderStrictSchema(asSchemaRecord(value));
+      continue;
+    }
+    if (
+      (key === "$defs" || key === "definitions") &&
+      typeof value === "object" &&
+      value !== null
+    ) {
+      converted[key] = Object.fromEntries(
+        Object.entries(asSchemaRecord(value)).map(([name, definition]) => [
+          name,
+          toProviderStrictSchema(asSchemaRecord(definition)),
+        ]),
+      );
+      continue;
+    }
+    converted[key] = value;
+  }
+  if (schema.type === "object" && !("properties" in schema)) {
+    converted.properties = {};
+    converted.required = [];
+    converted.additionalProperties = false;
+  }
+  return converted;
+};
+
+const valueMatchesSchemaShape = (
+  value: unknown,
+  schema: Readonly<Record<string, unknown>>,
+): boolean => {
+  if ("const" in schema && schema.const !== value) return false;
+  if (schema.type === "null") return value === null;
+  if (schema.type === "array") return Array.isArray(value);
+  if (schema.type === "object") {
+    if (typeof value !== "object" || value === null || Array.isArray(value)) {
+      return false;
+    }
+    const record = asRecord(value);
+    const required = Array.isArray(schema.required)
+      ? schema.required.filter(
+          (item): item is string => typeof item === "string",
+        )
+      : [];
+    return required.every((key) => key in record);
+  }
+  if (schema.type === "string") return typeof value === "string";
+  if (schema.type === "number" || schema.type === "integer") {
+    return typeof value === "number";
+  }
+  if (schema.type === "boolean") return typeof value === "boolean";
+  return true;
+};
+
+const schemaVariantFor = (
+  value: unknown,
+  schema: Readonly<Record<string, unknown>>,
+): Readonly<Record<string, unknown>> => {
+  const variants = [
+    ...(Array.isArray(schema.oneOf) ? schema.oneOf : []),
+    ...(Array.isArray(schema.anyOf) ? schema.anyOf : []),
+  ].map(asSchemaRecord);
+  if (!variants.length) return schema;
+  const record = asRecord(value);
+  const matches = variants
+    .filter((variant) => valueMatchesSchemaShape(value, variant))
+    .map((variant) => {
+      const properties = asSchemaRecord(variant.properties);
+      const constraints = Object.entries(properties).filter(
+        ([, property]) => "const" in asSchemaRecord(property),
+      );
+      const constantsMatch = constraints.every(([key, property]) => {
+        const constraint = asSchemaRecord(property);
+        return constraint.const === record[key];
+      });
+      if (!constantsMatch) return null;
+      const propertyMatches = Object.keys(properties).filter(
+        (key) => key in record,
+      ).length;
+      return {
+        variant,
+        score: constraints.length * 100 + propertyMatches,
+      };
+    })
+    .filter(
+      (
+        match,
+      ): match is {
+        variant: Readonly<Record<string, unknown>>;
+        score: number;
+      } => match !== null,
+    )
+    .sort((left, right) => right.score - left.score);
+  if (matches.length === 1 || matches[0]?.score !== matches[1]?.score) {
+    return matches[0]?.variant ?? schema;
+  }
+  return schema;
+};
+
+export const normalizeProviderOptionalNulls = (
+  value: unknown,
+  sourceSchema: Readonly<Record<string, unknown>>,
+): unknown => {
+  const schema = schemaVariantFor(value, sourceSchema);
+  if (Array.isArray(value)) {
+    const itemSchema = asSchemaRecord(schema.items);
+    return value.map((item) =>
+      normalizeProviderOptionalNulls(item, itemSchema),
+    );
+  }
+  if (typeof value !== "object" || value === null) return value;
+  const properties = asSchemaRecord(schema.properties);
+  const required = new Set(
+    Array.isArray(schema.required)
+      ? schema.required.filter(
+          (item): item is string => typeof item === "string",
+        )
+      : [],
+  );
+  return Object.fromEntries(
+    Object.entries(asRecord(value)).flatMap(([key, item]) => {
+      const propertySchema = asSchemaRecord(properties[key]);
+      if (
+        item === null &&
+        key in properties &&
+        !required.has(key) &&
+        !schemaAllowsNull(propertySchema)
+      ) {
+        return [];
+      }
+      return [
+        [
+          key,
+          normalizeProviderOptionalNulls(item, propertySchema),
+        ],
+      ];
+    }),
+  );
+};
+
+const providerErrorCategories = new Set([
+  "authentication_error",
+  "context_length_exceeded",
+  "invalid_json_schema",
+  "invalid_request",
+  "invalid_request_error",
+  "model_not_found",
+  "moderation_error",
+  "permission_error",
+  "provider_error",
+  "rate_limit_exceeded",
+  "server_error",
+]);
+
+const providerErrorDetail = async (response: Response): Promise<string> => {
+  let payload: unknown;
+  try {
+    payload = JSON.parse(await response.text());
+  } catch {
+    return "";
+  }
+  const root = asRecord(payload);
+  const error = asRecord(root.error);
+  const metadata = asRecord(error.metadata);
+  const candidates = [
+    error.code,
+    error.type,
+    metadata.error_type,
+    metadata.type,
+  ];
+  return (
+    candidates.find(
+      (candidate): candidate is string =>
+        typeof candidate === "string" &&
+        providerErrorCategories.has(candidate.toLowerCase()),
+    ) ?? ""
+  ).toLowerCase();
+};
+
 const requestJson = async (
   fetcher: typeof globalThis.fetch,
   url: string,
@@ -90,8 +358,11 @@ const requestJson = async (
     body: JSON.stringify(body),
   });
   if (!response.ok) {
+    const detail = await providerErrorDetail(response);
     throw new AiBoundaryRequestError(
-      `AI provider request failed with HTTP ${response.status}.`,
+      `AI provider request failed with HTTP ${response.status}${
+        detail ? ` (${detail})` : ""
+      }.`,
     );
   }
   return asRecord(await response.json());
@@ -121,6 +392,9 @@ export const createOpenAiCompatibleAdapter = (
       let inputTokens = 0;
       let outputTokens = 0;
       let estimatedCostUsd = 0;
+      const strictSchema = toProviderStrictSchema(
+        request.schema.jsonSchema,
+      );
 
       while (validationAttempt <= 2) {
         const response = await requestJson(
@@ -136,7 +410,7 @@ export const createOpenAiCompatibleAdapter = (
               json_schema: {
                 name: request.schema.name,
                 strict: true,
-                schema: request.schema.jsonSchema,
+                schema: strictSchema,
               },
             },
             provider,
@@ -212,7 +486,12 @@ export const createOpenAiCompatibleAdapter = (
         } catch {
           parsed = undefined;
         }
-        const validation = request.validate(parsed);
+        const validation = request.validate(
+          normalizeProviderOptionalNulls(
+            parsed,
+            request.schema.jsonSchema,
+          ),
+        );
         if (validation.ok) {
           return {
             value: validation.value,

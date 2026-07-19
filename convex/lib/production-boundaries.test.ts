@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { DEFAULT_PRODUCTION_LIMITS } from "../../src/infrastructure/production-contract";
 import {
   assertRoomAccess,
   assertRoomWritablePhase,
   canCommitOperationResult,
   canCommitBriefSnapshot,
+  canRetryWorkflow,
   cancelledAggregateKind,
   decideIdempotentOperation,
   enforceOperationConcurrency,
@@ -151,9 +153,18 @@ describe("Convex production boundaries", () => {
     expect(
       decideIdempotentOperation({ status: "retryable", attemptCount: 1 }),
     ).toEqual({ action: "retry", attemptCount: 2 });
-    expect(() =>
+    expect(
       decideIdempotentOperation({ status: "retryable", attemptCount: 2 }),
+    ).toEqual({ action: "retry", attemptCount: 3 });
+    expect(() =>
+      decideIdempotentOperation({ status: "retryable", attemptCount: 3 }),
     ).toThrow(/retry limit/i);
+  });
+
+  it("uses the shared workflow retry cap", () => {
+    const maximum = DEFAULT_PRODUCTION_LIMITS.maxWorkflowAttempts;
+    expect(canRetryWorkflow(maximum - 1)).toBe(true);
+    expect(canRetryWorkflow(maximum)).toBe(false);
   });
 
   it("never commits late workflow results after cancellation", () => {

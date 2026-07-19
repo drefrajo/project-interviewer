@@ -25,6 +25,7 @@ import {
 } from "../../convex/lib/production_boundaries";
 import { decideRateLimit } from "../../convex/lib/rate_limit_policy";
 import {
+  DEFAULT_PRODUCTION_LIMITS,
   safeOperationalMetadata,
 } from "../infrastructure/production-contract";
 import type { EvaluationFixture, EvaluationMaterialInput } from "./fixtures-v1";
@@ -228,7 +229,10 @@ const actualOperationalAssurances = async () => {
     ),
   );
   const boundedRetriesVerified = await rejected(async () =>
-    decideIdempotentOperation({ status: "retryable", attemptCount: 2 }),
+    decideIdempotentOperation({
+      status: "retryable",
+      attemptCount: DEFAULT_PRODUCTION_LIMITS.maxWorkflowAttempts,
+    }),
   );
   const metadata = safeOperationalMetadata({
     operationType: "interview_turn",

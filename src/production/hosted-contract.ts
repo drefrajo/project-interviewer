@@ -62,8 +62,8 @@ export const references = {
     onboard: api.rooms.onboardClient,
   },
   invites: {
-    create: api.invites.createCapability,
-    get: api.invites.getCapability,
+    create: api["invite_actions"].createCapability,
+    get: api["invite_actions"].getCapability,
     exchange: api.invites.exchangeCapabilityHash,
     revoke: api.invites.revokeCapability,
   },

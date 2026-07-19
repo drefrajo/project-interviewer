@@ -12,7 +12,7 @@ describe("production boundary contract", () => {
       maxFileBytes: 25 * 1024 * 1024,
       maxRoomBytes: 100 * 1024 * 1024,
       maxConcurrentFileWorkflows: 3,
-      maxWorkflowAttempts: 2,
+      maxWorkflowAttempts: 3,
       deletionRecoveryDays: 7,
     });
   });

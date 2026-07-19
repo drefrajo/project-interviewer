@@ -4,6 +4,7 @@ import {
 } from "convex/server";
 import { v } from "convex/values";
 import {
+  canRetryWorkflow,
   enforceUploadQuota,
   validateStoredUpload,
 } from "./lib/production_boundaries";
@@ -683,7 +684,7 @@ export const includeSuspectedSecrets = mutationGeneric({
     ) {
       return { operationId: existing._id, reused: true };
     }
-    if (existing && Number(existing.attemptCount) >= 2) {
+    if (existing && !canRetryWorkflow(Number(existing.attemptCount))) {
       throw new Error("The secret-override reanalysis retry limit was reached.");
     }
     const now = Date.now();

@@ -88,6 +88,9 @@ type ExistingOperation = Readonly<{
   attemptCount: number;
 }>;
 
+export const canRetryWorkflow = (attemptCount: number): boolean =>
+  attemptCount < DEFAULT_PRODUCTION_LIMITS.maxWorkflowAttempts;
+
 export const decideIdempotentOperation = (
   existing: ExistingOperation | undefined,
 ):
@@ -104,7 +107,7 @@ export const decideIdempotentOperation = (
   ) {
     return { action: "reuse" };
   }
-  if (existing.attemptCount >= DEFAULT_PRODUCTION_LIMITS.maxWorkflowAttempts) {
+  if (!canRetryWorkflow(existing.attemptCount)) {
     throw new Error("Workflow retry limit exceeded.");
   }
   return { action: "retry", attemptCount: existing.attemptCount + 1 };
