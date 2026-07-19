@@ -149,14 +149,6 @@ export const projectMaterialViewSchema = z
     ]),
     active: z.boolean(),
     retryAvailable: z.boolean(),
-    includeSuspectedSecrets: z.boolean(),
-    suspectedSecrets: z.array(
-      z.object({
-        kind: z.string(),
-        maskedPreview: z.string(),
-        locator: sourceLocatorSchema,
-      }),
-    ),
     extraction: z
       .object({
         language: z.enum(["en", "de", "mixed", "unknown"]),
@@ -166,7 +158,6 @@ export const projectMaterialViewSchema = z
     analysis: fileAnalysisSchema.optional(),
     analysisVersions: z.array(fileAnalysisSchema),
     failureCode: z.string().optional(),
-    canIncludeSuspectedSecrets: z.boolean(),
     canRemove: z.boolean(),
     createdAt: z.number(),
     updatedAt: z.number(),

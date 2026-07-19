@@ -26,6 +26,10 @@ import { createHostedInterviewService } from "./hosted-interview-service";
 import { createHostedBriefService } from "./hosted-brief-service";
 export type { HostedConvexTransport } from "./hosted-contract";
 
+type HostedClientInviteAccess = Awaited<
+  ReturnType<ProjectInterviewer["clientAccess"]["resolveInvite"]>
+>;
+
 export const createHostedApplication = (
   transport: HostedConvexTransport,
   cryptography: HostedCryptography = browserCryptography,
@@ -128,6 +132,80 @@ export const createHostedApplication = (
   const interviewService = createHostedInterviewService(transport);
 
   const briefService = createHostedBriefService(transport);
+  const inviteResolutionCache = new Map<
+    string,
+    {
+      promise: Promise<HostedClientInviteAccess>;
+      settled: boolean;
+    }
+  >();
+
+  const resolveInvite = (
+    inviteToken: string,
+    input: { deviceId?: string },
+  ): Promise<HostedClientInviteAccess> => {
+    const deviceId = input.deviceId ?? cryptography.randomToken();
+    const cacheKey = `${inviteToken}\u0000${deviceId}`;
+    const cached = inviteResolutionCache.get(cacheKey);
+    if (cached) {
+      if (!cached.settled) return cached.promise;
+      return cached.promise.then(async (previous) => {
+        const room = await getRoom(previous.actor, previous.actor.roomId);
+        return {
+          actor: previous.actor,
+          room,
+          onboardingRequired: !room.client,
+          ...(room.client ? { client: room.client } : {}),
+        };
+      });
+    }
+
+    const resolution = (async () => {
+      const sessionHash = await cryptography.hash(
+        cryptography.randomToken(),
+      );
+      const result = record(
+        await transport.mutation(references.invites.exchange, {
+          tokenHash: await cryptography.hash(inviteToken),
+          sessionHash,
+          deviceHash: await cryptography.hash(deviceId),
+        }),
+      );
+      const roomId = stringValue(result.roomId, "room id");
+      const inviteVersion = numberValue(
+        result.inviteVersion,
+        "invite version",
+      );
+      const actor: ClientActor = {
+        kind: "client",
+        roomId,
+        deviceId,
+        inviteVersion,
+        sessionId: sessionHash,
+      };
+      const room = await getRoom(actor, roomId);
+      return {
+        actor,
+        room,
+        onboardingRequired: !room.client,
+        ...(room.client ? { client: room.client } : {}),
+      };
+    })();
+    const entry = { promise: resolution, settled: false };
+    inviteResolutionCache.set(cacheKey, entry);
+    void resolution.then(
+      () => {
+        entry.settled = true;
+      },
+      () => {
+        entry.settled = true;
+        if (inviteResolutionCache.get(cacheKey) === entry) {
+          inviteResolutionCache.delete(cacheKey);
+        }
+      },
+    );
+    return resolution;
+  };
 
   const partial = {
     identities: {
@@ -313,41 +391,7 @@ export const createHostedApplication = (
         throw new Error("The hosted backend returned an invalid invite.");
       },
 
-      async resolveInvite(
-        inviteToken: string,
-        input: { deviceId?: string },
-      ) {
-        const deviceId = input.deviceId ?? cryptography.randomToken();
-        const sessionHash = await cryptography.hash(
-          cryptography.randomToken(),
-        );
-        const result = record(
-          await transport.mutation(references.invites.exchange, {
-            tokenHash: await cryptography.hash(inviteToken),
-            sessionHash,
-            deviceHash: await cryptography.hash(deviceId),
-          }),
-        );
-        const roomId = stringValue(result.roomId, "room id");
-        const inviteVersion = numberValue(
-          result.inviteVersion,
-          "invite version",
-        );
-        const actor: ClientActor = {
-          kind: "client",
-          roomId,
-          deviceId,
-          inviteVersion,
-          sessionId: sessionHash,
-        };
-        const room = await getRoom(actor, roomId);
-        return {
-          actor,
-          room,
-          onboardingRequired: !room.client,
-          ...(room.client ? { client: room.client } : {}),
-        };
-      },
+      resolveInvite,
       async onboard(
         actor: ClientActor,
         input: {

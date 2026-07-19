@@ -301,8 +301,10 @@ export default defineSchema({
     stage: v.string(),
     active: v.boolean(),
     retryAvailable: v.boolean(),
-    includeSuspectedSecrets: v.boolean(),
-    suspectedSecrets: v.array(v.any()),
+    // Legacy fields remain optional for existing documents; new uploads no
+    // longer participate in the removed application-side scan/redaction flow.
+    includeSuspectedSecrets: v.optional(v.boolean()),
+    suspectedSecrets: v.optional(v.array(v.any())),
     extractionMethod: v.optional(v.string()),
     failureCode: v.optional(v.string()),
     processingVersion: v.string(),

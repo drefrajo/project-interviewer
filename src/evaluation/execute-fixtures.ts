@@ -352,9 +352,7 @@ const sourceClaims = (
         ? material.analysis.signals.map(({ text }) => ({
             text,
             sourceSupported: [...materialByName.values()].some((source) => {
-              const observableText = text
-                .replace(/\[REDACTED SUSPECTED SECRET\]/gu, "")
-                .trim();
+              const observableText = text.trim();
               return (
                 observableText.length > 0 &&
                 source.includes(observableText)
@@ -752,10 +750,10 @@ const executeFixture = async (
             ({ text }) =>
               /ignore prior|declare this requirement/iu.test(text),
           )),
-      suspectedSecretsMasked:
+      sourceContentAvailableToAnalyzer:
         !fixture.scenarios.includes("suspected-secret") ||
-        harness.capturedAnalyzerText.every(
-          (text) => !text.includes("sk_test_12345678901234567890"),
+        harness.capturedAnalyzerText.some(
+          (text) => text.includes("sk_test_12345678901234567890"),
         ),
     },
     retrieval: {

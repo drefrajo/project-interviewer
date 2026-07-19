@@ -13,8 +13,8 @@ export const EMBEDDING_CONFIGURATION = {
 } as const;
 
 export const AI_MODELS = {
-  file_analyzer: "openai/gpt-5-mini",
-  interview_planner: "openai/gpt-5",
+  file_analyzer: "google/gemini-3.1-flash-lite",
+  interview_planner: "google/gemini-3.1-flash-lite",
   interview_agent: "openai/gpt-5",
   interview_reviewer: "anthropic/claude-sonnet-4",
   brief_generator: "openai/gpt-5",

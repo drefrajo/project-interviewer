@@ -19,7 +19,6 @@ export type AiOperationResult = {
     method: string;
     language: string;
     actualContentType: string;
-    suspectedSecrets: unknown[];
     chunks: Array<{
       text: string;
       locator: unknown;

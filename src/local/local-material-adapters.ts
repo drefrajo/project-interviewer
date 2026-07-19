@@ -4,6 +4,7 @@ import type {
   MaterialExtraction,
   MaterialSegment,
 } from "../domain/project-material";
+import { loadPdfJsTextRuntime } from "./pdf-runtime";
 export {
   detectActualContentType,
   detectActualContentTypeFromBytes,
@@ -168,8 +169,13 @@ const extractPresentation = async (
 const extractPdf = async (
   bytes: Uint8Array,
 ): Promise<MaterialExtraction> => {
-  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  const document = await pdfjs.getDocument({ data: bytes.slice() }).promise;
+  const pdfjs = await loadPdfJsTextRuntime();
+  const document = await pdfjs.getDocument({
+    data: bytes.slice(),
+    disableFontFace: true,
+    isOffscreenCanvasSupported: false,
+    useSystemFonts: false,
+  }).promise;
   const segments: MaterialSegment[] = [];
   for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
     const page = await document.getPage(pageNumber);

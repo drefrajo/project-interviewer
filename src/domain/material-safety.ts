@@ -61,50 +61,6 @@ export const findSuspectedSecrets = (
   return matches;
 };
 
-export const redactSegments = (
-  segments: MaterialSegment[],
-  matches: SecretMatch[],
-  includeSuspectedSecrets: boolean,
-): MaterialSegment[] => {
-  if (includeSuspectedSecrets) return structuredClone(segments);
-  return segments.map((segment) => ({
-    ...segment,
-    text: matches.reduce(
-      (text, match) =>
-        sameLocator(segment.locator, match.locator)
-          ? text.replaceAll(match.value, "[REDACTED SUSPECTED SECRET]")
-          : text,
-      segment.text,
-    ),
-  }));
-};
-
-export const publicSuspectedSecrets = (
-  matches: SecretMatch[],
-): SuspectedSecret[] =>
-  matches.map(({ kind, locator, maskedPreview }) => ({
-    kind,
-    locator,
-    maskedPreview,
-  }));
-
-export const redactModelText = (
-  text: string,
-  matches: SecretMatch[],
-): string =>
-  matches.reduce(
-    (redacted, match) =>
-      match.sensitiveValues.reduce(
-        (value, secret) =>
-          value.replaceAll(
-            secret,
-            "[REDACTED SUSPECTED SECRET]",
-          ),
-        redacted,
-      ),
-    text,
-  );
-
 const namedCredentialVariants = (value: string): string[] => {
   const separator = assignmentSeparator(value);
   const payload =

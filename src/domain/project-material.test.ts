@@ -15,10 +15,6 @@ import {
   sourceLocatorKey,
   type SourceLocator,
 } from "./project-material";
-import {
-  findSuspectedSecrets,
-  publicSuspectedSecrets,
-} from "./material-safety";
 
 const createDependencies = (options?: {
   extraction?: MaterialExtraction | Error;
@@ -88,7 +84,7 @@ const createDependencies = (options?: {
     },
     fileAnalyzer: {
       analyze: vi.fn(async (input) => {
-        analyzedInputs.push(input.redactedText);
+        analyzedInputs.push(input.extractedText);
         return options?.analysis ?? defaultAnalysis;
       }),
     },
@@ -120,6 +116,37 @@ const createRoom = async (dependencies: ProjectInterviewerDependencies) => {
 };
 
 describe("Project Material public service", () => {
+  it("refreshes a Freelancer's material list after another application instance uploads", async () => {
+    let persisted: ProjectInterviewerSnapshot | undefined;
+    const firstDependencies = createDependencies().dependencies;
+    firstDependencies.loadLatestState = () => persisted;
+    firstDependencies.persist = (snapshot) => {
+      persisted = structuredClone(snapshot);
+    };
+    const { app, freelancer, room } = await createRoom(firstDependencies);
+
+    const secondDependencies = createDependencies().dependencies;
+    secondDependencies.initialState = persisted!;
+    secondDependencies.loadLatestState = () => persisted;
+    secondDependencies.persist = (snapshot) => {
+      persisted = structuredClone(snapshot);
+    };
+    const second = createProjectInterviewer(secondDependencies);
+    const secondFreelancer = await second.identities.resumeFreelancer(
+      freelancer.freelancerId,
+    );
+
+    await second.materials.accept(secondFreelancer, room.id, {
+      name: "Client brief.txt",
+      size: 74,
+      declaredContentType: "text/plain",
+      fileReference: "file-ref",
+      uploader: "freelancer",
+    });
+
+    await expect(app.materials.list(freelancer, room.id)).resolves.toHaveLength(1);
+  });
+
   it("rejects a stale cross-instance upload inspection that finishes after room deletion", async () => {
     const { dependencies } = createDependencies();
     let persisted: ProjectInterviewerSnapshot | undefined;
@@ -280,22 +307,7 @@ describe("Project Material public service", () => {
     );
   });
 
-  it("never treats punctuation inside a generic high-entropy token as a public assignment prefix", () => {
-    const matches = findSuspectedSecrets([
-      {
-        text: "ABCD1234EFGH5678IJKL9012=MNOP",
-        locator: { kind: "paragraph", label: "Paragraph 1" },
-      },
-    ]);
-
-    const [warning] = publicSuspectedSecrets(matches);
-    expect(warning?.maskedPreview).toBe("ABCD…MNOP");
-    expect(warning?.maskedPreview).not.toContain(
-      "ABCD1234EFGH5678IJKL9012",
-    );
-  });
-
-  it("accepts first, masks suspected secrets, then commits shallow analysis and a Context Pack Revision", async () => {
+  it("passes extracted text through to shallow analysis and commits a Context Pack Revision", async () => {
     const { dependencies, analyzedInputs } = createDependencies();
     const { app, freelancer, room } = await createRoom(
       dependencies,
@@ -327,13 +339,7 @@ describe("Project Material public service", () => {
         processingVersion: "material-processing-v1",
       },
     });
-    expect(analyzed.suspectedSecrets).toEqual([
-      expect.objectContaining({
-        maskedPreview: "API_KEY=sk_t…7890",
-      }),
-    ]);
-    expect(analyzedInputs[0]).not.toContain("sk_test_12345678901234567890");
-    expect(analyzedInputs[0]).toContain("[REDACTED SUSPECTED SECRET]");
+    expect(analyzedInputs[0]).toContain("sk_test_12345678901234567890");
     expect(await app.contextPacks.latest(freelancer, room.id)).toMatchObject({
       revision: 1,
       reason: "material_analyzed",
@@ -452,40 +458,6 @@ describe("Project Material public service", () => {
     });
   });
 
-  it("audits an explicit secret override and reanalyzes with the flagged text", async () => {
-    const { dependencies, analyzedInputs } = createDependencies();
-    const { app, freelancer, room } = await createRoom(dependencies);
-    const material = await app.materials.accept(freelancer, room.id, {
-      name: "Brief.txt",
-      size: 74,
-      declaredContentType: "text/plain",
-      fileReference: "file-ref",
-      uploader: "freelancer",
-    });
-    await app.materials.process(freelancer, room.id, material.id);
-
-    await app.materials.includeSuspectedSecrets(
-      freelancer,
-      room.id,
-      material.id,
-      { acknowledgedProviderDisclosure: true },
-    );
-
-    expect(analyzedInputs.at(-1)).toContain(
-      "sk_test_12345678901234567890",
-    );
-    expect(
-      app
-        .inspectState()
-        .auditEvents.some(
-          ({ action }) => action === "project_material.secret_override",
-        ),
-    ).toBe(true);
-    expect(
-      app.inspectState().projectMaterials[0]?.analysisVersions,
-    ).toHaveLength(2);
-  });
-
   it("lets the Freelancer request a new analysis while retaining prior versions", async () => {
     const { dependencies } = createDependencies();
     const analyze = dependencies.fileAnalyzer?.analyze;
@@ -544,7 +516,7 @@ describe("Project Material public service", () => {
     ).rejects.toBeInstanceOf(AuthorizationError);
   });
 
-  it("masks repeated and short credentials everywhere, including provider output", async () => {
+  it("passes credential text through to the provider output", async () => {
     const locatorOne = {
       kind: "paragraph" as const,
       label: "Paragraph 1",
@@ -594,16 +566,9 @@ describe("Project Material public service", () => {
       material.id,
     );
 
-    expect(analyzedInputs[0]).not.toContain("tenant:abc123");
-    expect(analyzedInputs[0]?.match(/REDACTED/gu)).toHaveLength(2);
-    expect(analyzed.suspectedSecrets).toHaveLength(2);
-    expect(
-      analyzed.suspectedSecrets[0]?.maskedPreview,
-    ).not.toContain("tenant:");
-    expect(analyzed.analysis?.summary).not.toContain("tenant:abc123");
-    expect(analyzed.analysis?.signals[0]?.text).not.toContain(
-      "tenant:abc123",
-    );
+    expect(analyzedInputs[0]?.match(/tenant:abc123/gu)).toHaveLength(2);
+    expect(analyzed.analysis?.summary).toContain("tenant:abc123");
+    expect(analyzed.analysis?.signals[0]?.text).toContain("tenant:abc123");
   });
 
   it("adds Analysis Feedback to a new revision without another analyzer call", async () => {
@@ -685,6 +650,11 @@ describe("Project Material public service", () => {
     expect(await app.rooms.get(freelancer, room.id)).toMatchObject({
       interviewReadiness: "ready",
     });
+    expect(await app.materials.list(access.actor, room.id)).toMatchObject([
+      expect.objectContaining({ id: material.id, canRemove: true }),
+    ]);
+    await app.materials.remove(access.actor, room.id, material.id);
+    expect(await app.materials.list(access.actor, room.id)).toEqual([]);
   });
 
   it("uses the unsupported terminal path for a supported container with unsupported content", async () => {

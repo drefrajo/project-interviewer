@@ -17,7 +17,7 @@ export interface EvaluationObservation {
     claims: readonly { text: string; sourceSupported: boolean }[];
     prohibitedDeepStatements: number;
     promptInjectionIgnored: boolean;
-    suspectedSecretsMasked: boolean;
+    sourceContentAvailableToAnalyzer: boolean;
   };
   retrieval: {
     queries: readonly {

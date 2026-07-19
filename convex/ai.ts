@@ -13,15 +13,13 @@ import {
   createOpenAiCompatibleAdapter,
   type AiRole,
 } from "../src/infrastructure/openai-compatible-adapter";
-import { AI_ROLE_PROMPTS } from "../src/infrastructure/ai-role-prompts";
+import {
+  AI_ROLE_PROMPTS,
+  fileAnalyzerLanguageInstruction,
+} from "../src/infrastructure/ai-role-prompts";
 import { AI_MODELS } from "../src/infrastructure/ai-model-configuration";
 import { detectActualContentTypeFromBytes } from "../src/application/material-content-type";
 import { localParser } from "../src/local/local-material-adapters";
-import {
-  findSuspectedSecrets,
-  publicSuspectedSecrets,
-  redactSegments,
-} from "../src/domain/material-safety";
 import type {
   AiOperationResult,
   DomainOperationKind,
@@ -38,7 +36,6 @@ type DomainContext = {
     storageId: GenericId<"_storage">;
     name: string;
     declaredContentType: string;
-    includeSuspectedSecrets: boolean;
   };
   interview?: Record<string, unknown>;
   plan?: Record<string, unknown>;
@@ -432,7 +429,6 @@ const parseMaterial = async (
     stage:
       | "checking_file"
       | "extracting_content"
-      | "checking_secrets"
       | "analyzing"
       | "indexing",
   ) => Promise<void>,
@@ -457,18 +453,7 @@ const parseMaterial = async (
     contentType: actualContentType,
     bytes,
   });
-  await markProgress("checking_secrets");
-  const suspectedSecrets = findSuspectedSecrets(extraction.segments);
-  const safeSegments = redactSegments(
-    extraction.segments,
-    suspectedSecrets,
-    false,
-  );
-  const analyzerSegments = redactSegments(
-    extraction.segments,
-    suspectedSecrets,
-    domain.material.includeSuspectedSecrets,
-  );
+  const sourceSegments = extraction.segments;
   const chunkSegments = (
     segments: typeof extraction.segments,
   ) => segments.flatMap((segment) => {
@@ -481,15 +466,11 @@ const parseMaterial = async (
     }
     return values;
   });
-  const chunks = chunkSegments(safeSegments);
-  const analyzerChunks = chunkSegments(analyzerSegments);
+  const chunks = chunkSegments(sourceSegments);
   await markProgress("analyzing");
   const embeddings = chunks.length
     ? await adapter.embed(
-        (domain.material.includeSuspectedSecrets
-          ? analyzerChunks
-          : chunks
-        ).map(({ text }) => text),
+        chunks.map(({ text }) => text),
       )
     : { vectors: [] };
   const imageContent = actualContentType.startsWith("image/")
@@ -507,7 +488,6 @@ const parseMaterial = async (
       method: extraction.method,
       language: extraction.language,
       actualContentType,
-      suspectedSecrets: publicSuspectedSecrets(suspectedSecrets),
       chunks: chunks.map((chunk, index) => ({
         ...chunk,
         embedding: [...(embeddings.vectors[index] ?? [])],
@@ -519,7 +499,16 @@ const parseMaterial = async (
         text: JSON.stringify({
           fileName: domain.material.name,
           actualContentType,
-          segments: analyzerSegments,
+          segments: sourceSegments,
+          ...(actualContentType.startsWith("image/")
+            ? {
+                sourceLocator: {
+                  kind: "image",
+                  label: "Image 1",
+                  image: 1,
+                },
+              }
+            : {}),
         }),
       },
       ...imageContent,
@@ -550,7 +539,6 @@ export const executeDomainOperation = internalActionGeneric({
       stage:
         | "checking_file"
         | "extracting_content"
-        | "checking_secrets"
         | "analyzing"
         | "indexing",
     ) => {
@@ -714,8 +702,16 @@ export const executeDomainOperation = internalActionGeneric({
       messages: [
         {
           role: "system",
-          content:
+          content: [
             AI_ROLE_PROMPTS[roleByKind[args.kind]],
+            ...(args.kind === "file_analysis"
+              ? [
+                  fileAnalyzerLanguageInstruction(
+                    domain.room.briefLanguage === "de" ? "de" : "en",
+                  ),
+                ]
+              : []),
+          ].join(" "),
         },
         {
           role: "user",

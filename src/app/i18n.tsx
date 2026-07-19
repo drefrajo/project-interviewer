@@ -57,7 +57,7 @@ export const UI_COPY = {
       "Project Material and answers may be processed by third-party AI providers through OpenRouter.",
     protectAccess: "Protect access",
     protectAccessBody:
-      "Anyone with this Invite Link can enter this Project Room. Suspected text secrets are masked before AI processing by default, but detection is not a guarantee. Do not upload passwords, API keys, or tokens.",
+      "Anyone with this Invite Link can enter this Project Room. Project Material is sent to the configured AI provider for analysis, so share only what belongs in this Project Room.",
     yourName: "Your display name",
     interviewLanguage: "Interview Language",
     acknowledgement:
@@ -104,14 +104,7 @@ export const UI_COPY = {
     uploadingMaterial: "Uploading",
     confidence: "confidence",
     summarySources: "Summary sources",
-    suspectedSecrets: "Suspected secrets found",
-    secretMaskingExplanation:
-      "Matching text was masked before AI analysis. Detection reduces risk but cannot guarantee that every secret is found.",
-    secretOverrideDisclosure:
-      "I understand that including this text sends the flagged content through OpenRouter to the configured routed provider.",
-    includeFlaggedText: "Include flagged text and reprocess",
-    reprocessingMaterial: "Reprocessing",
-    flaggedTextIncluded: "Flagged text included by explicit override",
+    identifiedSources: "Identified sources",
     analysisFeedback: "Analysis feedback",
     feedbackSource: "Affected source",
     feedbackPlaceholder: "Add a correction or clarification…",
@@ -129,7 +122,6 @@ export const UI_COPY = {
     materialAnalyzed: "Analyzed",
     checkingFile: "Checking file",
     extractingContent: "Extracting content",
-    checkingSecrets: "Checking for secrets",
     analyzingMaterial: "Analyzing",
     indexingMaterial: "Indexing",
     interviewBody:
@@ -189,7 +181,7 @@ export const UI_COPY = {
       "Projektmaterial und Antworten können über OpenRouter von externen KI-Anbietern verarbeitet werden.",
     protectAccess: "Zugriff schützen",
     protectAccessBody:
-      "Jede Person mit diesem Link kann den Projektraum öffnen. Verdächtige Textgeheimnisse werden standardmäßig vor der KI-Verarbeitung maskiert; die Erkennung ist keine Garantie. Laden Sie keine Passwörter, API-Schlüssel oder Tokens hoch.",
+      "Jede Person mit diesem Link kann den Projektraum öffnen. Projektmaterial wird zur Analyse an den konfigurierten KI-Anbieter gesendet. Teilen Sie daher nur Inhalte, die in diesen Projektraum gehören.",
     yourName: "Ihr Anzeigename",
     interviewLanguage: "Interviewsprache",
     acknowledgement:
@@ -237,15 +229,7 @@ export const UI_COPY = {
     uploadingMaterial: "Wird hochgeladen",
     confidence: "Konfidenz",
     summarySources: "Quellen der Zusammenfassung",
-    suspectedSecrets: "Mögliche Geheimnisse gefunden",
-    secretMaskingExplanation:
-      "Passende Textstellen wurden vor der KI-Analyse maskiert. Die Erkennung senkt das Risiko, kann aber nicht garantieren, dass jedes Geheimnis gefunden wird.",
-    secretOverrideDisclosure:
-      "Ich verstehe, dass die markierten Inhalte dadurch über OpenRouter an den konfigurierten gerouteten Anbieter gesendet werden.",
-    includeFlaggedText: "Markierten Text einbeziehen und neu verarbeiten",
-    reprocessingMaterial: "Wird neu verarbeitet",
-    flaggedTextIncluded:
-      "Markierter Text wurde nach ausdrücklicher Bestätigung einbezogen",
+    identifiedSources: "Identifizierte Quellen",
     analysisFeedback: "Feedback zur Analyse",
     feedbackSource: "Betroffene Quelle",
     feedbackPlaceholder: "Korrektur oder Erläuterung hinzufügen…",
@@ -263,7 +247,6 @@ export const UI_COPY = {
     materialAnalyzed: "Analysiert",
     checkingFile: "Datei wird geprüft",
     extractingContent: "Inhalt wird extrahiert",
-    checkingSecrets: "Geheimnisse werden geprüft",
     analyzingMaterial: "Analyse läuft",
     indexingMaterial: "Indexierung läuft",
     interviewBody:

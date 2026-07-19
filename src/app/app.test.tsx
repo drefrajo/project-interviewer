@@ -6,6 +6,7 @@ import {
   within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { StrictMode } from "react";
 import { MemoryRouter, useRoutes } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { createRoutes } from "./routes";
@@ -69,6 +70,38 @@ const onboardClientAndContinueWithoutMaterial = async (
 };
 
 describe("File-First Discovery application shell", () => {
+  it("exchanges a Client Invite Link once when StrictMode replays effects", async () => {
+    localStorage.setItem("project-interviewer.locale", "en");
+    localStorage.setItem("project-interviewer.device-id", "browser-device");
+    const application = createTestApplication();
+    const freelancer = await application.identities.establishFreelancer({
+      displayName: "Ada",
+    });
+    const created = await application.rooms.create(freelancer, {
+      title: "Invite Room",
+      clientLabel: "Alpine",
+      projectDescription: "A client portal.",
+      briefLanguage: "en",
+      freelancerGuidance: "",
+    });
+    const resolveInvite = vi.spyOn(application.clientAccess, "resolveInvite");
+    const routes = createRoutes(application, freelancer);
+    const TestRoutes = () => useRoutes(routes);
+
+    render(
+      <StrictMode>
+        <MemoryRouter initialEntries={[`/invite/${created.inviteToken}`]}>
+          <TestRoutes />
+        </MemoryRouter>
+      </StrictMode>,
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: /before you begin/i }),
+    ).toBeInTheDocument();
+    expect(resolveInvite).toHaveBeenCalledOnce();
+  });
+
   it("lets a Freelancer create and open a Project Room from the Workspace", async () => {
     const user = userEvent.setup();
     const application = createTestApplication();
@@ -277,7 +310,7 @@ describe("File-First Discovery application shell", () => {
     ).toBeInTheDocument();
     expect(screen.getAllByText(/third-party ai providers/i)).toHaveLength(2);
     expect(
-      screen.getByText(/masked before ai processing by default/i),
+      screen.getByText(/sent to the configured ai provider for analysis/i),
     ).toBeInTheDocument();
     expect(screen.getByText(/alpine portal · ada/i)).toBeInTheDocument();
 
@@ -430,6 +463,12 @@ describe("File-First Discovery application shell", () => {
       screen.getByRole("heading", { name: "Brief.txt" }),
     ).toBeInTheDocument();
     expect(screen.getAllByText(/paragraph 1/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/summary sources/i).closest("details")).toBeNull();
+    const sources = screen.getByText(/identified sources/i);
+    const sourcesDisclosure = sources.closest("details");
+    expect(sourcesDisclosure).not.toHaveAttribute("open");
+    await user.click(sources);
+    expect(sourcesDisclosure).toHaveAttribute("open");
   });
 
   it("runs the Client interview as a conversation from Project Home", async () => {

@@ -1,6 +1,9 @@
 import { BRIEF_SECTION_IDS } from "../domain/project-brief";
 import type { AiRole } from "./openai-compatible-adapter";
 
+export const fileAnalyzerLanguageInstruction = (language: "en" | "de") =>
+  `Write the File Analysis summary, signals, and categories in ${language === "de" ? "German" : "English"}, the Project Brief Language. Preserve source-language wording only inside quoted or source-linked excerpts.`;
+
 type ChatRole = Exclude<AiRole, "embeddings">;
 
 const shared = [
@@ -16,9 +19,9 @@ export const AI_ROLE_PROMPTS: Record<ChatRole, string> = {
     shared,
     "Classify only with the fixed category vocabulary: brief, requirements, design/reference, technical, commercial, timeline, or other.",
     "Every summary claim and signal must carry an exact source locator from extracted content.",
+    "For a standalone uploaded image, use exactly {kind: image, label: Image 1, image: 1} as its source locator.",
     "Describe what the file says. Do not add deep scope critique, recommendations, feasibility judgments, or agreement language.",
     "Do not resolve contradictions or label cross-file contradictions during File Analysis.",
-    "Never reveal redacted suspected secrets.",
   ].join(" "),
   interview_planner: [
     "Policy version software-project-interview-planner-v1.",

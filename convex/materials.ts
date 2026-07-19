@@ -4,7 +4,6 @@ import {
 } from "convex/server";
 import { v } from "convex/values";
 import {
-  canRetryWorkflow,
   enforceUploadQuota,
   validateStoredUpload,
 } from "./lib/production_boundaries";
@@ -16,11 +15,15 @@ import {
 } from "./lib/server_authorization";
 import type { GenericId } from "convex/values";
 import { sourceLocatorValidator } from "./lib/value_validators";
-import { rebuildContextPack } from "./lib/context_pack_commit";
+import {
+  normalizeContextRevisionReason,
+  rebuildContextPack,
+} from "./lib/context_pack_commit";
 import { asRecord } from "./lib/commit_values";
 import { internal } from "./typed_api";
 import { clientMaterialDto } from "./lib/public_dtos";
 import { recordAudit } from "./lib/audit";
+import { canRemoveProjectMaterial } from "./lib/material_removal_access";
 
 const actorValidator = v.union(
   v.object({ kind: v.literal("freelancer") }),
@@ -72,6 +75,7 @@ const materialView = async (
     _id: GenericId<"projectMaterials">;
     roomId: GenericId<"projectRooms">;
     uploaderId: string;
+    state: string;
   },
   actor: { actorId: string; kind: "freelancer" | "client" },
 ) => {
@@ -119,8 +123,6 @@ const materialView = async (
     stage: material.stage,
     active: material.active,
     retryAvailable: material.retryAvailable,
-    includeSuspectedSecrets: material.includeSuspectedSecrets,
-    suspectedSecrets: material.suspectedSecrets,
     ...(material.extractionMethod
       ? {
           extraction: {
@@ -134,14 +136,11 @@ const materialView = async (
     failureCode: material.failureCode,
     createdAt: material.createdAt,
     updatedAt: material.updatedAt,
-    canIncludeSuspectedSecrets:
-      material.uploaderId === actor.actorId &&
-      Array.isArray(material.suspectedSecrets) &&
-      material.suspectedSecrets.length > 0 &&
-      material.includeSuspectedSecrets !== true,
-    canRemove: usedInTurn
-      ? actor.kind === "freelancer"
-      : material.uploaderId === actor.actorId,
+    canRemove: canRemoveProjectMaterial({
+      material,
+      actor,
+      usedInTurn,
+    }),
   };
 };
 
@@ -158,6 +157,11 @@ const latestContextPack = async (
     ? {
         ...revision,
         id: revision._id,
+        reason: normalizeContextRevisionReason(
+          String(revision.reason) as Parameters<
+            typeof normalizeContextRevisionReason
+          >[0],
+        ),
         subjectMaterialId: revision.subjectMaterialId,
       } as unknown as Record<string, unknown> & { revision: number }
     : null;
@@ -342,8 +346,6 @@ export const commitUpload = mutationGeneric({
       stage: "checking_file",
       active: true,
       retryAvailable: false,
-      includeSuspectedSecrets: false,
-      suspectedSecrets: [],
       processingVersion: "file-processing-v1",
       createdAt: now,
       updatedAt: now,
@@ -538,8 +540,11 @@ export const remove = mutationGeneric({
       args.materialId,
     );
     if (
-      (!usedInTurn && material.uploaderId !== authorized.actorId) ||
-      (usedInTurn && authorized.kind !== "freelancer")
+      !canRemoveProjectMaterial({
+        material,
+        actor: authorized,
+        usedInTurn,
+      })
     ) {
       throw new Error(
         usedInTurn
@@ -636,108 +641,5 @@ export const continueWithoutFiles = mutationGeneric({
       roomId: args.roomId,
       reason: "continued_without_material",
     });
-  },
-});
-
-export const includeSuspectedSecrets = mutationGeneric({
-  args: {
-    roomId: v.id("projectRooms"),
-    materialId: v.id("projectMaterials"),
-    actor: actorValidator,
-    acknowledgedProviderDisclosure: v.boolean(),
-  },
-  handler: async (context, args) => {
-    if (!args.acknowledgedProviderDisclosure) {
-      throw new Error("Provider disclosure acknowledgement is required.");
-    }
-    const authorized = await requireWritableRoomActor(
-      context,
-      args.roomId,
-      args.actor,
-    );
-    const material = await context.db.get(args.materialId);
-    if (
-      !material ||
-      material.roomId !== args.roomId ||
-      material.uploaderId !== authorized.actorId
-    ) {
-      throw new Error("Only the uploader may include suspected secrets.");
-    }
-    if (!material.suspectedSecrets.length) {
-      throw new Error("No suspected secrets are available to include.");
-    }
-    const idempotencyKey =
-      `file_processing:${args.materialId}:include_flagged`;
-    const existing = await context.db
-      .query("durableOperations")
-      .withIndex("by_idempotency", (query) =>
-        query.eq("roomId", args.roomId),
-      )
-      .collect()
-      .then((items) =>
-        items.find((item) => item.idempotencyKey === idempotencyKey),
-      );
-    if (
-      existing?.status === "succeeded" ||
-      existing?.status === "pending" ||
-      existing?.status === "running"
-    ) {
-      return { operationId: existing._id, reused: true };
-    }
-    if (existing && !canRetryWorkflow(Number(existing.attemptCount))) {
-      throw new Error("The secret-override reanalysis retry limit was reached.");
-    }
-    const now = Date.now();
-    await context.db.patch(args.materialId, {
-      includeSuspectedSecrets: true,
-      state: "accepted",
-      stage: "checking_file",
-      retryAvailable: false,
-      updatedAt: now,
-    });
-    await recordAudit(context, {
-      roomId: args.roomId,
-      actorKind: authorized.kind,
-      actorId: authorized.actorId,
-      ...(authorized.kind === "client"
-        ? { deviceHash: authorized.session.deviceHash }
-        : {}),
-      action: "project_material.secret_override",
-      now,
-    });
-    const operationId = existing
-      ? existing._id
-      : await context.db.insert("durableOperations", {
-          roomId: args.roomId,
-          operationType: "file_processing",
-          subjectId: String(args.materialId),
-          idempotencyKey,
-          status: "pending",
-          stage: "queued",
-          attemptCount: 1,
-          schemaVersion: "file-analysis-v1",
-          createdAt: now,
-          updatedAt: now,
-        });
-    if (existing) {
-      await context.db.patch(existing._id, {
-        status: "pending",
-        stage: "queued",
-        attemptCount: Number(existing.attemptCount) + 1,
-        errorCode: undefined,
-        workflowId: undefined,
-        updatedAt: now,
-      });
-    }
-    await context.scheduler.runAfter(
-      0,
-      internal.workflows.startFileAnalysisInternal,
-      {
-        roomId: args.roomId,
-        materialId: args.materialId,
-        operationId,
-      },
-    );
-    return { operationId, reused: false };
   },
 });

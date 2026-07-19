@@ -88,7 +88,7 @@ export interface FileAnalyzerInput {
   fileName: string;
   declaredContentType: string;
   outputLanguage: Language;
-  redactedText: string;
+  extractedText: string;
   segments: MaterialSegment[];
   isImage: boolean;
   image?: {
@@ -144,8 +144,6 @@ export interface ProjectMaterial {
   stage: MaterialStage;
   active: boolean;
   retryAvailable: boolean;
-  includeSuspectedSecrets: boolean;
-  suspectedSecrets: SuspectedSecret[];
   extraction?: Omit<MaterialExtraction, "segments"> | undefined;
   analysis?: FileAnalysis | undefined;
   analysisVersions: FileAnalysis[];
@@ -158,7 +156,6 @@ export type ProjectMaterialView = Omit<
   ProjectMaterial,
   "fileReference" | "uploaderId"
 > & {
-  canIncludeSuspectedSecrets: boolean;
   canRemove: boolean;
 };
 

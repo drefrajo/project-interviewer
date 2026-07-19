@@ -1,4 +1,4 @@
-import { useEffect, useState, type ChangeEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -47,22 +47,27 @@ export const ProjectMaterialPanel = ({
   const [feedbackLocatorIndexes, setFeedbackLocatorIndexes] = useState<
     Record<string, number>
   >({});
-  const [overrideAcknowledged, setOverrideAcknowledged] = useState<
-    Record<string, boolean>
-  >({});
-  const [secretOverridesInFlight, setSecretOverridesInFlight] =
-    useState<Record<string, boolean>>({});
   const [reanalysisInFlight, setReanalysisInFlight] =
     useState<Record<string, boolean>>({});
+  const materialFingerprint = useRef("");
 
-  const refresh = async () => {
+  const refresh = async (notifyParent = true) => {
     const [nextMaterials, nextPack] = await Promise.all([
       application.materials.list(actor, room.id),
       application.contextPacks.latest(actor, room.id),
     ]);
+    const nextFingerprint = nextMaterials
+      .map(
+        ({ id, state, stage, updatedAt, analysisVersions }) =>
+          [id, state, stage, updatedAt, analysisVersions.length].join(":"),
+      )
+      .sort()
+      .join("|");
+    const materialsChanged = materialFingerprint.current !== nextFingerprint;
+    materialFingerprint.current = nextFingerprint;
     setMaterials(nextMaterials);
     setContextPack(nextPack);
-    onReadinessChange?.();
+    if (notifyParent || materialsChanged) onReadinessChange?.();
   };
 
   const beginProgressPolling = (): number =>
@@ -75,6 +80,10 @@ export const ProjectMaterialPanel = ({
 
   useEffect(() => {
     void refresh();
+    const timer = window.setInterval(() => {
+      void refresh(false).catch(() => undefined);
+    }, 1_500);
+    return () => window.clearInterval(timer);
     // The actor and room are stable issued identities for this mounted route.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [application, actor, room.id]);
@@ -246,45 +255,6 @@ export const ProjectMaterialPanel = ({
     }
   };
 
-  const includeSecrets = async (materialId: string) => {
-    if (secretOverridesInFlight[materialId]) return;
-    setSecretOverridesInFlight((current) => ({
-      ...current,
-      [materialId]: true,
-    }));
-    setMaterials((current) =>
-      current.map((material) =>
-        material.id === materialId
-          ? {
-              ...material,
-              state: "processing",
-              stage: "analyzing",
-              retryAvailable: false,
-            }
-          : material,
-      ),
-    );
-    const progressTimer = beginProgressPolling();
-    try {
-      await application.materials.includeSuspectedSecrets(
-        actor,
-        room.id,
-        materialId,
-        {
-          acknowledgedProviderDisclosure:
-            overrideAcknowledged[materialId] === true,
-        },
-      );
-    } finally {
-      window.clearInterval(progressTimer);
-      setSecretOverridesInFlight((current) => ({
-        ...current,
-        [materialId]: false,
-      }));
-      await refresh();
-    }
-  };
-
   const addFeedback = async (materialId: string) => {
     const material = materials.find(({ id }) => id === materialId);
     const locators = material ? analysisLocators(material) : [];
@@ -393,83 +363,35 @@ export const ProjectMaterialPanel = ({
                   <span className="border border-line bg-white px-2 py-1 text-[0.7rem] font-extrabold uppercase">{material.analysis.language.toUpperCase()}</span>
                 </div>
                 <p className="leading-6 text-ink">{material.analysis.summary}</p>
-                <div
-                  aria-label={t("summarySources")}
-                  className="mt-3 mb-3 flex flex-wrap gap-1.5"
-                >
-                  {material.analysis.summarySources.map(
-                    (locator, index) => (
-                      <span className="bg-[#e3ede8] px-2 py-1 text-[0.7rem] font-extrabold text-forest" key={`${locator.label}-${index}`}>
-                        {locator.label}
-                      </span>
-                    ),
-                  )}
+                <div className="mt-3 mb-3 border-t border-line pt-2">
+                  <p className="mb-2 text-xs font-extrabold text-forest">
+                    {t("summarySources")}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {material.analysis.summarySources.map(
+                      (locator, index) => (
+                        <span className="bg-[#e3ede8] px-2 py-1 text-[0.7rem] font-extrabold text-forest" key={`${locator.label}-${index}`}>
+                          {locator.label}
+                        </span>
+                      ),
+                    )}
+                  </div>
                 </div>
                 {material.analysis.signals.length ? (
-                  <ul className="grid list-none gap-2 p-0">
-                    {material.analysis.signals.map((signal) => (
-                      <li className="grid gap-1 border-t border-line pt-2 text-sm leading-6 text-ink" key={`${signal.locator.label}-${signal.text}`}>
-                        <span className="text-[0.7rem] font-extrabold text-forest">{signal.locator.label}</span>
-                        {signal.text}
-                      </li>
-                    ))}
-                  </ul>
+                  <details className="border-t border-line pt-2">
+                    <summary className="cursor-pointer text-xs font-extrabold text-forest">
+                      {t("identifiedSources")} ({material.analysis.signals.length})
+                    </summary>
+                    <ul className="mt-2 grid list-none gap-2 p-0">
+                      {material.analysis.signals.map((signal) => (
+                        <li className="grid gap-1 border-t border-line pt-2 text-sm leading-6 text-ink" key={`${signal.locator.label}-${signal.text}`}>
+                          <span className="text-[0.7rem] font-extrabold text-forest">{signal.locator.label}</span>
+                          {signal.text}
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
                 ) : null}
-              </div>
-            ) : null}
-
-            {material.suspectedSecrets.length ? (
-              <div className="mt-4 flex items-start gap-3 bg-[#fff7dc] p-4">
-                <ShieldAlert aria-hidden="true" className="mt-0.5 shrink-0 text-[#8d5a18]" />
-                <div>
-                  <strong className="text-ink">{t("suspectedSecrets")}</strong>
-                  <p className="mt-1 text-sm leading-6 text-ink">{t("secretMaskingExplanation")}</p>
-                  <ul className="mt-2 list-disc pl-5 text-sm leading-6 text-ink">
-                    {material.suspectedSecrets.map((secret) => (
-                      <li key={`${secret.locator.label}-${secret.maskedPreview}`}>
-                        <code>{secret.maskedPreview}</code> ·{" "}
-                        {secret.locator.label}
-                      </li>
-                    ))}
-                  </ul>
-                  {!material.includeSuspectedSecrets &&
-                  material.canIncludeSuspectedSecrets &&
-                  !readOnly ? (
-                    <>
-                      <label className="mt-3 flex items-start gap-3 text-sm leading-6 text-ink">
-                        <input
-                          className="mt-0.5 size-5 shrink-0"
-                          checked={
-                            overrideAcknowledged[material.id] === true
-                          }
-                          onChange={(event) =>
-                            setOverrideAcknowledged((current) => ({
-                              ...current,
-                              [material.id]: event.target.checked,
-                            }))
-                          }
-                          type="checkbox"
-                        />
-                        <span>{t("secretOverrideDisclosure")}</span>
-                      </label>
-                      <button
-                        className="mt-3 inline-flex min-h-11 items-center justify-center rounded-md border border-line bg-transparent px-4 py-2 text-sm font-bold text-ink hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
-                        disabled={
-                          !overrideAcknowledged[material.id] ||
-                          secretOverridesInFlight[material.id]
-                        }
-                        onClick={() => void includeSecrets(material.id)}
-                        type="button"
-                      >
-                        {secretOverridesInFlight[material.id]
-                          ? t("reprocessingMaterial")
-                          : t("includeFlaggedText")}
-                      </button>
-                    </>
-                  ) : material.includeSuspectedSecrets ? (
-                    <strong>{t("flaggedTextIncluded")}</strong>
-                  ) : null}
-                </div>
               </div>
             ) : null}
 
@@ -608,7 +530,8 @@ const stateLabel = (
   const stages = {
     checking_file: "checkingFile",
     extracting_content: "extractingContent",
-    checking_secrets: "checkingSecrets",
+    // Display a legacy persisted stage without suggesting a current scan.
+    checking_secrets: "analyzingMaterial",
     analyzing: "analyzingMaterial",
     indexing: "indexingMaterial",
     complete: "materialAnalyzed",

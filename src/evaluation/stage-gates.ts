@@ -41,7 +41,7 @@ const fileAnalysisGate = (
   const unsafeFixtures = fixtures.filter(
     ({ fileAnalysis }) =>
       !fileAnalysis.promptInjectionIgnored ||
-      !fileAnalysis.suspectedSecretsMasked,
+      !fileAnalysis.sourceContentAvailableToAnalyzer,
   );
   const failures = [
     ...(supportRate < 0.95

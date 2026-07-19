@@ -174,27 +174,6 @@ export const createHostedMaterialServices = (
           stringValue(started.operationId, "operation id"),
         );
       },
-      async includeSuspectedSecrets(
-        actor: RoomActor,
-        roomId: string,
-        materialId: string,
-        input: { acknowledgedProviderDisclosure: boolean },
-      ) {
-        const started = record(
-          await transport.mutation(references.materials.includeSecrets, {
-            roomId,
-            materialId,
-            actor: actorValue(actor),
-            ...input,
-          }),
-        );
-        return startFileOperation(
-          actor,
-          roomId,
-          materialId,
-          stringValue(started.operationId, "operation id"),
-        );
-      },
       async addFeedback(
         actor: RoomActor,
         roomId: string,

@@ -131,6 +131,33 @@ export const exchangeCapabilityHash = mutationGeneric({
     deviceHash: v.string(),
   },
   handler: async (context, args) => {
+    const existingSession = await context.db
+      .query("clientSessions")
+      .withIndex("by_session_hash", (query) =>
+        query.eq("sessionHash", args.sessionHash),
+      )
+      .unique();
+    if (existingSession) {
+      const capability = await context.db
+        .query("inviteCapabilities")
+        .withIndex("by_token_hash", (query) =>
+          query.eq("tokenHash", args.tokenHash),
+        )
+        .unique();
+      if (
+        !capability ||
+        capability.status !== "active" ||
+        existingSession.roomId !== capability.roomId ||
+        existingSession.inviteVersion !== capability.version ||
+        existingSession.deviceHash !== args.deviceHash
+      ) {
+        throw new Error("Invite is invalid or revoked.");
+      }
+      return {
+        roomId: capability.roomId,
+        inviteVersion: capability.version,
+      };
+    }
     await enforceRateLimit(context, {
       scope: "invite_exchange_global",
       key: "invite_exchange_global",

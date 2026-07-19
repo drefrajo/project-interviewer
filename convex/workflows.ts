@@ -290,7 +290,6 @@ export const markMaterialProgress = internalMutationGeneric({
     stage: v.union(
       v.literal("checking_file"),
       v.literal("extracting_content"),
-      v.literal("checking_secrets"),
       v.literal("analyzing"),
       v.literal("indexing"),
     ),

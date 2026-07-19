@@ -1,11 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { AI_ROLE_PROMPTS } from "./ai-role-prompts";
+import {
+  AI_ROLE_PROMPTS,
+  fileAnalyzerLanguageInstruction,
+} from "./ai-role-prompts";
 
 describe("developer-controlled AI role prompts", () => {
   it("keeps File Analysis descriptive, source-located, and non-prescriptive", () => {
     expect(AI_ROLE_PROMPTS.file_analyzer).toContain("fixed category");
     expect(AI_ROLE_PROMPTS.file_analyzer).toContain("exact source locator");
     expect(AI_ROLE_PROMPTS.file_analyzer).toContain("Do not resolve contradictions");
+  });
+
+  it("binds File Analysis prose to the Project Brief language", () => {
+    expect(fileAnalyzerLanguageInstruction("de")).toContain("German");
+    expect(fileAnalyzerLanguageInstruction("en")).toContain("English");
   });
 
   it("keeps Interview decisions evidence-backed and outside agreement authority", () => {

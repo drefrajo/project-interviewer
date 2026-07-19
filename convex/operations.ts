@@ -12,6 +12,7 @@ import {
   requireWritableRoomActorFromSession,
 } from "./lib/server_authorization";
 import { cancelOperationAndRecoverAggregate } from "./lib/operation_cancellation";
+import { isFileProcessingSubjectInRoom } from "./lib/file_processing_subject";
 
 export const begin = mutationGeneric({
   args: {
@@ -45,9 +46,10 @@ export const begin = mutationGeneric({
       : null;
     if (
       !fileMaterial ||
-      fileMaterial.roomId !== args.roomId ||
-      (actor.kind === "client" &&
-        fileMaterial.uploaderId !== actor.actorId)
+      !isFileProcessingSubjectInRoom({
+        material: fileMaterial,
+        roomId: args.roomId,
+      })
     ) {
       throw new Error("File-processing subject is invalid.");
     }

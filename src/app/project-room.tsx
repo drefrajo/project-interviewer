@@ -110,12 +110,40 @@ export const ClientEntry = ({
   > | null>(null);
   const [error, setError] = useState("");
   const deviceId = useMemo(getOrCreateDeviceId, []);
+  const inviteRequestRef = useRef<{
+    application: ProjectInterviewer;
+    key: string;
+  } | null>(null);
 
   useEffect(() => {
+    const requestKey = `${inviteToken}\u0000${deviceId}`;
+    if (
+      inviteRequestRef.current?.application === application &&
+      inviteRequestRef.current.key === requestKey
+    ) {
+      return;
+    }
+    inviteRequestRef.current = { application, key: requestKey };
     void application.clientAccess
       .resolveInvite(inviteToken, { deviceId })
-      .then(setAccess)
-      .catch(() => setError(t("invalidInvite")));
+      .then((nextAccess) => {
+        if (
+          inviteRequestRef.current?.application === application &&
+          inviteRequestRef.current.key === requestKey
+        ) {
+          setAccess(nextAccess);
+        }
+      })
+      .catch(() => {
+        if (
+          inviteRequestRef.current?.application !== application ||
+          inviteRequestRef.current.key !== requestKey
+        ) {
+          return;
+        }
+        inviteRequestRef.current = null;
+        setError(t("invalidInvite"));
+      });
   }, [application, deviceId, inviteToken, t]);
 
   useEffect(() => {

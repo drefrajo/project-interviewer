@@ -19,11 +19,7 @@ import {
 } from "./project-material";
 import {
   cosineSimilarity,
-  findSuspectedSecrets,
   fullTextScore,
-  publicSuspectedSecrets,
-  redactModelText,
-  redactSegments,
 } from "./material-safety";
 import { normalizeSafeSharedResource } from "./shared-resource-safety";
 import {
@@ -703,9 +699,10 @@ export const createProjectInterviewer = (
         ProjectMaterial,
         "fileReference" | "uploaderId"
       >),
-      canIncludeSuspectedSecrets: actorOwnsMaterial(actor, material),
       canRemove:
         actor.kind === "freelancer" ||
+        material.state === "failed" ||
+        material.state === "unsupported" ||
         actorOwnsMaterial(actor, material),
     };
   };
@@ -906,7 +903,6 @@ export const createProjectInterviewer = (
     actor: RoomActor,
     room: ProjectRoom,
     material: ProjectMaterial,
-    includeSuspectedSecrets: boolean,
     operation: DurableOperation,
   ): Promise<ProjectMaterialView> => {
     operation.status = "running";
@@ -963,22 +959,7 @@ export const createProjectInterviewer = (
         ? [{ kind: "image", label: "Image 1", image: 1 }]
         : extraction.segments.map(({ locator }) => locator);
 
-      material.stage = "checking_secrets";
-      operation.stage = "checking_secrets";
-      operation.updatedAt = dependencies.clock.now();
-      material.updatedAt = dependencies.clock.now();
-      persist();
-      const suspectedSecrets = findSuspectedSecrets(extraction.segments);
-      const safeSegments = redactSegments(
-        extraction.segments,
-        suspectedSecrets,
-        false,
-      );
-      const analyzerSegments = redactSegments(
-        extraction.segments,
-        suspectedSecrets,
-        includeSuspectedSecrets,
-      );
+      const sourceSegments = extraction.segments;
 
       material.stage = "analyzing";
       operation.stage = "analyzing";
@@ -989,10 +970,10 @@ export const createProjectInterviewer = (
         fileName: material.name,
         declaredContentType: material.declaredContentType,
         outputLanguage: room.briefLanguage,
-        redactedText: analyzerSegments
+        extractedText: sourceSegments
           .map(({ locator, text }) => `[${locator.label}] ${text}`)
           .join("\n"),
-        segments: analyzerSegments,
+        segments: sourceSegments,
         isImage,
         ...(isImage
           ? {
@@ -1041,7 +1022,7 @@ export const createProjectInterviewer = (
       operation.updatedAt = dependencies.clock.now();
       material.updatedAt = dependencies.clock.now();
       persist();
-      const chunkedSegments = safeSegments.flatMap((segment) =>
+      const chunkedSegments = sourceSegments.flatMap((segment) =>
         chunkMaterialSegment(segment, materialChunkCharacters),
       );
       const vectors = await dependencies.embeddings.embed(
@@ -1055,7 +1036,7 @@ export const createProjectInterviewer = (
       state.materialChunks = state.materialChunks.filter(
         (chunk) => chunk.materialId !== material.id,
       );
-      safeSegments.forEach((segment) => {
+      sourceSegments.forEach((segment) => {
         state.materialSegments.push({
           ...copy(segment),
           roomId: room.id,
@@ -1078,10 +1059,6 @@ export const createProjectInterviewer = (
         });
       });
 
-      const safeSignals = draft.signals.map((signal) => ({
-        ...copy(signal),
-        text: redactModelText(signal.text, suspectedSecrets),
-      }));
       material.extraction = {
         language: extraction.language,
         method: extraction.method,
@@ -1092,16 +1069,16 @@ export const createProjectInterviewer = (
           ? draft.signals
               .map(({ locator }) => locator)
               .slice(0, 3)
-          : safeSegments
+          : sourceSegments
               .map(({ locator }) => locator)
               .slice(0, 1);
       const analysis: FileAnalysis = {
         ...copy(draft),
         id: dependencies.ids.next("file_analysis"),
         version: material.analysisVersions.length + 1,
-        summary: redactModelText(draft.summary, suspectedSecrets),
+        summary: draft.summary,
         summarySources: copy(summarySources),
-        signals: safeSignals,
+        signals: copy(draft.signals),
         processingVersion: "material-processing-v1",
         schemaVersion: "file-analysis-v1",
         promptVersion: "software-project-file-analysis-v1",
@@ -1110,9 +1087,6 @@ export const createProjectInterviewer = (
       };
       material.analysis = analysis;
       material.analysisVersions.push(copy(analysis));
-      material.suspectedSecrets =
-        publicSuspectedSecrets(suspectedSecrets);
-      material.includeSuspectedSecrets = includeSuspectedSecrets;
       delete material.failureCode;
       material.retryAvailable = false;
       material.state = "analyzed";
@@ -1188,7 +1162,6 @@ export const createProjectInterviewer = (
     actor: RoomActor,
     room: ProjectRoom,
     material: ProjectMaterial,
-    includeSuspectedSecrets: boolean,
     reanalysisVersion?: number,
   ): Promise<ProjectMaterialView> => {
     if (materialRemovalLocks.has(material.id)) {
@@ -1198,27 +1171,34 @@ export const createProjectInterviewer = (
     }
     if (
       reanalysisVersion === undefined &&
-      material.state === "analyzed" &&
-      material.includeSuspectedSecrets === includeSuspectedSecrets
+      material.state === "analyzed"
     ) {
       return Promise.resolve(toProjectMaterialView(material, actor));
     }
-    const idempotencyKey = [
+    const processingPrefix = [
       "file_processing",
       room.id,
       material.id,
-      includeSuspectedSecrets ? "include_flagged" : "masked",
-      ...(reanalysisVersion === undefined
-        ? []
-        : [`reanalysis_${reanalysisVersion}`]),
     ].join(":");
-    const existingPromise =
-      materialProcessingPromises.get(idempotencyKey);
+    const reanalysisSuffix =
+      reanalysisVersion === undefined
+        ? ""
+        : `:reanalysis_${reanalysisVersion}`;
+    const idempotencyKey = `${processingPrefix}${reanalysisSuffix}`;
+    const legacyIdempotencyKeys = [
+      `${processingPrefix}:masked${reanalysisSuffix}`,
+      `${processingPrefix}:include_flagged${reanalysisSuffix}`,
+    ];
+    const processingKeys = [idempotencyKey, ...legacyIdempotencyKeys];
+    const existingPromiseEntry = [...materialProcessingPromises.entries()].find(
+      ([key]) => processingKeys.includes(key),
+    );
+    const existingPromise = existingPromiseEntry?.[1];
     if (existingPromise) return existingPromise;
     const now = dependencies.clock.now();
     const operation =
       state.durableOperations.find(
-        (candidate) => candidate.idempotencyKey === idempotencyKey,
+        (candidate) => processingKeys.includes(candidate.idempotencyKey),
       ) ??
       {
         id: dependencies.ids.next("operation"),
@@ -1244,17 +1224,17 @@ export const createProjectInterviewer = (
           actor,
           room,
           material,
-          includeSuspectedSecrets,
           operation,
         );
       } finally {
         releaseWorker();
       }
     })();
-    materialProcessingPromises.set(idempotencyKey, promise);
+    const promiseKey = operation.idempotencyKey;
+    materialProcessingPromises.set(promiseKey, promise);
     void promise.then(
-      () => materialProcessingPromises.delete(idempotencyKey),
-      () => materialProcessingPromises.delete(idempotencyKey),
+      () => materialProcessingPromises.delete(promiseKey),
+      () => materialProcessingPromises.delete(promiseKey),
     );
     return promise;
   };
@@ -2415,8 +2395,6 @@ export const createProjectInterviewer = (
           stage: "checking_file",
           active: true,
           retryAvailable: false,
-          includeSuspectedSecrets: false,
-          suspectedSecrets: [],
           analysisVersions: [],
           createdAt: now,
           updatedAt: now,
@@ -2440,7 +2418,6 @@ export const createProjectInterviewer = (
           actor,
           room,
           material,
-          material.includeSuspectedSecrets,
         );
       },
 
@@ -2460,7 +2437,6 @@ export const createProjectInterviewer = (
           actor,
           room,
           material,
-          material.includeSuspectedSecrets,
         );
       },
 
@@ -2483,46 +2459,8 @@ export const createProjectInterviewer = (
           actor,
           room,
           material,
-          material.includeSuspectedSecrets,
           material.analysisVersions.length + 1,
         );
-      },
-
-      async includeSuspectedSecrets(
-        actor: RoomActor,
-        roomId: string,
-        materialId: string,
-        input: { acknowledgedProviderDisclosure: boolean },
-      ): Promise<ProjectMaterialView> {
-        const room = requireWritableRoomActor(actor, roomId);
-        const material = requireMaterial(actor, roomId, materialId);
-        if (!input.acknowledgedProviderDisclosure) {
-          throw new ValidationError(
-            "Provider disclosure acknowledgement is required.",
-          );
-        }
-        if (!material.suspectedSecrets.length) {
-          throw new ValidationError(
-            "No suspected secrets are available to include.",
-          );
-        }
-        if (!actorOwnsMaterial(actor, material)) {
-          throw new AuthorizationError(
-            "Only the uploader may include suspected secrets.",
-          );
-        }
-        const idempotencyKey = [
-          "file_processing",
-          room.id,
-          material.id,
-          "include_flagged",
-        ].join(":");
-        const existing =
-          materialProcessingPromises.get(idempotencyKey);
-        if (existing) return existing;
-        audit(actor, roomId, "project_material.secret_override");
-        persist();
-        return processMaterial(actor, room, material, true);
       },
 
       async addFeedback(
@@ -2629,7 +2567,9 @@ export const createProjectInterviewer = (
           return copy(priorRevision);
         }
         const actorOwnsUpload = actorOwnsMaterial(actor, material);
-        if (!actorOwnsUpload && actor.kind !== "freelancer") {
+        const terminalFailure =
+          material.state === "failed" || material.state === "unsupported";
+        if (!actorOwnsUpload && actor.kind !== "freelancer" && !terminalFailure) {
           throw new AuthorizationError(
             "Only the uploader or Freelancer may remove this Project Material.",
           );
@@ -2640,7 +2580,7 @@ export const createProjectInterviewer = (
             const inFlight = [
               ...materialProcessingPromises.entries(),
             ]
-              .filter(([key]) => key.includes(`:${materialId}:`))
+              .filter(([key]) => key.includes(`:${materialId}`))
               .map(([, promise]) => promise);
             await Promise.all(inFlight);
             requireWritableRoomActor(actor, roomId);

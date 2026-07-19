@@ -41,12 +41,14 @@ describe("Client-safe Convex projections", () => {
         stage: "complete",
         active: true,
         retryAvailable: false,
-        suspectedSecrets: [],
         createdAt: 1,
         updatedAt: 2,
         storageId: "private-storage-id",
         uploaderId: "private-uploader",
       }),
     ).not.toHaveProperty("storageId");
+    expect(
+      clientMaterialDto({ suspectedSecrets: [] }),
+    ).not.toHaveProperty("suspectedSecrets");
   });
 });

@@ -84,7 +84,6 @@ export const references = {
     commitUpload: api.materials.commitUpload,
     listFreelancer: api.materials.listForFreelancer,
     listClient: api.materials.listForClient,
-    includeSecrets: api.materials.includeSuspectedSecrets,
     addFeedback: api.materials.addFeedback,
     remove: api.materials.remove,
     continueWithoutFiles: api.materials.continueWithoutFiles,

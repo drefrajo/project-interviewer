@@ -6,10 +6,13 @@ import type { GenericId, Value } from "convex/values";
 import type { ContextPackRevision } from "../../src/domain/project-material";
 
 export type ContextRevisionReason =
-  | "file_analysis_completed"
-  | "analysis_feedback_added"
-  | "material_removed"
-  | "continued_without_material";
+  | ContextPackRevision["reason"]
+  | "file_analysis_completed";
+
+export const normalizeContextRevisionReason = (
+  reason: ContextRevisionReason,
+): ContextPackRevision["reason"] =>
+  reason === "file_analysis_completed" ? "material_analyzed" : reason;
 
 export const rebuildContextPack = async (
   context: GenericMutationCtx<GenericDataModel>,
@@ -116,7 +119,7 @@ export const rebuildContextPack = async (
   const id = await context.db.insert("contextPackRevisions", {
     roomId: input.roomId,
     revision,
-    reason: input.reason,
+    reason: normalizeContextRevisionReason(input.reason),
     ...(input.subjectMaterialId
       ? { subjectMaterialId: input.subjectMaterialId }
       : {}),
@@ -148,10 +151,7 @@ export const rebuildContextPack = async (
     id: String(id),
     roomId: String(input.roomId),
     revision,
-    reason:
-      input.reason === "file_analysis_completed"
-        ? "material_analyzed"
-        : input.reason,
+    reason: normalizeContextRevisionReason(input.reason),
     ...(input.subjectMaterialId
       ? { subjectMaterialId: String(input.subjectMaterialId) }
       : {}),

@@ -8,6 +8,7 @@ import {
   localFileAnalyzer,
   localParser,
 } from "./local-material-adapters";
+import { ensurePdfTextExtractionRuntime } from "./pdf-runtime";
 
 describe("local Project Material adapters", () => {
   it("preserves paragraph and CSV row locators in English and German", async () => {
@@ -91,7 +92,7 @@ describe("local Project Material adapters", () => {
       fileName: "hostile.txt",
       declaredContentType: "text/plain",
       outputLanguage: "en",
-      redactedText: extraction.segments[0]?.text ?? "",
+      extractedText: extraction.segments[0]?.text ?? "",
       segments: extraction.segments,
       isImage: false,
     });
@@ -143,6 +144,65 @@ describe("local Project Material adapters", () => {
     ).resolves.toBe("application/zip");
   });
 
+  it("extracts text from PDFs without relying on Node canvas rendering", async () => {
+    const previousDomMatrix = globalThis.DOMMatrix;
+    const previousPath2D = globalThis.Path2D;
+    Reflect.deleteProperty(globalThis, "DOMMatrix");
+    Reflect.deleteProperty(globalThis, "Path2D");
+    try {
+      ensurePdfTextExtractionRuntime();
+      const body = "BT /F1 18 Tf 72 720 Td (Hello PDF) Tj ET\n";
+      const pdf = [
+        "%PDF-1.4",
+        "1 0 obj",
+        "<< /Type /Catalog /Pages 2 0 R >>",
+        "endobj",
+        "2 0 obj",
+        "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+        "endobj",
+        "3 0 obj",
+        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>",
+        "endobj",
+        "4 0 obj",
+        `<< /Length ${body.length} >>`,
+        "stream",
+        body,
+        "endstream",
+        "endobj",
+        "5 0 obj",
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+        "endobj",
+        "trailer",
+        "<< /Root 1 0 R >>",
+        "%%EOF",
+      ].join("\n");
+
+      const extraction = await localParser.extract({
+        name: "brief.pdf",
+        contentType: "application/pdf",
+        bytes: new TextEncoder().encode(pdf),
+      });
+
+      expect(extraction.segments).toEqual([
+        {
+          text: "Hello PDF",
+          locator: { kind: "page", label: "Page 1", page: 1 },
+        },
+      ]);
+    } finally {
+      if (previousDomMatrix === undefined) {
+        Reflect.deleteProperty(globalThis, "DOMMatrix");
+      } else {
+        globalThis.DOMMatrix = previousDomMatrix;
+      }
+      if (previousPath2D === undefined) {
+        Reflect.deleteProperty(globalThis, "Path2D");
+      } else {
+        globalThis.Path2D = previousPath2D;
+      }
+    }
+  });
+
   it("maps common English and German project terms into the same local semantic space", async () => {
     const [english = [], german = []] = await localEmbeddings.embed([
       "client launch date and requirements",
@@ -161,7 +221,7 @@ describe("local Project Material adapters", () => {
       fileName: "skizze.png",
       declaredContentType: "image/png",
       outputLanguage: "de",
-      redactedText: "",
+      extractedText: "",
       segments: [],
       isImage: true,
       image: {
@@ -196,7 +256,7 @@ describe("local Project Material adapters", () => {
       fileName: "anforderungen.txt",
       declaredContentType: "text/plain",
       outputLanguage: "en",
-      redactedText: extraction.segments[0]?.text ?? "",
+      extractedText: extraction.segments[0]?.text ?? "",
       segments: extraction.segments,
       isImage: false,
     });

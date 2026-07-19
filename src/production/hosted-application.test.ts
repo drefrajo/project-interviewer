@@ -87,6 +87,15 @@ describe("hosted application adapter", () => {
       inviteVersion: 2,
       sessionId: "hashed:client-session",
     });
+
+    const repeatAccess = await application.clientAccess.resolveInvite(
+      "raw-invite",
+      { deviceId: "device-1" },
+    );
+
+    expect(repeatAccess.actor).toEqual(access.actor);
+    expect(transport.mutation).toHaveBeenCalledOnce();
+    expect(transport.query).toHaveBeenCalledTimes(2);
   });
 
   it("retrieves the current Invite Link for its authenticated owner", async () => {
