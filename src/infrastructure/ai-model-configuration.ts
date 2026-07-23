@@ -13,14 +13,13 @@ export const EMBEDDING_CONFIGURATION = {
 } as const;
 
 export const AI_MODELS = {
-  // Gemini providers reject the nested source-locator JSON schema with
-  // HTTP 400, and Claude models before 4.5 silently ignore response_format.
-  // The roles below must therefore stay on providers verified to honor
-  // strict structured outputs for the app's schemas.
+  // All chat roles use OpenAI models with strict json_schema support.
+  // Luna is fast and cost-efficient with strict json_schema support.
+  // GPT-5 mini handles file analysis at the lowest cost.
   file_analyzer: "openai/gpt-5-mini",
-  interview_planner: "google/gemini-3.1-flash-lite",
-  interview_agent: "openai/gpt-5",
-  interview_reviewer: "anthropic/claude-sonnet-4.5",
-  brief_generator: "openai/gpt-5",
+  interview_planner: "openai/gpt-5.6-luna",
+  interview_agent: "openai/gpt-5.6-luna",
+  interview_reviewer: "openai/gpt-5.6-luna",
+  brief_generator: "openai/gpt-5.6-luna",
   embeddings: EMBEDDING_CONFIGURATION.model,
 } as const satisfies Record<AiRole, string>;
