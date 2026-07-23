@@ -90,6 +90,13 @@ export interface DiscoveryFinding {
   createdAt: number;
 }
 
+export interface InterviewTurnEntry {
+  questionId: string;
+  questionText: string;
+  answer: string;
+  answerKind: "answer" | "skip";
+}
+
 export interface InterviewTurn {
   id: string;
   roomId: string;
@@ -98,6 +105,7 @@ export interface InterviewTurn {
   question: InterviewQuestion;
   answer: string;
   answerKind: "answer" | "skip";
+  entries?: InterviewTurnEntry[] | undefined;
   idempotencyKey: string;
   contextPackRevisionId: string | null;
   contextPackRevision: number | null;
@@ -152,6 +160,7 @@ export interface DiscoveryInterview {
   language: Language;
   status: InterviewStatus;
   currentQuestion?: InterviewQuestion | undefined;
+  currentQuestions?: InterviewQuestion[] | undefined;
   operationStatus: "idle" | "running" | "retryable";
   answerCount: number;
   unresolvedTopics: string[];
@@ -214,6 +223,7 @@ export interface PlannerDraft {
   knownRisks: string[];
   openGoals: string[];
   firstQuestion: InterviewQuestionDraft;
+  openingQuestions?: InterviewQuestionDraft[] | undefined;
   model: string;
   provider: string;
   usage?: ModelUsage;
@@ -245,6 +255,7 @@ export interface InterviewAgentDelta {
   >;
   unresolvedTopics: string[];
   nextQuestion?: InterviewQuestionDraft;
+  nextQuestions?: InterviewQuestionDraft[] | undefined;
   completionAssessment: {
     proposeCompletion: boolean;
     rationale: string;
@@ -340,6 +351,7 @@ export interface DiscoveryInterviewView {
   respondingDevice: boolean;
   leaseVersion: number | null;
   currentQuestion?: InterviewQuestion | undefined;
+  currentQuestions?: InterviewQuestion[] | undefined;
   operationStatus: DiscoveryInterview["operationStatus"];
   answerCount: number;
   plan?: Pick<InterviewPlan, "profileId" | "profileVersion"> | undefined;
@@ -446,6 +458,18 @@ interface CoordinatorDependencies extends InterviewAdapters {
 }
 
 const clone = <T>(value: T): T => structuredClone(value);
+
+const questionBatch = (
+  interview: Pick<
+    DiscoveryInterview,
+    "currentQuestion" | "currentQuestions"
+  >,
+): InterviewQuestion[] =>
+  interview.currentQuestions?.length
+    ? interview.currentQuestions
+    : interview.currentQuestion
+      ? [interview.currentQuestion]
+      : [];
 
 export const createDiscoveryInterviewCoordinator = (
   dependencies: CoordinatorDependencies,
@@ -610,6 +634,9 @@ export const createDiscoveryInterviewCoordinator = (
       ...(interview.currentQuestion
         ? { currentQuestion: clone(interview.currentQuestion) }
         : {}),
+      ...(questionBatch(interview).length
+        ? { currentQuestions: clone(questionBatch(interview)) }
+        : {}),
       coverage:
         plan?.coverageAreas.map(({ id, label, status }) => ({
           id,
@@ -670,6 +697,20 @@ export const createDiscoveryInterviewCoordinator = (
     ...clone(draft),
     askedAt: dependencies.clock.now(),
   });
+
+  const setQuestionBatch = (
+    interview: DiscoveryInterview,
+    drafts: InterviewQuestionDraft[],
+  ): void => {
+    const batch = drafts.slice(0, 4).map(createQuestion);
+    interview.currentQuestions = batch;
+    interview.currentQuestion = batch[0];
+  };
+
+  const clearQuestionBatch = (interview: DiscoveryInterview): void => {
+    delete interview.currentQuestion;
+    delete interview.currentQuestions;
+  };
 
   const recordModelUsage = (
     operation: InterviewOperation,
@@ -771,7 +812,13 @@ export const createDiscoveryInterviewCoordinator = (
       updatedAt: now,
     };
     dependencies.state.interviewPlans.push(plan);
-    interview.currentQuestion = createQuestion(draft.firstQuestion);
+    const opening = (
+      draft.openingQuestions?.length
+        ? draft.openingQuestions
+        : [draft.firstQuestion]
+    ).slice(0, 3);
+    interview.currentQuestions = opening.map(createQuestion);
+    interview.currentQuestion = interview.currentQuestions[0];
     interview.status = "active";
     interview.operationStatus = "idle";
     interview.updatedAt = now;
@@ -1114,7 +1161,7 @@ export const createDiscoveryInterviewCoordinator = (
 
     const shouldReview =
       draft.completionAssessment.proposeCompletion ||
-      nextAnswerCount % 40 === 0;
+      nextAnswerCount % 12 === 0;
     let review: ReviewerDraft | undefined;
     if (shouldReview) {
       review = await runReviewer(interview, stagedPlan, {
@@ -1144,7 +1191,7 @@ export const createDiscoveryInterviewCoordinator = (
     }
     if (review) {
       interview.reviewerBlockers = clone(review.blockers);
-      if (nextAnswerCount % 40 === 0) {
+      if (nextAnswerCount % 12 === 0) {
         interview.usageReviewTriggered = true;
       }
     }
@@ -1154,7 +1201,7 @@ export const createDiscoveryInterviewCoordinator = (
       review &&
       review.blockers.length === 0
     ) {
-      delete interview.currentQuestion;
+      clearQuestionBatch(interview);
       interview.status = "awaiting_confirmation";
       interview.completionRationale =
         "Agent sufficiency, reviewer clearance, and final Client check completed.";
@@ -1163,43 +1210,55 @@ export const createDiscoveryInterviewCoordinator = (
       review &&
       review.blockers.length === 0
     ) {
-      interview.currentQuestion = createQuestion({
-        text:
-          interview.language === "de"
-            ? "Gibt es noch etwas Wichtiges, das wir für den Projektbrief festhalten sollten?"
-            : "Is there anything else important we should capture for the Project Brief?",
-        coverageAreaId: "final",
-        kind: "final_anything_else",
-        reason: "Final Client check before completion confirmation.",
-      });
-    } else if (draft.nextQuestion) {
-      interview.currentQuestion = createQuestion(draft.nextQuestion);
+      setQuestionBatch(interview, [
+        {
+          text:
+            interview.language === "de"
+              ? "Gibt es noch etwas Wichtiges, das wir für den Projektbrief festhalten sollten?"
+              : "Is there anything else important we should capture for the Project Brief?",
+          coverageAreaId: "final",
+          kind: "final_anything_else",
+          reason: "Final Client check before completion confirmation.",
+        },
+      ]);
+    } else if (draft.nextQuestions?.length || draft.nextQuestion) {
+      setQuestionBatch(
+        interview,
+        draft.nextQuestions?.length
+          ? draft.nextQuestions
+          : [draft.nextQuestion!],
+      );
     } else {
       const openArea = plan.coverageAreas.find(
         ({ status }) =>
           status === "uncovered" || status === "partial",
       );
       if (!openArea) {
-        interview.currentQuestion = createQuestion({
-          text:
-            interview.language === "de"
-              ? "Welche offene Unsicherheit ist für dieses Projekt am wichtigsten?"
-              : "Which remaining uncertainty matters most for this project?",
-          coverageAreaId: "final",
-          kind: "primary",
-          reason: "A next question is required until completion clears review.",
-        });
+        setQuestionBatch(interview, [
+          {
+            text:
+              interview.language === "de"
+                ? "Welche offene Unsicherheit ist für dieses Projekt am wichtigsten?"
+                : "Which remaining uncertainty matters most for this project?",
+            coverageAreaId: "final",
+            kind: "primary",
+            reason:
+              "A next question is required until completion clears review.",
+          },
+        ]);
       } else {
-        interview.currentQuestion = createQuestion({
-          text:
-            openArea.openQuestions[0] ??
-            (interview.language === "de"
-              ? `Was sollten wir noch zu „${openArea.label}“ klären?`
-              : `What should we still clarify about ${openArea.label}?`),
-          coverageAreaId: openArea.id,
-          kind: "primary",
-          reason: `Coverage remains ${openArea.status}.`,
-        });
+        setQuestionBatch(interview, [
+          {
+            text:
+              openArea.openQuestions[0] ??
+              (interview.language === "de"
+                ? `Was sollten wir noch zu „${openArea.label}“ klären?`
+                : `What should we still clarify about ${openArea.label}?`),
+            coverageAreaId: openArea.id,
+            kind: "primary",
+            reason: `Coverage remains ${openArea.status}.`,
+          },
+        ]);
       }
     }
     if (interview.status !== "awaiting_confirmation") {
@@ -1253,6 +1312,11 @@ export const createDiscoveryInterviewCoordinator = (
       answerKind: "answer" | "skip";
       idempotencyKey: string;
       contextPackRevisionId: string | null;
+      entries?: Array<{
+        questionId: string;
+        answer: string;
+        answerKind: "answer" | "skip";
+      }>;
     },
   ): Promise<DiscoveryInterviewView> => {
     const room = dependencies.authorize(actor, roomId);
@@ -1275,13 +1339,32 @@ export const createDiscoveryInterviewCoordinator = (
         Promise.resolve(toView(actor, interview))
       );
     }
+    const batch = questionBatch(interview);
     if (
       interview.status !== "active" ||
       interview.operationStatus === "running" ||
-      interview.currentQuestion?.id !== input.questionId
+      !batch.length
     ) {
       throw new InterviewStateError(
         "The answer does not match the current question.",
+      );
+    }
+    const entries = input.entries ?? [
+      {
+        questionId: input.questionId,
+        answer: input.answer,
+        answerKind: input.answerKind,
+      },
+    ];
+    const batchIds = new Set(batch.map(({ id }) => id));
+    if (
+      entries.length !== batch.length ||
+      entries.some((entry) => !batchIds.has(entry.questionId)) ||
+      new Set(entries.map(({ questionId }) => questionId)).size !==
+        entries.length
+    ) {
+      throw new InterviewStateError(
+        "Every current question needs an answer before continuing.",
       );
     }
     const contextPack = dependencies.latestContextPack(roomId);
@@ -1292,13 +1375,15 @@ export const createDiscoveryInterviewCoordinator = (
         "Project Material changed; reload the current question.",
       );
     }
-    if (
-      input.answerKind === "answer" &&
-      !input.answer.trim()
-    ) {
-      throw new InterviewStateError("An answer is required.");
+    for (const entry of entries) {
+      if (entry.answerKind === "answer" && !entry.answer.trim()) {
+        throw new InterviewStateError("An answer is required.");
+      }
     }
-    const question = clone(interview.currentQuestion);
+    const question = clone(batch[0]!);
+    const firstEntry = entries.find(
+      (entry) => entry.questionId === question.id,
+    )!;
     const now = dependencies.clock.now();
     const turn: InterviewTurn = {
       id: dependencies.ids.next("turn"),
@@ -1310,12 +1395,28 @@ export const createDiscoveryInterviewCoordinator = (
         ).length + 1,
       question,
       answer:
-        input.answerKind === "skip"
+        firstEntry.answerKind === "skip"
           ? interview.language === "de"
             ? "Übersprungen"
             : "Skipped"
-          : input.answer.trim(),
-      answerKind: input.answerKind,
+          : firstEntry.answer.trim(),
+      answerKind: firstEntry.answerKind,
+      entries: batch.map((batched) => {
+        const entry = entries.find(
+          (candidate) => candidate.questionId === batched.id,
+        )!;
+        return {
+          questionId: batched.id,
+          questionText: batched.text,
+          answer:
+            entry.answerKind === "skip"
+              ? interview.language === "de"
+                ? "Übersprungen"
+                : "Skipped"
+              : entry.answer.trim(),
+          answerKind: entry.answerKind,
+        };
+      }),
       idempotencyKey: input.idempotencyKey,
       contextPackRevisionId: contextPack?.id ?? null,
       contextPackRevision: contextPack?.revision ?? null,
@@ -1323,7 +1424,7 @@ export const createDiscoveryInterviewCoordinator = (
     };
     dependencies.state.interviewTurns.push(turn);
     dependencies.touchRoom(roomId);
-    delete interview.currentQuestion;
+    clearQuestionBatch(interview);
     interview.operationStatus = "running";
     interview.updatedAt = now;
     const operation = createOperation(
@@ -1337,20 +1438,22 @@ export const createDiscoveryInterviewCoordinator = (
     if (contextPack) {
       operation.contextPackRevisionId = contextPack.id;
     }
-    if (input.answerKind === "skip") {
-      dependencies.state.discoveryFindings.push({
-        id: dependencies.ids.next("finding"),
-        roomId,
-        interviewId: interview.id,
-        type: "gap",
-        statement:
-          interview.language === "de"
-            ? `Der Client hat „${question.text}“ übersprungen.`
-            : `The Client skipped “${question.text}”.`,
-        sources: [{ type: "turn", turnId: turn.id }],
-        status: "active",
-        createdAt: now,
-      });
+    for (const entry of turn.entries ?? []) {
+      if (entry.answerKind === "skip") {
+        dependencies.state.discoveryFindings.push({
+          id: dependencies.ids.next("finding"),
+          roomId,
+          interviewId: interview.id,
+          type: "gap",
+          statement:
+            interview.language === "de"
+              ? `Der Client hat „${entry.questionText}“ übersprungen.`
+              : `The Client skipped “${entry.questionText}”.`,
+          sources: [{ type: "turn", turnId: turn.id }],
+          status: "active",
+          createdAt: now,
+        });
+      }
     }
     dependencies.persist();
 
@@ -1499,6 +1602,31 @@ export const createDiscoveryInterviewCoordinator = (
       });
     },
 
+    async submitAnswers(
+      actor: RoomActor,
+      roomId: string,
+      input: {
+        entries: Array<{
+          questionId: string;
+          answer: string;
+          answerKind: "answer" | "skip";
+        }>;
+        idempotencyKey: string;
+        contextPackRevisionId: string | null;
+      },
+    ): Promise<DiscoveryInterviewView> {
+      const client = requireClient(actor, roomId);
+      const first = input.entries[0];
+      return acceptTurn(client, roomId, {
+        questionId: first?.questionId ?? "",
+        answer: first?.answer ?? "",
+        answerKind: first?.answerKind ?? "answer",
+        idempotencyKey: input.idempotencyKey,
+        contextPackRevisionId: input.contextPackRevisionId,
+        entries: input.entries,
+      });
+    },
+
     async retryPending(
       actor: RoomActor,
       roomId: string,
@@ -1640,7 +1768,7 @@ export const createDiscoveryInterviewCoordinator = (
       }
       interview.status = "completed_early";
       interview.operationStatus = "idle";
-      delete interview.currentQuestion;
+      clearQuestionBatch(interview);
       interview.incompleteReason =
         input.reason?.trim() ||
         "The Client deliberately finished discovery early.";
@@ -1765,18 +1893,20 @@ export const createDiscoveryInterviewCoordinator = (
       }
       if (!input.confirmed) {
         interview.status = "active";
-        interview.currentQuestion = createQuestion({
-          text:
-            interview.language === "de"
-              ? "Was sollten wir noch klären?"
-              : "What should we still clarify?",
-          coverageAreaId: "final",
-          kind: "primary",
-          reason: "The Client declined completion confirmation.",
-        });
+        setQuestionBatch(interview, [
+          {
+            text:
+              interview.language === "de"
+                ? "Was sollten wir noch klären?"
+                : "What should we still clarify?",
+            coverageAreaId: "final",
+            kind: "primary",
+            reason: "The Client declined completion confirmation.",
+          },
+        ]);
       } else {
         interview.status = "completed";
-        delete interview.currentQuestion;
+        clearQuestionBatch(interview);
         dependencies.setRoomPhase(roomId, "freelancer_review");
         dependencies.audit(client, roomId, "interview.completed");
       }
@@ -1827,17 +1957,23 @@ const validatePlanDraft = (
   contextPack: ContextPackRevision | null,
 ): string => {
   const areaIds = new Set(draft.coverageAreas.map(({ id }) => id));
+  const opening = draft.openingQuestions?.length
+    ? draft.openingQuestions
+    : [draft.firstQuestion];
   if (
     draft.profileId !== "software-project" ||
     draft.profileVersion !== "software-project-v1" ||
     !draft.coverageAreas.length ||
     draft.coverageAreas.length > 12 ||
     !draft.firstQuestion.text.trim() ||
-    draft.firstQuestion.text.length > 500 ||
-    !draft.firstQuestion.reason.trim() ||
-    draft.firstQuestion.kind !== "primary" ||
-    !draft.coverageAreas.some(
-      ({ id }) => id === draft.firstQuestion.coverageAreaId,
+    opening.length > 3 ||
+    opening.some(
+      (question) =>
+        !question.text.trim() ||
+        question.text.length > 500 ||
+        !question.reason.trim() ||
+        question.kind !== "primary" ||
+        !areaIds.has(question.coverageAreaId),
     ) ||
     SOFTWARE_PROJECT_PROFILE.requiredCoverageAreas.some(
       (id) => !areaIds.has(id),
@@ -1901,12 +2037,19 @@ const validateAgentDelta = (
     existingFindings: DiscoveryFinding[];
   },
 ): string => {
+  const nextBatch =
+    draft.nextQuestions?.length
+      ? draft.nextQuestions
+      : draft.nextQuestion
+        ? [draft.nextQuestion]
+        : [];
   if (
     draft.coverageUpdates.length > plan.coverageAreas.length ||
     draft.findings.length > 12 ||
     (draft.findingStatusUpdates?.length ?? 0) > 12 ||
     draft.unresolvedTopics.length > 20 ||
-    (draft.nextQuestion?.text.length ?? 0) > 500
+    nextBatch.length > 4 ||
+    nextBatch.some(({ text }) => text.length > 500)
   ) {
     return "Interview delta exceeds its bounds.";
   }
@@ -1979,20 +2122,19 @@ const validateAgentDelta = (
     return "Discovery Finding status update is invalid.";
   }
   if (
-    draft.nextQuestion &&
-    (!draft.nextQuestion.text.trim() ||
-      !draft.nextQuestion.reason.trim() ||
-      !areaIds.has(draft.nextQuestion.coverageAreaId) ||
-      !["primary", "follow_up"].includes(
-        draft.nextQuestion.kind,
-      ))
+    nextBatch.some(
+      (question) =>
+        !question.text.trim() ||
+        !question.reason.trim() ||
+        !areaIds.has(question.coverageAreaId) ||
+        !["primary", "follow_up"].includes(question.kind),
+    )
   ) {
     return "Next question is invalid.";
   }
   if (
     !draft.completionAssessment.rationale.trim() ||
-    (!draft.completionAssessment.proposeCompletion &&
-      !draft.nextQuestion)
+    (!draft.completionAssessment.proposeCompletion && !nextBatch.length)
   ) {
     return "Completion assessment or next question is missing.";
   }

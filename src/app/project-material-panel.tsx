@@ -27,6 +27,7 @@ export const ProjectMaterialPanel = ({
   readOnly,
   materialFileStore,
   onReadinessChange,
+  onContinueToInterview,
 }: {
   application: ProjectInterviewer;
   actor: RoomActor;
@@ -34,6 +35,7 @@ export const ProjectMaterialPanel = ({
   readOnly: boolean;
   materialFileStore?: RouteContext["materialFileStore"];
   onReadinessChange?(): void;
+  onContinueToInterview?(): void;
 }) => {
   const { t } = useI18n();
   const [materials, setMaterials] = useState<ProjectMaterialView[]>([]);
@@ -44,9 +46,6 @@ export const ProjectMaterialPanel = ({
   const [feedbackDrafts, setFeedbackDrafts] = useState<Record<string, string>>(
     {},
   );
-  const [feedbackLocatorIndexes, setFeedbackLocatorIndexes] = useState<
-    Record<string, number>
-  >({});
   const [reanalysisInFlight, setReanalysisInFlight] =
     useState<Record<string, boolean>>({});
   const materialFingerprint = useRef("");
@@ -256,14 +255,10 @@ export const ProjectMaterialPanel = ({
   };
 
   const addFeedback = async (materialId: string) => {
-    const material = materials.find(({ id }) => id === materialId);
-    const locators = material ? analysisLocators(material) : [];
-    const locator =
-      locators[feedbackLocatorIndexes[materialId] ?? 0];
-    if (!locator) return;
+    const explanation = (feedbackDrafts[materialId] ?? "").trim();
+    if (!explanation) return;
     await application.materials.addFeedback(actor, room.id, materialId, {
-      explanation: feedbackDrafts[materialId] ?? "",
-      locator,
+      explanation,
     });
     setFeedbackDrafts((current) => ({ ...current, [materialId]: "" }));
     await refresh();
@@ -396,7 +391,7 @@ export const ProjectMaterialPanel = ({
             ) : null}
 
             {material.state === "analyzed" && !readOnly ? (
-              <div className="mt-4 grid items-end gap-3 md:grid-cols-[minmax(12rem,2fr)_minmax(9rem,1fr)_auto]">
+              <div className="mt-4 grid items-end gap-3 md:grid-cols-[minmax(12rem,1fr)_auto]">
                 <label className="flex flex-col gap-1.5 text-sm font-bold text-ink">
                   <span>{t("analysisFeedback")}</span>
                   <input
@@ -410,30 +405,6 @@ export const ProjectMaterialPanel = ({
                     placeholder={t("feedbackPlaceholder")}
                     value={feedbackDrafts[material.id] ?? ""}
                   />
-                </label>
-                <label className="flex flex-col gap-1.5 text-sm font-bold text-ink">
-                  <span>{t("feedbackSource")}</span>
-                  <select
-                    className="min-h-11 rounded-md border border-[#bec7c0] bg-white px-3 py-2 font-normal"
-                    onChange={(event) =>
-                      setFeedbackLocatorIndexes((current) => ({
-                        ...current,
-                        [material.id]: Number(event.target.value),
-                      }))
-                    }
-                    value={feedbackLocatorIndexes[material.id] ?? 0}
-                  >
-                    {analysisLocators(material).map(
-                      (locator, index) => (
-                        <option
-                          key={`${locator.label}-${index}`}
-                          value={index}
-                        >
-                          {locator.label}
-                        </option>
-                      ),
-                    )}
-                  </select>
                 </label>
                 <button
                   className="inline-flex min-h-11 items-center justify-center rounded-md border border-line bg-transparent px-4 py-2 text-sm font-bold text-ink hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
@@ -495,6 +466,29 @@ export const ProjectMaterialPanel = ({
             type="button"
           >
             {t("continueWithoutFiles")}
+          </button>
+        </div>
+      ) : null}
+
+      {actor.kind === "client" &&
+      !readOnly &&
+      room.interviewReadiness === "ready" &&
+      ["setup", "discovery"].includes(room.phase) ? (
+        <div className="mt-5 flex flex-col items-start gap-3 border border-[#b7cec2] bg-[#e5f3df] p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="m-0 font-display text-lg font-bold text-forest">
+              {t("filesReadyTitle")}
+            </h3>
+            <p className="mb-0 mt-1 text-sm leading-6 text-ink">
+              {t("filesReadyBody")}
+            </p>
+          </div>
+          <button
+            className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-md bg-forest px-4 py-2 text-sm font-bold text-white hover:bg-[#0f3d2f]"
+            onClick={() => onContinueToInterview?.()}
+            type="button"
+          >
+            {t("continueToInterview")}
           </button>
         </div>
       ) : null}
@@ -566,19 +560,3 @@ const formatBytes = (bytes: number): string =>
   bytes < 1024 * 1024
     ? `${Math.max(1, Math.round(bytes / 1024))} KB`
     : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-
-const analysisLocators = (
-  material: ProjectMaterialView,
-): NonNullable<ProjectMaterialView["analysis"]>["summarySources"] => {
-  const candidates = [
-    ...(material.analysis?.summarySources ?? []),
-    ...(material.analysis?.signals.map(({ locator }) => locator) ?? []),
-  ];
-  return candidates.filter(
-    (candidate, index) =>
-      candidates.findIndex(
-        (locator) =>
-          JSON.stringify(locator) === JSON.stringify(candidate),
-      ) === index,
-  );
-};

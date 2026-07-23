@@ -1552,9 +1552,13 @@ export const createProjectInterviewer = (
           );
           return feedback
             ? {
-                label: `Analysis Feedback · ${feedback.locator.label}`,
+                label: feedback.locator
+                  ? `Analysis Feedback · ${feedback.locator.label}`
+                  : "Analysis Feedback",
                 text: feedback.explanation,
-                locator: feedback.locator.label,
+                ...(feedback.locator
+                  ? { locator: feedback.locator.label }
+                  : {}),
               }
             : null;
         }
@@ -2126,18 +2130,21 @@ export const createProjectInterviewer = (
           const now = dependencies.clock.now();
           interview.status = "active";
           interview.operationStatus = "idle";
-          interview.currentQuestion = {
-            id: dependencies.ids.next("question"),
-            text:
-              interview.language === "de"
-                ? `Die Klärung wurde wieder geöffnet. Was sollten wir bei „${area.label}“ als Nächstes ergänzen oder korrigieren?`
-                : `Discovery was reopened. What should we add or correct next for “${area.label}”?`,
-            coverageAreaId: area.id,
-            kind: "follow_up",
-            reason:
-              "The Freelancer reopened discovery to continue the existing Interview Plan.",
-            askedAt: now,
-          };
+          interview.currentQuestions = [
+            {
+              id: dependencies.ids.next("question"),
+              text:
+                interview.language === "de"
+                  ? `Die Klärung wurde wieder geöffnet. Was sollten wir bei „${area.label}“ als Nächstes ergänzen oder korrigieren?`
+                  : `Discovery was reopened. What should we add or correct next for “${area.label}”?`,
+              coverageAreaId: area.id,
+              kind: "follow_up",
+              reason:
+                "The Freelancer reopened discovery to continue the existing Interview Plan.",
+              askedAt: now,
+            },
+          ];
+          interview.currentQuestion = interview.currentQuestions[0];
           delete interview.completionRationale;
           delete interview.incompleteReason;
           interview.reviewerBlockers = [];
@@ -2467,7 +2474,7 @@ export const createProjectInterviewer = (
         actor: RoomActor,
         roomId: string,
         materialId: string,
-        input: { explanation: string; locator: SourceLocator },
+        input: { explanation: string; locator?: SourceLocator },
       ): Promise<AnalysisFeedback> {
         const room = requireWritableRoomActor(actor, roomId);
         const material = requireMaterial(actor, roomId, materialId);
@@ -2481,21 +2488,23 @@ export const createProjectInterviewer = (
             "Analysis Feedback needs a short explanation.",
           );
         }
-        const availableLocators = [
-          ...(material.analysis?.summarySources ?? []),
-          ...(material.analysis?.signals.map(({ locator }) => locator) ??
-            []),
-        ];
-        if (
-          !availableLocators.some(
-            (locator) =>
-              JSON.stringify(locator) ===
-              JSON.stringify(input.locator),
-          )
-        ) {
-          throw new ValidationError(
-            "Analysis Feedback must reference an analyzed source.",
-          );
+        if (input.locator) {
+          const availableLocators = [
+            ...(material.analysis?.summarySources ?? []),
+            ...(material.analysis?.signals.map(({ locator }) => locator) ??
+              []),
+          ];
+          if (
+            !availableLocators.some(
+              (locator) =>
+                JSON.stringify(locator) ===
+                JSON.stringify(input.locator),
+            )
+          ) {
+            throw new ValidationError(
+              "Analysis Feedback must reference an analyzed source.",
+            );
+          }
         }
         const feedback: AnalysisFeedback = {
           id: dependencies.ids.next("analysis_feedback"),
@@ -2504,7 +2513,7 @@ export const createProjectInterviewer = (
           explanation: input.explanation.trim(),
           actorKind: actor.kind,
           ...(actor.kind === "client" ? { deviceId: actor.deviceId } : {}),
-          locator: copy(input.locator),
+          ...(input.locator ? { locator: copy(input.locator) } : {}),
           createdAt: dependencies.clock.now(),
         };
         state.analysisFeedback.push(feedback);

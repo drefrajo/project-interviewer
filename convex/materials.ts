@@ -461,7 +461,7 @@ export const addFeedback = mutationGeneric({
     materialId: v.id("projectMaterials"),
     actor: actorValidator,
     explanation: v.string(),
-    locator: sourceLocatorValidator,
+    locator: v.optional(sourceLocatorValidator),
   },
   handler: async (context, args) => {
     const authorized = await requireWritableRoomActor(
@@ -485,7 +485,7 @@ export const addFeedback = mutationGeneric({
       ...(args.actor.kind === "client" && authorized.kind === "client"
         ? { deviceHash: authorized.session.deviceHash }
         : {}),
-      locator: args.locator,
+      ...(args.locator ? { locator: args.locator } : {}),
       createdAt,
     });
     await rebuildContextPack(context, {
@@ -512,7 +512,7 @@ export const addFeedback = mutationGeneric({
       ...(args.actor.kind === "client" && authorized.kind === "client"
         ? { deviceId: authorized.session.deviceHash }
         : {}),
-      locator: args.locator,
+      ...(args.locator ? { locator: args.locator } : {}),
       createdAt,
     };
   },

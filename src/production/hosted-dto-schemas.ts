@@ -170,7 +170,7 @@ export const analysisFeedbackSchema = z.object({
   explanation: z.string(),
   actorKind: z.enum(["freelancer", "client"]),
   deviceId: z.string().optional(),
-  locator: sourceLocatorSchema,
+  locator: sourceLocatorSchema.optional(),
   createdAt: z.number(),
 }) satisfies z.ZodType<AnalysisFeedback>;
 
@@ -237,6 +237,7 @@ export const discoveryInterviewViewSchema = z
     respondingDevice: z.boolean(),
     leaseVersion: z.number().nullable(),
     currentQuestion: questionSchema.optional(),
+    currentQuestions: z.array(questionSchema).optional(),
     operationStatus: z.enum(["idle", "running", "retryable"]),
     answerCount: z.number(),
     plan: z
@@ -266,6 +267,16 @@ export const discoveryInterviewViewSchema = z
         question: questionSchema,
         answer: z.string(),
         answerKind: z.enum(["answer", "skip"]),
+        entries: z
+          .array(
+            z.object({
+              questionId: identifier,
+              questionText: z.string(),
+              answer: z.string(),
+              answerKind: z.enum(["answer", "skip"]),
+            }),
+          )
+          .optional(),
         idempotencyKey: z.string(),
         contextPackRevisionId: z.string().nullable(),
         contextPackRevision: z.number().nullable(),

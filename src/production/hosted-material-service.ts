@@ -178,7 +178,7 @@ export const createHostedMaterialServices = (
         actor: RoomActor,
         roomId: string,
         materialId: string,
-        input: { explanation: string; locator: SourceLocator },
+        input: { explanation: string; locator?: SourceLocator },
       ) {
         const value = await transport.mutation(
           references.materials.addFeedback,

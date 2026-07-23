@@ -12,7 +12,7 @@ describe("Project Home next-action guidance", () => {
     ).toMatchObject({
       actor: "client",
       targetTab: "material",
-      label: "Open Project Material",
+      label: "Add files",
     });
   });
 
@@ -24,7 +24,7 @@ describe("Project Home next-action guidance", () => {
     );
     expect(attention).toMatchObject({
       actor: "client",
-      title: "Waiting for the Client to continue discovery.",
+      title: "Waiting for the Client to continue the interview.",
     });
     expect(attention).not.toHaveProperty("targetTab");
   });
@@ -51,7 +51,7 @@ describe("Project Home next-action guidance", () => {
       ),
     ).toMatchObject({
       actor: "client",
-      title: "Waiting for the Client to prepare Project Material.",
+      title: "Waiting for the Client to share their files.",
     });
   });
 

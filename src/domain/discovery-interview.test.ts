@@ -1231,7 +1231,133 @@ describe("Discovery Interview public service", () => {
     ).toBe(true);
   });
 
-  it("runs the read-only Reviewer at the 40-answer usage guardrail", async () => {
+  it("accepts a batch of questions only when every question is answered", async () => {
+    const planner: InterviewAdapters["planner"] = {
+      plan: async () => ({
+        profileId: "software-project",
+        profileVersion: "software-project-v1",
+        coverageAreas: requiredCoverageAreas(),
+        knownRisks: [],
+        openGoals: ["Establish goals and users"],
+        firstQuestion: {
+          text: "What should improve for the people using this product?",
+          coverageAreaId: "goals-users",
+          kind: "primary",
+          reason: "No evidence establishes the desired outcome.",
+        },
+        openingQuestions: [
+          {
+            text: "What should improve for the people using this product?",
+            coverageAreaId: "goals-users",
+            kind: "primary",
+            reason: "No evidence establishes the desired outcome.",
+          },
+          {
+            text: "Who should use it first?",
+            coverageAreaId: "goals-users",
+            kind: "primary",
+            reason: "The primary users are not established.",
+          },
+        ],
+        model: "planner-fixture",
+        provider: "test",
+      }),
+    };
+    const agent: InterviewAdapters["agent"] = {
+      advance: async ({ acceptedTurn }) => ({
+        coverageUpdates: [
+          {
+            id: "goals-users",
+            status: "sufficient",
+            evidence: [{ type: "turn", turnId: acceptedTurn.id }],
+            rationale: "The Client established the desired outcome.",
+            openQuestions: [],
+          },
+        ],
+        findings: [],
+        unresolvedTopics: [],
+        nextQuestions: [
+          {
+            text: "Which outcome would make the first release successful?",
+            coverageAreaId: "goals-users",
+            kind: "primary",
+            reason: "Clarify measurable success.",
+          },
+        ],
+        completionAssessment: {
+          proposeCompletion: false,
+          rationale: "Success criteria remain open.",
+        },
+        model: "agent-fixture",
+        provider: "test",
+      }),
+    };
+    const { app, room, client } = await createInterviewHarness({
+      planner,
+      agent,
+    });
+    const started = await app.interviews.start(client, room.id);
+    expect(started.currentQuestions).toHaveLength(2);
+    expect(started.currentQuestion?.text).toBe(
+      "What should improve for the people using this product?",
+    );
+    const contextPack = await app.contextPacks.latest(client, room.id);
+    const [first, second] = started.currentQuestions!;
+
+    await expect(
+      app.interviews.submitAnswers(client, room.id, {
+        entries: [
+          {
+            questionId: first!.id,
+            answer: "Fewer support calls.",
+            answerKind: "answer",
+          },
+        ],
+        idempotencyKey: "batch-partial",
+        contextPackRevisionId: contextPack?.id ?? null,
+      }),
+    ).rejects.toThrow(/every current question/i);
+
+    const view = await app.interviews.submitAnswers(client, room.id, {
+      entries: [
+        {
+          questionId: first!.id,
+          answer: "Fewer support calls.",
+          answerKind: "answer",
+        },
+        { questionId: second!.id, answer: "", answerKind: "skip" },
+      ],
+      idempotencyKey: "batch-complete",
+      contextPackRevisionId: contextPack?.id ?? null,
+    });
+
+    expect(view.turns.at(-1)?.entries).toEqual([
+      {
+        questionId: first!.id,
+        questionText: first!.text,
+        answer: "Fewer support calls.",
+        answerKind: "answer",
+      },
+      {
+        questionId: second!.id,
+        questionText: second!.text,
+        answer: "Skipped",
+        answerKind: "skip",
+      },
+    ]);
+    expect(view.currentQuestions).toHaveLength(1);
+    expect(view.currentQuestion?.text).toBe(
+      "Which outcome would make the first release successful?",
+    );
+    expect(
+      view.findings.some(
+        (finding) =>
+          finding.type === "gap" && finding.statement.includes(second!.text),
+      ),
+    ).toBe(true);
+  });
+
+  it("runs the read-only Reviewer at the 12-answer usage guardrail", async () => {
     const agent = {
       advance: async ({ acceptedTurn }) => ({
         coverageUpdates: [
@@ -1275,7 +1401,7 @@ describe("Discovery Interview public service", () => {
     let view = await app.interviews.start(client, room.id);
     const contextPack = await app.contextPacks.latest(client, room.id);
 
-    for (let index = 1; index <= 40; index += 1) {
+    for (let index = 1; index <= 12; index += 1) {
       view = await app.interviews.submitAnswer(client, room.id, {
         questionId: view.currentQuestion!.id,
         answer: `Concrete answer number ${index} with enough detail.`,
@@ -1285,7 +1411,7 @@ describe("Discovery Interview public service", () => {
     }
 
     expect(view).toMatchObject({
-      answerCount: 40,
+      answerCount: 12,
       usageReviewTriggered: true,
       reviewerBlockers: ["The required area remains partial."],
       status: "active",

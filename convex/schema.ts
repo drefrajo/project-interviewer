@@ -422,6 +422,7 @@ export default defineSchema({
       v.literal("completed_early"),
     ),
     currentQuestion: v.optional(interviewQuestion),
+    currentQuestions: v.optional(v.array(interviewQuestion)),
     operationStatus: v.union(
       v.literal("idle"),
       v.literal("running"),
@@ -467,6 +468,19 @@ export default defineSchema({
     question: interviewQuestion,
     answer: v.string(),
     answerKind: v.union(v.literal("answer"), v.literal("skip")),
+    entries: v.optional(
+      v.array(
+        v.object({
+          questionId: v.string(),
+          questionText: v.string(),
+          answer: v.string(),
+          answerKind: v.union(
+            v.literal("answer"),
+            v.literal("skip"),
+          ),
+        }),
+      ),
+    ),
     idempotencyKey: v.string(),
     contextPackRevisionId: v.optional(v.id("contextPackRevisions")),
     contextPackRevision: v.optional(v.number()),

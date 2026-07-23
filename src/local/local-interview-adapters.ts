@@ -328,6 +328,14 @@ export const localInterviewPlanner: NonNullable<
           ? { text: first.openQuestions[0]! }
           : {}),
       },
+      openingQuestions: [
+        {
+          ...questionFor(language, first.id as AreaId),
+          ...(materialContradiction && first.id === "constraints"
+            ? { text: first.openQuestions[0]! }
+            : {}),
+        },
+      ],
       model: "local-file-first-planner-v1",
       provider: "local",
       usage: { inputTokens: 0, outputTokens: 0, estimatedCostUsd: 0 },
@@ -665,6 +673,33 @@ export const localInterviewAgent: NonNullable<
       nextArea = area;
     }
     const proposeCompletion = !nextArea && !newContradiction;
+    const nextQuestion: InterviewQuestionDraft | undefined =
+      newContradiction
+        ? {
+            text:
+              language === "de"
+                ? "Die Budget- oder Zeitangaben scheinen sich zu widersprechen. Welche Angabe soll als aktuell gelten, oder bleibt die Frage offen?"
+                : "The budget or timing statements appear to conflict. Which statement should be treated as current, or should this remain open?",
+            coverageAreaId: "constraints",
+            kind: "follow_up" as const,
+            reason:
+              "Conflicting Client statements require neutral resolution.",
+          }
+        : nextArea
+        ? {
+            ...questionFor(
+              language,
+              nextArea.id as AreaId,
+              nextArea.id === area?.id ? "follow_up" : "primary",
+            ),
+            text:
+              nextArea.id === area?.id
+                ? questions[language][nextArea.id as AreaId]
+                : language === "de"
+                  ? `Danke, das klärt ${labels.de[areaId]}. ${questions.de[nextArea.id as AreaId]}`
+                  : `Thanks, that clarifies ${labels.en[areaId]}. ${questions.en[nextArea.id as AreaId]}`,
+          }
+        : undefined;
     return {
       coverageUpdates,
       findings,
@@ -675,35 +710,8 @@ export const localInterviewAgent: NonNullable<
           ["uncovered", "partial"].includes(candidateStatus),
         )
         .map(({ label }) => label),
-      ...(newContradiction
-        ? {
-            nextQuestion: {
-              text:
-                language === "de"
-                  ? "Die Budget- oder Zeitangaben scheinen sich zu widersprechen. Welche Angabe soll als aktuell gelten, oder bleibt die Frage offen?"
-                  : "The budget or timing statements appear to conflict. Which statement should be treated as current, or should this remain open?",
-              coverageAreaId: "constraints",
-              kind: "follow_up" as const,
-              reason:
-                "Conflicting Client statements require neutral resolution.",
-            },
-          }
-        : nextArea
-        ? {
-            nextQuestion: {
-              ...questionFor(
-                language,
-                nextArea.id as AreaId,
-                nextArea.id === area?.id ? "follow_up" : "primary",
-              ),
-              text:
-                nextArea.id === area?.id
-                  ? questions[language][nextArea.id as AreaId]
-                  : language === "de"
-                    ? `Danke, das klärt ${labels.de[areaId]}. ${questions.de[nextArea.id as AreaId]}`
-                    : `Thanks, that clarifies ${labels.en[areaId]}. ${questions.en[nextArea.id as AreaId]}`,
-            },
-          }
+      ...(nextQuestion
+        ? { nextQuestion, nextQuestions: [nextQuestion] }
         : {}),
       completionAssessment: {
         proposeCompletion,

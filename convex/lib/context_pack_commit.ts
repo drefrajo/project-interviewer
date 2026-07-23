@@ -97,8 +97,12 @@ export const rebuildContextPack = async (
           ? ("client" as const)
           : ("freelancer" as const),
       ...(item.deviceHash ? { deviceId: String(item.deviceHash) } : {}),
-      locator:
-        item.locator as ContextPackRevision["feedback"][number]["locator"],
+      ...(item.locator
+        ? {
+            locator:
+              item.locator as ContextPackRevision["feedback"][number]["locator"],
+          }
+        : {}),
       createdAt: Number(item.createdAt),
     }));
   const now = input.now ?? Date.now();

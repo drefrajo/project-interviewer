@@ -185,9 +185,7 @@ describe("DiscoveryInterviewPanel conversation", () => {
       name: acceptedTurn.question.text,
     });
     const reply = screen.getByText(acceptedTurn.answer);
-    const status = screen.getByText(
-      /considering that and preparing the next question/i,
-    );
+    const status = screen.getByText("Working on the next questions");
 
     expect(
       question.compareDocumentPosition(reply) &
@@ -201,9 +199,7 @@ describe("DiscoveryInterviewPanel conversation", () => {
     expect(
       screen.queryByText("Managers need a regional queue."),
     ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("textbox", { name: /your reply/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
   });
 
   it("keeps structured discovery state in a secondary Freelancer disclosure", async () => {
@@ -217,9 +213,7 @@ describe("DiscoveryInterviewPanel conversation", () => {
       screen.getByRole("heading", { name: "Discovery findings" }),
     ).toBeInTheDocument();
     expect(screen.getByText("Managers need a regional queue.")).toBeInTheDocument();
-    expect(
-      screen.queryByRole("textbox", { name: /your reply/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
   });
 
   it("opens a correction form on the Client reply it supersedes", async () => {
@@ -248,12 +242,12 @@ describe("DiscoveryInterviewPanel conversation", () => {
     expect(replyArticle).not.toBeNull();
     await user.click(
       within(replyArticle!).getByRole("button", {
-        name: /correct this reply/i,
+        name: /correct this answer/i,
       }),
     );
 
     const correctedReply = within(replyArticle!).getByRole("textbox", {
-      name: /corrected reply/i,
+      name: /corrected answer/i,
     });
     expect(correctedReply).toHaveValue(acceptedTurn.answer);
     await user.clear(correctedReply);
@@ -266,7 +260,7 @@ describe("DiscoveryInterviewPanel conversation", () => {
     );
     await user.click(
       within(replyArticle!).getByRole("button", {
-        name: /correct this reply/i,
+        name: /correct this answer/i,
       }),
     );
 
@@ -275,6 +269,123 @@ describe("DiscoveryInterviewPanel conversation", () => {
       correctedAnswer: "Branch managers use it every day.",
       reason: "The role name changed.",
     });
+  });
+
+  it("requires every question in a batch before sending answers", async () => {
+    const user = userEvent.setup();
+    const batch = [
+      {
+        id: "question-2",
+        text: "Who will use the portal?",
+        coverageAreaId: "goals-users",
+        kind: "primary" as const,
+        reason: "Users are not clear yet.",
+        askedAt: 3,
+      },
+      {
+        id: "question-3",
+        text: "What should they do first?",
+        coverageAreaId: "scope",
+        kind: "primary" as const,
+        reason: "Scope remains open.",
+        askedAt: 3,
+      },
+      {
+        id: "question-4",
+        text: "Is there a budget in mind?",
+        coverageAreaId: "constraints",
+        kind: "primary" as const,
+        reason: "Constraints are open.",
+        askedAt: 3,
+      },
+    ];
+    const view = interviewView({
+      currentQuestion: batch[0],
+      currentQuestions: batch,
+    });
+    const submitAnswers = vi.fn(async () => view);
+    const application = {
+      contextPacks: { latest: vi.fn(async () => null) },
+      interviews: {
+        get: vi.fn(async () => view),
+        heartbeat: vi.fn(async () => undefined),
+        submitAnswers,
+      },
+    } as unknown as ProjectInterviewer;
+    renderPanel(client, view, application);
+
+    const send = await screen.findByRole("button", {
+      name: /send answers/i,
+    });
+    expect(send).toBeDisabled();
+    expect(screen.getByText("0 of 3 answered")).toBeInTheDocument();
+
+    await user.type(
+      screen.getByLabelText("Who will use the portal?"),
+      "Regional managers.",
+    );
+    expect(screen.getByText("1 of 3 answered")).toBeInTheDocument();
+    expect(send).toBeDisabled();
+
+    const notSureButtons = screen.getAllByRole("button", {
+      name: /i’m not sure/i,
+    });
+    await user.click(notSureButtons[1]!);
+    expect(screen.getByText("2 of 3 answered")).toBeInTheDocument();
+    expect(send).toBeDisabled();
+
+    await user.type(
+      screen.getByLabelText("Is there a budget in mind?"),
+      "Around 10k.",
+    );
+    expect(screen.getByText("3 of 3 answered")).toBeInTheDocument();
+    expect(send).toBeEnabled();
+
+    await user.click(send);
+    expect(submitAnswers).toHaveBeenCalledWith(client, room.id, {
+      entries: [
+        {
+          questionId: "question-2",
+          answer: "Regional managers.",
+          answerKind: "answer",
+        },
+        { questionId: "question-3", answer: "", answerKind: "skip" },
+        {
+          questionId: "question-4",
+          answer: "Around 10k.",
+          answerKind: "answer",
+        },
+      ],
+      idempotencyKey: expect.stringMatching(/^answers:/),
+      contextPackRevisionId: null,
+    });
+  });
+
+  it("shows batched questions and answers in the conversation", async () => {
+    const batchedTurn: InterviewTurn = {
+      ...acceptedTurn,
+      entries: [
+        {
+          questionId: "question-1",
+          questionText: "Who needs to use the portal?",
+          answer: "Regional service managers.",
+          answerKind: "answer",
+        },
+        {
+          questionId: "question-1b",
+          questionText: "And who else?",
+          answer: "",
+          answerKind: "skip",
+        },
+      ],
+    };
+    renderPanel(client, interviewView({ turns: [batchedTurn] }));
+
+    expect(
+      (await screen.findAllByText("And who else?")).length,
+    ).toBeGreaterThan(0);
+    expect(screen.getByText("Regional service managers.")).toBeInTheDocument();
+    expect(screen.getAllByText(/i’m not sure\./i).length).toBeGreaterThan(0);
   });
 
   it("presents completion as a natural final conversational choice", async () => {
@@ -287,13 +398,13 @@ describe("DiscoveryInterviewPanel conversation", () => {
     );
 
     expect(
-      await screen.findByText(/i think we have enough to prepare/i),
+      await screen.findByText(/i think i have everything i need/i),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /finish conversation/i }),
+      screen.getByRole("button", { name: /yes, we’re done/i }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /more to discuss/i }),
+      screen.getByRole("button", { name: /i’d like to add more/i }),
     ).toBeInTheDocument();
   });
 });

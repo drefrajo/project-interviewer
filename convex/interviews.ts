@@ -113,6 +113,11 @@ export const get = queryGeneric({
       respondingDevice,
       leaseVersion: lease?.leaseVersion ?? null,
       currentQuestion: interview.currentQuestion,
+      currentQuestions: interview.currentQuestions?.length
+        ? interview.currentQuestions
+        : interview.currentQuestion
+          ? [interview.currentQuestion]
+          : undefined,
       operationStatus: interview.operationStatus,
       answerCount: interview.answerCount,
       ...(plan
@@ -368,9 +373,23 @@ export const takeover = mutationGeneric({
 const acceptTurn = mutationGeneric({
   args: {
     ...clientArgs,
-    questionId: v.string(),
-    answer: v.string(),
-    answerKind: v.union(v.literal("answer"), v.literal("skip")),
+    questionId: v.optional(v.string()),
+    answer: v.optional(v.string()),
+    answerKind: v.optional(
+      v.union(v.literal("answer"), v.literal("skip")),
+    ),
+    entries: v.optional(
+      v.array(
+        v.object({
+          questionId: v.string(),
+          answer: v.string(),
+          answerKind: v.union(
+            v.literal("answer"),
+            v.literal("skip"),
+          ),
+        }),
+      ),
+    ),
     idempotencyKey: v.string(),
     contextPackRevisionId: v.optional(v.id("contextPackRevisions")),
   },
@@ -406,18 +425,54 @@ const acceptTurn = mutationGeneric({
         );
       return { interviewId: interview._id, operationId: operation?._id };
     }
-    if (interview.status !== "active" || !interview.currentQuestion) {
+    type CurrentQuestion = {
+      id: string;
+      text: string;
+      coverageAreaId: string;
+      kind: "primary" | "follow_up" | "final_anything_else";
+      reason: string;
+      askedAt: number;
+    };
+    const batch: CurrentQuestion[] = interview.currentQuestions?.length
+      ? (interview.currentQuestions as CurrentQuestion[])
+      : interview.currentQuestion
+        ? [interview.currentQuestion as CurrentQuestion]
+        : [];
+    if (interview.status !== "active" || !batch.length) {
       throw new Error("No question is active.");
     }
-    if (
-      interview.currentQuestion.id !== args.questionId ||
-      interview.operationStatus === "running"
-    ) {
+    if (interview.operationStatus === "running") {
       throw new Error("The current question has changed.");
     }
-    const answer = args.answer.trim();
-    if (args.answerKind === "answer" && !answer) {
-      throw new Error("An answer is required.");
+    const entries =
+      args.entries ??
+      (args.questionId !== undefined &&
+      args.answer !== undefined &&
+      args.answerKind !== undefined
+        ? [
+            {
+              questionId: args.questionId,
+              answer: args.answer,
+              answerKind: args.answerKind,
+            },
+          ]
+        : []);
+    const batchIds = new Set(batch.map((question) => question.id));
+    if (
+      !entries.length ||
+      entries.length !== batch.length ||
+      entries.some((entry) => !batchIds.has(entry.questionId)) ||
+      new Set(entries.map((entry) => entry.questionId)).size !==
+        entries.length
+    ) {
+      throw new Error(
+        "Every current question needs an answer before continuing.",
+      );
+    }
+    for (const entry of entries) {
+      if (entry.answerKind === "answer" && !entry.answer.trim()) {
+        throw new Error("An answer is required.");
+      }
     }
     const [contextPack, latestContext, activeMaterials] = await Promise.all([
       args.contextPackRevisionId
@@ -454,13 +509,29 @@ const acceptTurn = mutationGeneric({
       );
     }
     const now = Date.now();
+    const firstQuestion = batch[0]!;
+    const firstEntry = entries.find(
+      (entry) => entry.questionId === firstQuestion.id,
+    )!;
     const turnId = await context.db.insert("interviewTurns", {
       roomId: args.roomId,
       interviewId: interview._id,
       sequence: interview.answerCount + 1,
-      question: interview.currentQuestion,
-      answer: args.answerKind === "skip" ? "" : answer,
-      answerKind: args.answerKind,
+      question: firstQuestion,
+      answer:
+        firstEntry.answerKind === "skip" ? "" : firstEntry.answer.trim(),
+      answerKind: firstEntry.answerKind,
+      entries: batch.map((batched) => {
+        const entry = entries.find(
+          (candidate) => candidate.questionId === batched.id,
+        )!;
+        return {
+          questionId: batched.id,
+          questionText: batched.text,
+          answer: entry.answerKind === "skip" ? "" : entry.answer.trim(),
+          answerKind: entry.answerKind,
+        };
+      }),
       idempotencyKey: args.idempotencyKey,
       contextPackRevisionId: contextPack._id,
       contextPackRevision: contextPack.revision,
@@ -470,7 +541,7 @@ const acceptTurn = mutationGeneric({
       answerCount: interview.answerCount + 1,
       operationStatus: "running",
       usageReviewTriggered:
-        interview.usageReviewTriggered || interview.answerCount + 1 >= 40,
+        interview.usageReviewTriggered || interview.answerCount + 1 >= 12,
       updatedAt: now,
     });
     const operationId = await context.db.insert("durableOperations", {
@@ -752,20 +823,22 @@ export const confirmCompletion = mutationGeneric({
         lastActivityAt: now,
       });
     } else {
+      const followUp = {
+        id: `question_${crypto.randomUUID()}`,
+        text:
+          interview.language === "de"
+            ? "Was sollten wir vor dem Abschluss noch klären?"
+            : "What should we clarify before completing discovery?",
+        coverageAreaId: "final",
+        kind: "follow_up" as const,
+        reason: "The Client asked to continue discovery.",
+        askedAt: now,
+      };
       await context.db.patch(interview._id, {
         status: "active",
         operationStatus: "idle",
-        currentQuestion: {
-          id: `question_${crypto.randomUUID()}`,
-          text:
-            interview.language === "de"
-              ? "Was sollten wir vor dem Abschluss noch klären?"
-              : "What should we clarify before completing discovery?",
-          coverageAreaId: "final",
-          kind: "follow_up",
-          reason: "The Client asked to continue discovery.",
-          askedAt: now,
-        },
+        currentQuestion: followUp,
+        currentQuestions: [followUp],
         updatedAt: now,
       });
     }

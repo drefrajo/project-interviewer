@@ -507,6 +507,7 @@ const ProjectRoomHome = ({
               room={room}
               {...(materialFileStore ? { materialFileStore } : {})}
               {...(onReadinessChange ? { onReadinessChange } : {})}
+              onContinueToInterview={() => selectTab("interview")}
             />
           ) : null}
           {activeTab === "interview" ? (

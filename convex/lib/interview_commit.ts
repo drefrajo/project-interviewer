@@ -60,23 +60,57 @@ export const commitInterviewPlanning = async (
     updatedAt: now,
   });
   const first = areas[0];
+  const opening = (
+    Array.isArray(result.value.openingQuestions) &&
+    result.value.openingQuestions.length
+      ? result.value.openingQuestions.slice(0, 3).map((raw) => {
+          const question = asRecord(raw);
+          return {
+            id: `question_${crypto.randomUUID()}`,
+            text: asString(
+              question.text,
+              first
+                ? interview.language === "de"
+                  ? `Was sollten wir zu „${first.label}“ unbedingt wissen?`
+                  : `What should we understand about “${first.label}”?`
+                : "What should we understand first?",
+            ),
+            coverageAreaId: asString(
+              question.coverageAreaId,
+              first?.id ?? "general",
+            ),
+            kind: "primary" as const,
+            reason: asString(
+              question.reason,
+              first?.rubric ?? "Open the conversation.",
+            ),
+            askedAt: now,
+          };
+        })
+      : first
+        ? [
+            {
+              id: `question_${crypto.randomUUID()}`,
+              text:
+                interview.language === "de"
+                  ? `Was sollten wir zu „${first.label}“ unbedingt wissen?`
+                  : `What should we understand about “${first.label}”?`,
+              coverageAreaId: first.id,
+              kind: "primary" as const,
+              reason: first.rubric,
+              askedAt: now,
+            },
+          ]
+        : []
+  );
   await context.db.patch(interviewId, {
     planId,
     status: "active",
     operationStatus: "idle",
-    ...(first
+    ...(opening.length
       ? {
-          currentQuestion: {
-            id: `question_${crypto.randomUUID()}`,
-            text:
-              interview.language === "de"
-                ? `Was sollten wir zu „${first.label}“ unbedingt wissen?`
-                : `What should we understand about “${first.label}”?`,
-            coverageAreaId: first.id,
-            kind: "primary" as const,
-            reason: first.rubric,
-            askedAt: now,
-          },
+          currentQuestion: opening[0],
+          currentQuestions: opening,
         }
       : {}),
     updatedAt: now,
@@ -105,13 +139,40 @@ export const commitInterviewUpdate = async (
   if (!interview || interview.roomId !== operation.roomId) {
     throw new Error("Interview subject not found.");
   }
-  const next = asRecord(result.value.nextQuestion);
+  const nextBatch = (
+    Array.isArray(result.value.nextQuestions) &&
+    result.value.nextQuestions.length
+      ? result.value.nextQuestions
+      : result.value.nextQuestion
+        ? [result.value.nextQuestion]
+        : []
+  )
+    .slice(0, 4)
+    .map((raw) => {
+      const question = asRecord(raw);
+      return {
+        id: asString(question.id, `question_${crypto.randomUUID()}`),
+        text: asString(question.text, "What else should we understand?"),
+        coverageAreaId: asString(question.coverageAreaId, "general"),
+        kind:
+          question.kind === "follow_up"
+            ? ("follow_up" as const)
+            : question.kind === "final_anything_else"
+              ? ("final_anything_else" as const)
+              : ("primary" as const),
+        reason: asString(
+          question.reason,
+          "Close the remaining discovery gap.",
+        ),
+        askedAt: now,
+      };
+    });
   const blockers = asStrings(result.value.blockers);
   const currentQuestion = asRecord(interview.currentQuestion);
   const answeredFinalQuestion =
     currentQuestion.kind === "final_anything_else";
   const needsUsageReview =
-    kind === "interview_turn" && Number(interview.answerCount) >= 40;
+    kind === "interview_turn" && Number(interview.answerCount) >= 12;
   const agentProposesCompletion =
     kind === "interview_turn" &&
     result.value.status === "awaiting_confirmation";
@@ -176,23 +237,14 @@ export const commitInterviewUpdate = async (
       ? { completionRationale: result.value.completionRationale }
       : {}),
     ...(reviewQuestion
-      ? { currentQuestion: reviewQuestion }
-      : Object.keys(next).length &&
-          !(agentProposesCompletion || needsUsageReview)
       ? {
-          currentQuestion: {
-            id: asString(next.id, `question_${crypto.randomUUID()}`),
-            text: asString(next.text, "What else should we understand?"),
-            coverageAreaId: asString(next.coverageAreaId, "general"),
-            kind:
-              next.kind === "follow_up"
-                ? ("follow_up" as const)
-                : next.kind === "final_anything_else"
-                  ? ("final_anything_else" as const)
-                  : ("primary" as const),
-            reason: asString(next.reason, "Close the remaining discovery gap."),
-            askedAt: now,
-          },
+          currentQuestion: reviewQuestion,
+          currentQuestions: [reviewQuestion],
+        }
+      : nextBatch.length && !(agentProposesCompletion || needsUsageReview)
+      ? {
+          currentQuestion: nextBatch[0],
+          currentQuestions: nextBatch,
         }
       : {}),
     updatedAt: now,

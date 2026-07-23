@@ -2,8 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type {
-  BriefEvidenceDetail,
-  BriefSource,
   BriefWarning,
   ProjectBriefView,
   ReviewVersion,
@@ -14,70 +12,99 @@ import type {
   RoomActor,
 } from "../domain/project-interviewer";
 import { useI18n } from "./i18n";
+import { WorkingIndicator } from "./working-indicator";
 
 const copy = {
   en: {
-    title: "Project Brief",
-    unavailable: "The Project Brief becomes available after discovery is complete.",
-    generate: "Generate Project Brief",
-    generating: "Generating the source-linked Project Brief…",
-    retry: "Retry generation",
-    draft: "Brief Draft",
-    save: "Save Markdown",
-    copy: "Copy Markdown",
+    title: "Project brief",
+    unavailable:
+      "The project brief will appear here once the interview is finished.",
+    generate: "Create the project brief",
+    generatingLabel: "The project brief is being created",
+    generating: [
+      "Writing the project brief…",
+      "Gathering everything we learned…",
+      "Putting it into words…",
+      "Almost there…",
+    ],
+    retry: "Try again",
+    draft: "Draft",
+    draftHint:
+      "Edit the brief as text, or switch to the preview to see it formatted. The text is what gets saved.",
+    edit: "Edit",
     preview: "Preview",
-    send: "Send for Client review",
-    warnings: "Review warnings",
-    acknowledge: "Acknowledge",
-    resolve: "Resolve",
-    review: "Review Version",
-    approve: "Approve this Review Version",
-    change: "Change Request",
-    changePlaceholder: "Describe the revision you need…",
-    saveChange: "Save Change Request",
+    draftView: "Draft view",
+    save: "Save changes",
+    copy: "Copy text",
+    send: "Send to the client for review",
+    warnings: "Things to check",
+    acknowledge: "Keep as is",
+    resolve: "Mark as clarified",
+    review: "Version for review",
+    approve: "Approve this version",
+    change: "Request a change",
+    changePlaceholder: "Tell us what should be different…",
+    saveChange: "Send change request",
     acknowledgeChange: "Acknowledge and begin revision",
-    reopen: "Reopen as private Brief Draft",
+    reopen: "Reopen as private draft",
     print: "Print / Save as PDF",
-    history: "Previous Review Versions",
-    evidence: "Evidence",
+    history: "Earlier versions",
     approvalDisclaimer:
-      "Approval confirms this discovery understanding only. It is not a signature or contract.",
+      "Approving confirms that this matches your shared understanding of the project. It is not a signature or contract.",
     readOnly: "This archived Project Room is read-only.",
-    saved: "Markdown saved.",
+    saved: "Saved.",
+    copied: "Copied.",
+    copyFailed: "The text could not be copied.",
   },
   de: {
     title: "Projektbrief",
     unavailable:
-      "Der Projektbrief wird nach Abschluss der Klärung verfügbar.",
+      "Der Projektbrief erscheint hier, sobald das Interview abgeschlossen ist.",
     generate: "Projektbrief erstellen",
-    generating: "Quellengestützter Projektbrief wird erstellt…",
-    retry: "Erstellung wiederholen",
-    draft: "Briefentwurf",
-    save: "Markdown speichern",
-    copy: "Markdown kopieren",
+    generatingLabel: "Der Projektbrief wird erstellt",
+    generating: [
+      "Der Projektbrief wird geschrieben…",
+      "Ich sammle alles Gelernte…",
+      "Ich bringe es zu Papier…",
+      "Fast fertig…",
+    ],
+    retry: "Erneut versuchen",
+    draft: "Entwurf",
+    draftHint:
+      "Bearbeiten Sie den Brief als Text oder wechseln Sie zur Vorschau, um ihn formatiert zu sehen. Gespeichert wird der Text.",
+    edit: "Bearbeiten",
     preview: "Vorschau",
-    send: "Zur Client-Prüfung senden",
-    warnings: "Prüfhinweise",
-    acknowledge: "Bestätigen",
+    draftView: "Ansicht des Entwurfs",
+    save: "Änderungen speichern",
+    copy: "Text kopieren",
+    send: "An den Client zur Prüfung senden",
+    warnings: "Zu prüfen",
+    acknowledge: "So belassen",
     resolve: "Als geklärt markieren",
-    review: "Prüfversion",
-    approve: "Diese Prüfversion freigeben",
-    change: "Änderungswunsch",
-    changePlaceholder: "Beschreiben Sie die benötigte Änderung…",
-    saveChange: "Änderungswunsch speichern",
+    review: "Version zur Prüfung",
+    approve: "Diese Version freigeben",
+    change: "Änderung wünschen",
+    changePlaceholder: "Sagen Sie uns, was anders sein soll…",
+    saveChange: "Änderungswunsch senden",
     acknowledgeChange: "Bestätigen und Überarbeitung beginnen",
-    reopen: "Als privaten Briefentwurf öffnen",
+    reopen: "Als privaten Entwurf öffnen",
     print: "Drucken / Als PDF speichern",
-    history: "Frühere Prüfversionen",
-    evidence: "Quellen",
+    history: "Frühere Versionen",
     approvalDisclaimer:
       "Die Freigabe bestätigt nur dieses gemeinsame Projektverständnis. Sie ist keine Unterschrift und kein Vertrag.",
     readOnly: "Dieser archivierte Projektraum ist schreibgeschützt.",
-    saved: "Markdown gespeichert.",
+    saved: "Gespeichert.",
+    copied: "Kopiert.",
+    copyFailed: "Der Text konnte nicht kopiert werden.",
   },
 } as const;
 
-type BriefCopy = { [Key in keyof (typeof copy)["en"]]: string };
+type BriefCopy = {
+  [Key in keyof (typeof copy)["en"]]: (typeof copy)["en"][Key] extends
+    readonly string[]
+    ? readonly string[]
+    : string;
+};
 
 const primaryButton =
   "inline-flex min-h-11 items-center justify-center rounded-md bg-forest px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-[#0f3d2f] disabled:cursor-not-allowed disabled:opacity-60";
@@ -110,25 +137,6 @@ const warningLabel = (warning: BriefWarning, locale: "en" | "de") => {
   return labels[locale][warning.category];
 };
 
-const sourceLabel = (source: BriefSource) => {
-  switch (source.type) {
-    case "material":
-      return source.locator.label;
-    case "turn":
-      return "Interview answer";
-    case "correction":
-      return "Interview correction";
-    case "analysis_feedback":
-      return "Analysis feedback";
-    case "model_inference":
-      return "Model inference";
-    case "project_description":
-      return "Project Description";
-    case "freelancer_edit":
-      return "Freelancer edit";
-  }
-};
-
 const MarkdownDocument = ({ markdown }: { markdown: string }) => (
   <article className="prose prose-slate min-w-0 max-w-full overflow-x-auto rounded-xl border border-slate-200 bg-white p-5 shadow-sm [overflow-wrap:anywhere] prose-headings:scroll-mt-24 prose-code:break-words">
     <ReactMarkdown remarkPlugins={[remarkGfm]} skipHtml>
@@ -152,17 +160,13 @@ export const ProjectBriefPanel = ({
   const text = copy[locale];
   const [view, setView] = useState<ProjectBriefView>();
   const [markdown, setMarkdown] = useState("");
+  const [draftMode, setDraftMode] = useState<"edit" | "preview">("edit");
   const [changeRequest, setChangeRequest] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
-  const [selectedSource, setSelectedSource] = useState<BriefSource | null>(
-    null,
-  );
-  const [sourceDetail, setSourceDetail] = useState<BriefEvidenceDetail | null>(
-    null,
-  );
   const busyRef = useRef(false);
+  const editorRef = useRef<HTMLTextAreaElement>(null);
   const latestChangeRequestText =
     view?.activeChangeRequest?.revisions.at(-1)?.text ?? "";
 
@@ -185,17 +189,11 @@ export const ProjectBriefPanel = ({
   }, [actor.kind, latestChangeRequestText]);
 
   useEffect(() => {
-    if (!selectedSource) {
-      setSourceDetail(null);
-      return;
-    }
-    void application.briefs
-      .inspectSource(actor, room.id, selectedSource)
-      .then(setSourceDetail)
-      .catch((caught) =>
-        setError(caught instanceof Error ? caught.message : String(caught)),
-      );
-  }, [actor, application, room.id, selectedSource]);
+    const editor = editorRef.current;
+    if (!editor || draftMode !== "edit") return;
+    editor.style.height = "auto";
+    editor.style.height = `${editor.scrollHeight}px`;
+  }, [markdown, draftMode, view?.draft]);
 
   const perform = async (action: () => Promise<ProjectBriefView>) => {
     if (busyRef.current) return false;
@@ -231,13 +229,9 @@ export const ProjectBriefPanel = ({
         { artifactId: view.draft.id },
       );
       await navigator.clipboard.writeText(exported);
-      setNotice(locale === "de" ? "Markdown kopiert." : "Markdown copied.");
+      setNotice(text.copied);
     } catch {
-      setError(
-        locale === "de"
-          ? "Markdown konnte nicht kopiert werden."
-          : "Markdown could not be copied.",
-      );
+      setError(text.copyFailed);
     }
   };
 
@@ -282,15 +276,23 @@ export const ProjectBriefPanel = ({
       </header>
       {readOnly ? <p className="text-muted">{text.readOnly}</p> : null}
       {error ? <p className="border-l-4 border-coral bg-[#fff1e7] p-3 font-bold text-[#852f21]" role="alert">{error}</p> : null}
-      {notice ? <p className="font-semibold text-forest" role="status">{notice}</p> : null}
+      {notice ? <p aria-live="polite" className="font-semibold text-forest" role="status">{notice}</p> : null}
 
-      {view === undefined ? <p role="status">{text.generating}</p> : null}
+      {view === undefined ? (
+        <p>
+          <WorkingIndicator label={text.generatingLabel} phrases={text.generating} />
+        </p>
+      ) : null}
       {view && !view.draft && !view.visibleReviewVersion && actor.kind === "freelancer" && !readOnly ? (
         <button className={primaryButton} disabled={busy} onClick={() => void perform(() => application.briefs.generate(actor, room.id, { idempotencyKey: `brief:${room.id}` }))} type="button">
           {text.generate}
         </button>
       ) : null}
-      {view?.operation?.status === "running" ? <p role="status">{text.generating}</p> : null}
+      {view?.operation?.status === "running" ? (
+        <p>
+          <WorkingIndicator label={text.generatingLabel} phrases={text.generating} />
+        </p>
+      ) : null}
       {view?.operation?.status === "retryable" && actor.kind === "freelancer" && !readOnly ? (
         <button className={primaryButton} disabled={busy} onClick={() => void perform(() => application.briefs.retryGeneration(actor, room.id))} type="button">
           {text.retry}
@@ -301,20 +303,41 @@ export const ProjectBriefPanel = ({
         <section className="space-y-4" aria-labelledby="brief-draft-heading">
           <div>
             <h3 id="brief-draft-heading">{text.draft}</h3>
-            <p className="text-sm text-slate-600">
-              {locale === "de"
-                ? "Dies ist ein Markdown-Dokument. Unsichtbare Markierungen bewahren Quellen und Status beim Speichern."
-                : "This is one Markdown document. Invisible markers preserve sources and states when it is saved."}
-            </p>
+            <p className="text-sm text-slate-600">{text.draftHint}</p>
           </div>
           {!readOnly ? (
+            <div
+              aria-label={text.draftView}
+              className="inline-flex gap-1 rounded-lg border border-slate-300 bg-white p-1"
+              role="tablist"
+            >
+              {(["edit", "preview"] as const).map((mode) => (
+                <button
+                  aria-selected={draftMode === mode}
+                  className={`min-h-9 rounded-md px-4 text-sm font-bold transition-colors ${
+                    draftMode === mode
+                      ? "bg-forest text-white"
+                      : "text-slate-600 hover:bg-slate-100"
+                  }`}
+                  key={mode}
+                  onClick={() => setDraftMode(mode)}
+                  role="tab"
+                  type="button"
+                >
+                  {mode === "edit" ? text.edit : text.preview}
+                </button>
+              ))}
+            </div>
+          ) : null}
+          {!readOnly && draftMode === "edit" ? (
             <>
               <label className="block">
                 <span className="sr-only">Project Brief Markdown</span>
                 <textarea
                   aria-label="Project Brief Markdown"
-                  className="min-h-[32rem] w-full rounded-xl border border-slate-300 bg-white p-4 font-mono text-sm leading-6 shadow-sm outline-none focus:border-slate-950 focus:ring-2 focus:ring-slate-950/20"
+                  className="min-h-[60vh] w-full resize-none overflow-hidden rounded-xl border border-slate-300 bg-white p-4 font-mono text-sm leading-6 shadow-sm outline-none focus:border-slate-950 focus:ring-2 focus:ring-slate-950/20"
                   onChange={(event) => setMarkdown(event.target.value)}
+                  ref={editorRef}
                   spellCheck={false}
                   value={markdown}
                 />
@@ -328,12 +351,14 @@ export const ProjectBriefPanel = ({
                 </button>
               </div>
             </>
-          ) : null}
-          <div className="space-y-2">
-            <h4>{text.preview}</h4>
+          ) : (
             <MarkdownDocument markdown={markdown} />
-          </div>
-          <EvidenceList sections={view.draft.sections} selectedSource={selectedSource} setSelectedSource={setSelectedSource} title={text.evidence} />
+          )}
+          {!readOnly && draftMode === "edit" ? (
+            <div className="hidden print:block">
+              <MarkdownDocument markdown={markdown} />
+            </div>
+          ) : null}
           <Warnings actor={actor} application={application} busy={busy} locale={locale} perform={perform} roomId={room.id} warnings={view.draft.warnings} text={text} />
           {!readOnly ? (
             <button className={primaryButton} disabled={busy} onClick={() => void perform(() => application.briefs.sendForReview(actor, room.id))} type="button">
@@ -353,9 +378,7 @@ export const ProjectBriefPanel = ({
           readOnly={readOnly}
           review={view.visibleReviewVersion}
           roomId={room.id}
-          selectedSource={selectedSource}
           setChangeRequest={setChangeRequest}
-          setSelectedSource={setSelectedSource}
           text={text}
           view={view}
         />
@@ -371,16 +394,6 @@ export const ProjectBriefPanel = ({
             </details>
           ))}
         </section>
-      ) : null}
-
-      {selectedSource ? (
-        <aside aria-live="polite" className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <div className="flex items-start justify-between gap-3">
-            <strong>{sourceLabel(selectedSource)}</strong>
-            <button aria-label="Close source detail" className={ghostButton} onClick={() => setSelectedSource(null)} type="button">×</button>
-          </div>
-          <p>{sourceDetail?.text ?? (locale === "de" ? "Quelle wird geladen…" : "Loading source…")}</p>
-        </aside>
       ) : null}
     </section>
   );
@@ -424,45 +437,6 @@ const Warnings = ({
   </section>
 ) : null;
 
-const EvidenceList = ({
-  sections,
-  selectedSource,
-  setSelectedSource,
-  title,
-}: {
-  sections: Array<{ sources: BriefSource[]; items: Array<{ sources: BriefSource[] }> }>;
-  selectedSource: BriefSource | null;
-  setSelectedSource(source: BriefSource): void;
-  title: string;
-}) => {
-  const sources = sections.flatMap((section) => [
-    ...section.sources,
-    ...section.items.flatMap((item) => item.sources),
-  ]);
-  const unique = sources.filter(
-    (source, index) =>
-      sources.findIndex((candidate) => JSON.stringify(candidate) === JSON.stringify(source)) === index,
-  );
-  return unique.length ? (
-    <details className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-      <summary>{title}</summary>
-      <div className="mt-3 flex flex-wrap gap-2">
-        {unique.map((source) => (
-          <button
-            className={ghostButton}
-            key={JSON.stringify(source)}
-            onClick={() => setSelectedSource(source)}
-            type="button"
-            aria-pressed={selectedSource !== null && JSON.stringify(selectedSource) === JSON.stringify(source)}
-          >
-            {sourceLabel(source)}
-          </button>
-        ))}
-      </div>
-    </details>
-  ) : null;
-};
-
 const ReviewDocument = ({
   actor,
   application,
@@ -472,9 +446,7 @@ const ReviewDocument = ({
   readOnly,
   review,
   roomId,
-  selectedSource,
   setChangeRequest,
-  setSelectedSource,
   text,
   view,
 }: {
@@ -486,9 +458,7 @@ const ReviewDocument = ({
   readOnly: boolean;
   review: ReviewVersion;
   roomId: string;
-  selectedSource: BriefSource | null;
   setChangeRequest(value: string): void;
-  setSelectedSource(source: BriefSource): void;
   text: BriefCopy;
   view: ProjectBriefView;
 }) => (
@@ -501,9 +471,6 @@ const ReviewDocument = ({
     <p className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
       {text.approvalDisclaimer}
     </p>
-    {actor.kind === "freelancer" ? (
-      <EvidenceList sections={review.sections} selectedSource={selectedSource} setSelectedSource={setSelectedSource} title={text.evidence} />
-    ) : null}
     {actor.kind === "client" && !readOnly && review.status === "awaiting_client" ? (
       <div className="flex flex-wrap gap-2">
         <button className={primaryButton} disabled={busy} onClick={() => void perform(() => application.briefs.approve(actor, roomId))} type="button">
@@ -523,9 +490,6 @@ const ReviewDocument = ({
         </label>
         <button className={secondaryButton} disabled={busy || !changeRequest.trim()} type="submit">{text.saveChange}</button>
       </form>
-    ) : null}
-    {actor.kind === "client" ? (
-      <EvidenceList sections={review.sections} selectedSource={selectedSource} setSelectedSource={setSelectedSource} title={text.evidence} />
     ) : null}
     {actor.kind === "freelancer" && !readOnly && review.status === "change_requested" && view.activeChangeRequest ? (
       <button className={primaryButton} disabled={busy} onClick={() => void perform(() => application.briefs.acknowledgeChangeRequest(actor, roomId))} type="button">{text.acknowledgeChange}</button>

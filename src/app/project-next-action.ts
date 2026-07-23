@@ -30,9 +30,9 @@ const labels: Record<
 > = {
   en: {
     share_invite: "Share the Invite Link",
-    continue_discovery: "Continue the Discovery Interview",
-    review_brief_draft: "Review the Brief Draft",
-    review_project_brief: "Review the Project Brief",
+    continue_discovery: "Continue the interview",
+    review_brief_draft: "Review the draft",
+    review_project_brief: "Review the project brief",
     wait_for_client_review: "Wait for Client review",
     use_project_home: "Use the approved Project Home",
     restore_project_room: "Restore the Project Room",
@@ -40,8 +40,8 @@ const labels: Record<
   },
   de: {
     share_invite: "Einladungslink teilen",
-    continue_discovery: "Klärungsinterview fortsetzen",
-    review_brief_draft: "Briefentwurf prüfen",
+    continue_discovery: "Interview fortsetzen",
+    review_brief_draft: "Entwurf prüfen",
     review_project_brief: "Projektbrief prüfen",
     wait_for_client_review: "Auf Client-Prüfung warten",
     use_project_home: "Freigegebene Projektübersicht nutzen",
@@ -71,66 +71,66 @@ const attentionCopy = {
     setup: {
       client: {
         detail:
-          "Add Project Material, or deliberately continue without files when there is nothing to share.",
-        label: "Open Project Material",
-        title: "You need to prepare the discovery context.",
+          "Add files about your project — or simply continue without files if there is nothing to share.",
+        label: "Add files",
+        title: "First, let’s gather your project files.",
       },
       freelancer: {
         detail:
-          "Share the Invite Link below. The Client then prepares the discovery context.",
+          "Share the Invite Link below. The Client then adds their files.",
         title: "You need to invite the Client.",
       },
     },
     material_waiting: {
       freelancer: {
         detail:
-          "The Client still needs to add Project Material or deliberately continue without files.",
-        title: "Waiting for the Client to prepare Project Material.",
+          "The Client still needs to add files or deliberately continue without files.",
+        title: "Waiting for the Client to share their files.",
       },
     },
     discovery: {
       client: {
         detail:
-          "Answer the current question so the conversation can move forward.",
-        label: "Open Discovery Interview",
-        title: "You need to continue the Discovery Interview.",
+          "A few short questions are waiting for you — answer them in your own words.",
+        label: "Answer questions",
+        title: "A few questions are waiting for you.",
       },
       freelancer: {
         detail:
-          "The Client is answering the Discovery Interview. You can observe the conversation here.",
-        title: "Waiting for the Client to continue discovery.",
+          "The Client is answering the interview. You can observe the conversation here.",
+        title: "Waiting for the Client to continue the interview.",
       },
     },
     freelancer_review: {
       client: {
         detail:
-          "The Freelancer is reviewing the Project Brief before sending it to you.",
-        title: "Waiting for the Freelancer to review the Project Brief.",
+          "The Freelancer is reviewing the project brief before sending it to you.",
+        title: "Waiting for the Freelancer to review the project brief.",
       },
       freelancer: {
         detail:
-          "Review and refine the Project Brief, then send a version to the Client.",
-        label: "Open Project Brief",
-        title: "You need to review the Project Brief.",
+          "Review and refine the project brief, then send a version to the Client.",
+        label: "Open project brief",
+        title: "You need to review the project brief.",
       },
     },
     client_review: {
       client: {
         detail:
-          "Read the Project Brief, then approve it or request a change.",
-        label: "Open Project Brief",
-        title: "You need to review the Project Brief.",
+          "Read the project brief, then approve it or ask for a change.",
+        label: "Read the project brief",
+        title: "The project brief is ready for you.",
       },
       freelancer: {
         detail:
-          "The Client is reviewing the Project Brief. Their approval or Change Request will appear there.",
-        title: "Waiting for the Client to review the Project Brief.",
+          "The Client is reviewing the project brief. Their approval or change request will appear there.",
+        title: "Waiting for the Client to review the project brief.",
       },
     },
     approved: {
       detail:
-        "The Client approved the current Project Brief. There is no outstanding action in this Project Room.",
-      title: "The Project Brief is approved.",
+        "The Client approved the current project brief. There is no outstanding action in this Project Room.",
+      title: "The project brief is approved.",
     },
     archived: {
       client: {
@@ -149,34 +149,34 @@ const attentionCopy = {
     setup: {
       client: {
         detail:
-          "Fügen Sie Projektmaterial hinzu oder fahren Sie bewusst ohne Dateien fort, wenn nichts geteilt werden soll.",
-        label: "Projektmaterial öffnen",
-        title: "Sie müssen den Klärungskontext vorbereiten.",
+          "Fügen Sie Dateien zu Ihrem Projekt hinzu — oder fahren Sie einfach ohne Dateien fort, wenn es nichts zu teilen gibt.",
+        label: "Dateien hinzufügen",
+        title: "Sammeln wir zuerst Ihre Projektdateien.",
       },
       freelancer: {
         detail:
-          "Teilen Sie unten den Einladungslink. Danach bereitet der Client den Klärungskontext vor.",
+          "Teilen Sie unten den Einladungslink. Danach fügt der Client seine Dateien hinzu.",
         title: "Sie müssen den Client einladen.",
       },
     },
     material_waiting: {
       freelancer: {
         detail:
-          "Der Client muss noch Projektmaterial hinzufügen oder bewusst ohne Dateien fortfahren.",
-        title: "Warten auf die Vorbereitung des Projektmaterials durch den Client.",
+          "Der Client muss noch Dateien hinzufügen oder bewusst ohne Dateien fortfahren.",
+        title: "Warten auf die Dateien des Clients.",
       },
     },
     discovery: {
       client: {
         detail:
-          "Beantworten Sie die aktuelle Frage, damit das Gespräch weitergehen kann.",
-        label: "Klärungsinterview öffnen",
-        title: "Sie müssen das Klärungsinterview fortsetzen.",
+          "Ein paar kurze Fragen warten auf Sie — beantworten Sie sie in Ihren eigenen Worten.",
+        label: "Fragen beantworten",
+        title: "Ein paar Fragen warten auf Sie.",
       },
       freelancer: {
         detail:
-          "Der Client beantwortet das Klärungsinterview. Sie können das Gespräch hier verfolgen.",
-        title: "Warten auf die Fortsetzung der Klärung durch den Client.",
+          "Der Client beantwortet das Interview. Sie können das Gespräch hier verfolgen.",
+        title: "Warten auf die Fortsetzung des Interviews durch den Client.",
       },
     },
     freelancer_review: {
@@ -196,8 +196,8 @@ const attentionCopy = {
       client: {
         detail:
           "Lesen Sie den Projektbrief und stimmen Sie zu oder bitten Sie um eine Änderung.",
-        label: "Projektbrief öffnen",
-        title: "Sie müssen den Projektbrief prüfen.",
+        label: "Projektbrief lesen",
+        title: "Der Projektbrief ist für Sie bereit.",
       },
       freelancer: {
         detail:

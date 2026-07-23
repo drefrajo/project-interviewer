@@ -318,12 +318,20 @@ const providerErrorCategories = new Set([
   "server_error",
 ]);
 
-const providerErrorDetail = async (response: Response): Promise<string> => {
+const redactProviderErrorText = (text: string): string =>
+  text
+    .replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, "[redacted]")
+    .replace(/\b(?:sk|pk|key|tok|bearer)[-_A-Za-z0-9]{6,}\b/gi, "[redacted]");
+
+const providerErrorDetail = async (
+  response: Response,
+): Promise<{ category: string; message: string }> => {
+  const rawText = await response.text().catch(() => "");
   let payload: unknown;
   try {
-    payload = JSON.parse(await response.text());
+    payload = JSON.parse(rawText);
   } catch {
-    return "";
+    payload = undefined;
   }
   const root = asRecord(payload);
   const error = asRecord(root.error);
@@ -334,13 +342,38 @@ const providerErrorDetail = async (response: Response): Promise<string> => {
     metadata.error_type,
     metadata.type,
   ];
-  return (
+  const category = (
     candidates.find(
       (candidate): candidate is string =>
         typeof candidate === "string" &&
         providerErrorCategories.has(candidate.toLowerCase()),
     ) ?? ""
   ).toLowerCase();
+  const nested = asRecord(
+    typeof metadata.raw === "string"
+      ? (() => {
+          try {
+            return JSON.parse(metadata.raw);
+          } catch {
+            return undefined;
+          }
+        })()
+      : undefined,
+  );
+  const nestedError = asRecord(nested.error);
+  const rawMessage = [
+    error.message,
+    nestedError.message,
+    typeof metadata.raw === "string" ? metadata.raw : undefined,
+  ].find(
+    (candidate): candidate is string =>
+      typeof candidate === "string" && candidate.trim().length > 0,
+  );
+  const message = redactProviderErrorText(rawMessage ?? rawText)
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 300);
+  return { category, message };
 };
 
 const requestJson = async (
@@ -358,10 +391,12 @@ const requestJson = async (
     body: JSON.stringify(body),
   });
   if (!response.ok) {
-    const detail = await providerErrorDetail(response);
+    const { category, message } = await providerErrorDetail(response);
     throw new AiBoundaryRequestError(
       `AI provider request failed with HTTP ${response.status}${
-        detail ? ` (${detail})` : ""
+        category ? ` (${category})` : ""
+      } for model "${String(body.model ?? "unknown")}"${
+        message ? `: ${message}` : ""
       }.`,
     );
   }

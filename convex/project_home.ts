@@ -274,21 +274,23 @@ export const reopenDiscovery = mutationGeneric({
       ) ?? plan?.coverageAreas[0];
     if (!area) throw new Error("The Interview Plan has no coverage areas.");
     const now = Date.now();
+    const reopeningQuestion = {
+      id: crypto.randomUUID(),
+      text:
+        interview.language === "de"
+          ? `Die Klärung wurde wieder geöffnet. Was sollten wir bei „${area.label}“ als Nächstes ergänzen oder korrigieren?`
+          : `Discovery was reopened. What should we add or correct next for “${area.label}”?`,
+      coverageAreaId: area.id,
+      kind: "follow_up" as const,
+      reason:
+        "The Freelancer reopened discovery to continue the existing Interview Plan.",
+      askedAt: now,
+    };
     await context.db.patch(interview._id, {
       status: "active",
       operationStatus: "idle",
-      currentQuestion: {
-        id: crypto.randomUUID(),
-        text:
-          interview.language === "de"
-            ? `Die Klärung wurde wieder geöffnet. Was sollten wir bei „${area.label}“ als Nächstes ergänzen oder korrigieren?`
-            : `Discovery was reopened. What should we add or correct next for “${area.label}”?`,
-        coverageAreaId: area.id,
-        kind: "follow_up",
-        reason:
-          "The Freelancer reopened discovery to continue the existing Interview Plan.",
-        askedAt: now,
-      },
+      currentQuestion: reopeningQuestion,
+      currentQuestions: [reopeningQuestion],
       completionRationale: undefined,
       incompleteReason: undefined,
       reviewerBlockers: [],

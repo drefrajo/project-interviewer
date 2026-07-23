@@ -177,13 +177,6 @@ const coverageAreaOutput = z
     required: z.boolean().default(true),
   })
   .strict();
-const interviewPlanOutput = z
-  .object({
-    coverageAreas: z.array(coverageAreaOutput).min(1),
-    knownRisks: z.array(z.string()),
-    openGoals: z.array(z.string()),
-  })
-  .strict();
 const nextQuestionOutput = z
   .object({
     id: z.string().optional(),
@@ -191,6 +184,26 @@ const nextQuestionOutput = z
     coverageAreaId: z.string().min(1),
     kind: z.enum(["primary", "follow_up", "final_anything_else"]),
     reason: z.string().min(1),
+  })
+  .strict();
+const interviewPlanOutput = z
+  .object({
+    coverageAreas: z.array(coverageAreaOutput).min(1),
+    knownRisks: z.array(z.string()),
+    openGoals: z.array(z.string()),
+    openingQuestions: z
+      .array(
+        z
+          .object({
+            text: z.string().min(1),
+            coverageAreaId: z.string().min(1),
+            reason: z.string().min(1),
+          })
+          .strict(),
+      )
+      .min(1)
+      .max(3)
+      .optional(),
   })
   .strict();
 const interviewReviewOutput = z
@@ -233,6 +246,7 @@ const interviewTurnOutput = z
   .object({
     status: z.enum(["active", "awaiting_confirmation", "completed_early"]),
     nextQuestion: nextQuestionOutput.nullish(),
+    nextQuestions: z.array(nextQuestionOutput).min(1).max(4).nullish(),
     unresolvedTopics: z.array(z.string()),
     coverageUpdates: z
       .array(

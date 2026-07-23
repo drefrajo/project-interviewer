@@ -168,6 +168,30 @@ export const createHostedInterviewService = (
       }
       return wait(client, roomId);
     },
+    async submitAnswers(actor, roomId, input) {
+      const client = requireClient(actor);
+      const started = record(
+        await transport.mutation(references.interviews.acceptTurn, {
+          roomId,
+          sessionHash: client.sessionId,
+          entries: input.entries,
+          idempotencyKey: input.idempotencyKey,
+          ...(input.contextPackRevisionId
+            ? { contextPackRevisionId: input.contextPackRevisionId }
+            : {}),
+        }),
+      );
+      if (typeof started.operationId === "string") {
+        await startWorkflow(
+          "interview_turn",
+          roomId,
+          stringValue(started.interviewId, "interview id"),
+          started.operationId,
+          client.sessionId,
+        );
+      }
+      return wait(client, roomId);
+    },
     async skip(actor, roomId, input) {
       const client = requireClient(actor);
       const started = record(

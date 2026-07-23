@@ -141,17 +141,17 @@ describe("File-First Discovery application shell", () => {
       screen.getByRole("heading", { name: /shared resources/i }),
     ).toBeInTheDocument();
     expect(
-      screen.queryByLabelText(/add project material/i),
+      screen.queryByLabelText(/add files/i),
     ).not.toBeInTheDocument();
 
     await user.click(
-      within(tabs).getByRole("tab", { name: /project material/i }),
+      within(tabs).getByRole("tab", { name: /^files$/i }),
     );
     expect(
-      await screen.findByLabelText(/add project material/i),
+      await screen.findByLabelText(/add files/i),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: /continue without files/i }),
+      screen.queryByRole("button", { name: /i have no files/i }),
     ).not.toBeInTheDocument();
 
     await user.click(
@@ -446,11 +446,11 @@ describe("File-First Discovery application shell", () => {
     );
 
     await user.click(
-      await screen.findByRole("tab", { name: /project material/i }),
+      await screen.findByRole("tab", { name: /^files$/i }),
     );
 
     await user.upload(
-      await screen.findByLabelText(/add project material/i),
+      await screen.findByLabelText(/add files/i),
       new File(["Portal launch target: October."], "Brief.txt", {
         type: "text/plain",
       }),
@@ -463,8 +463,8 @@ describe("File-First Discovery application shell", () => {
       screen.getByRole("heading", { name: "Brief.txt" }),
     ).toBeInTheDocument();
     expect(screen.getAllByText(/paragraph 1/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/summary sources/i).closest("details")).toBeNull();
-    const sources = screen.getByText(/identified sources/i);
+    expect(screen.getByText(/based on/i).closest("details")).toBeNull();
+    const sources = screen.getByText(/details we noticed/i);
     const sourcesDisclosure = sources.closest("details");
     expect(sourcesDisclosure).not.toHaveAttribute("open");
     await user.click(sources);
@@ -500,11 +500,11 @@ describe("File-First Discovery application shell", () => {
       </MemoryRouter>,
     );
     await user.click(
-      await screen.findByRole("tab", { name: /discovery interview/i }),
+      await screen.findByRole("tab", { name: /^interview$/i }),
     );
     await user.click(
       await screen.findByRole("button", {
-        name: /start conversation/i,
+        name: /start the conversation/i,
       }),
     );
 
@@ -514,12 +514,12 @@ describe("File-First Discovery application shell", () => {
       }),
     ).toBeInTheDocument();
     await user.type(
-      screen.getByLabelText(/your reply/i),
+      screen.getByLabelText(/who will use this product/i),
       "Customers should submit service requests without calling support.",
     );
     await user.click(
       screen.getByRole("button", {
-        name: /send reply/i,
+        name: /send answers/i,
       }),
     );
     expect(
@@ -528,7 +528,7 @@ describe("File-First Discovery application shell", () => {
       }),
     ).toBeInTheDocument();
     const conversation = screen.getByRole("list", {
-      name: /discovery interview/i,
+      name: /^interview$/i,
     });
     expect(
       within(conversation).getByRole("article", { name: /^you$/i }),
@@ -591,27 +591,30 @@ describe("File-First Discovery application shell", () => {
       </MemoryRouter>,
     );
     await user.click(
-      await screen.findByRole("tab", { name: /discovery interview/i }),
+      await screen.findByRole("tab", { name: /^interview$/i }),
     );
     await user.click(
       await screen.findByRole("button", {
-        name: /start conversation/i,
+        name: /start the conversation/i,
       }),
     );
 
     const answer =
       "Customers should submit service requests without calling support.";
-    await user.type(screen.getByLabelText(/your reply/i), answer);
+    await user.type(
+      screen.getByLabelText(/who will use this product/i),
+      answer,
+    );
     await user.click(
       screen.getByRole("button", {
-        name: /send reply/i,
+        name: /send answers/i,
       }),
     );
 
     await vi.waitFor(() => expect(agentStarted).toHaveBeenCalledOnce());
     expect(await screen.findByText(answer)).toBeInTheDocument();
     expect(
-      screen.getByText(/considering that and preparing the next question/i),
+      screen.getByText("Working on the next questions"),
     ).toBeInTheDocument();
 
     resolveAgent?.({
@@ -711,11 +714,11 @@ describe("File-First Discovery application shell", () => {
     );
     await user.click(
       await screen.findByRole("button", {
-        name: /generate project brief/i,
+        name: /create the project brief/i,
       }),
     );
     expect(
-      await screen.findByRole("heading", { name: /brief draft/i }),
+      await screen.findByRole("heading", { name: /^draft$/i }),
     ).toBeInTheDocument();
     const markdownEditor = screen.getByLabelText(/project brief markdown/i);
     const generatedMarkdown = (markdownEditor as HTMLTextAreaElement).value;
@@ -729,17 +732,17 @@ describe("File-First Discovery application shell", () => {
       target: { value: revisedMarkdown },
     });
     await user.click(
-      screen.getByRole("button", { name: /save markdown/i }),
+      screen.getByRole("button", { name: /save changes/i }),
     );
     expect(await screen.findByRole("status")).toHaveTextContent(
-      /markdown saved/i,
+      /^saved\.$/i,
     );
     const writeText = vi.spyOn(navigator.clipboard, "writeText");
     await user.click(
-      screen.getByRole("button", { name: /copy markdown/i }),
+      screen.getByRole("button", { name: /copy text/i }),
     );
     expect(await screen.findByRole("status")).toHaveTextContent(
-      /markdown copied/i,
+      /^copied\.$/i,
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("## Evidence appendix"),
@@ -747,25 +750,29 @@ describe("File-First Discovery application shell", () => {
     expect(writeText).not.toHaveBeenCalledWith(
       expect.stringContaining("project-brief:section"),
     );
-    const preview = screen
-      .getByRole("heading", { name: /preview/i })
-      .parentElement!;
+    await user.click(
+      screen.getByRole("tab", { name: /^preview$/i }),
+    );
     expect(
-      within(preview).getByText(/single sign-on for every staff member/i),
+      await screen.findByText(/single sign-on for every staff member/i),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/project brief markdown/i),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole("tab", { name: /^edit$/i }));
     while (
-      screen.queryAllByRole("button", { name: /^acknowledge$/i }).length
+      screen.queryAllByRole("button", { name: /^keep as is$/i }).length
     ) {
       await user.click(
-        screen.getAllByRole("button", { name: /^acknowledge$/i })[0]!,
+        screen.getAllByRole("button", { name: /^keep as is$/i })[0]!,
       );
     }
     await user.click(
-      screen.getByRole("button", { name: /send for client review/i }),
+      screen.getByRole("button", { name: /send to the client for review/i }),
     );
     expect(
       await screen.findByRole("heading", {
-        name: /review version 1/i,
+        name: /version for review 1/i,
       }),
     ).toBeInTheDocument();
     expect(
@@ -787,7 +794,7 @@ describe("File-First Discovery application shell", () => {
     );
     expect(
       await screen.findByRole("heading", {
-        name: /review version 1/i,
+        name: /version for review 1/i,
       }),
     ).toBeInTheDocument();
     expect(
@@ -797,13 +804,13 @@ describe("File-First Discovery application shell", () => {
       screen.queryByText(/project-brief:section/i),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /approve this review version/i }),
+      screen.getByRole("button", { name: /approve this version/i }),
     ).toBeInTheDocument();
     expect(screen.getByText(/not a signature or contract/i)).toBeInTheDocument();
-    const changeRequestField = screen.getByLabelText(/^change request$/i);
+    const changeRequestField = screen.getByLabelText(/^request a change$/i);
     await user.type(changeRequestField, "Clarify who administers SSO.");
     await user.click(
-      screen.getByRole("button", { name: /save change request/i }),
+      screen.getByRole("button", { name: /send change request/i }),
     );
     await vi.waitFor(async () =>
       expect(
@@ -828,7 +835,7 @@ describe("File-First Discovery application shell", () => {
       "Clarify who administers SSO and when access is revoked.",
     );
     await user.click(
-      screen.getByRole("button", { name: /save change request/i }),
+      screen.getByRole("button", { name: /send change request/i }),
     );
     await vi.waitFor(async () =>
       expect(
@@ -1140,16 +1147,16 @@ describe("File-First Discovery application shell", () => {
     ).not.toBeInTheDocument();
     const tabs = screen.getByRole("tablist", { name: /project room/i });
     await user.click(
-      within(tabs).getByRole("tab", { name: /project material/i }),
+      within(tabs).getByRole("tab", { name: /^files$/i }),
     );
     expect(
-      screen.queryByLabelText(/add project material/i),
+      screen.queryByLabelText(/add files/i),
     ).not.toBeInTheDocument();
     await user.click(
-      within(tabs).getByRole("tab", { name: /discovery interview/i }),
+      within(tabs).getByRole("tab", { name: /^interview$/i }),
     );
     expect(
-      screen.queryByRole("button", { name: /start conversation/i }),
+      screen.queryByRole("button", { name: /start the conversation/i }),
     ).not.toBeInTheDocument();
     await application.projectHome.lifecycle.delete(
       freelancer,

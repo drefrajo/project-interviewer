@@ -166,7 +166,7 @@ export interface AnalysisFeedback {
   explanation: string;
   actorKind: RoomActor["kind"];
   deviceId?: string | undefined;
-  locator: SourceLocator;
+  locator?: SourceLocator | undefined;
   createdAt: number;
 }
 

@@ -85,7 +85,7 @@ A subject that a Discovery Profile expects the Discovery Interview to address be
 _Avoid_: Checklist item, question category
 
 **Interview Turn**:
-One focused question from the system and its corresponding Client answer, associated with the Context Pack Revision available at that time.
+One small batch of questions from the system and the Client's corresponding answers, associated with the Context Pack Revision available at that time. Every question in the batch must be answered (or explicitly marked as unknown) before the turn is accepted.
 _Avoid_: Message, prompt
 
 **Interview Correction**:

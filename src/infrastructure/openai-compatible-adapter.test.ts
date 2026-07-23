@@ -147,6 +147,9 @@ describe("OpenAI-compatible AI boundary", () => {
     await expect(operation).rejects.toThrow(
       /HTTP 400 \(invalid_json_schema\)/i,
     );
+    await expect(operation).rejects.toThrow(
+      /invalid schema for \[redacted\] using \[redacted\]/i,
+    );
     await expect(operation).rejects.not.toThrow(
       /private-client|sk-private|secret-api-key/i,
     );

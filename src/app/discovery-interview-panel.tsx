@@ -13,47 +13,66 @@ import type {
 import type {
   DiscoveryInterviewView,
   DiscoveryFinding,
+  InterviewQuestion,
+  InterviewTurn,
+  InterviewTurnEntry,
 } from "../domain/discovery-interview";
 import { useI18n } from "./i18n";
+import { WorkingIndicator } from "./working-indicator";
 
 const copy = {
   en: {
     intro:
-      "Have a conversation about the project. You can answer naturally, skip anything you do not know, and correct an earlier answer at any time.",
+      "Let’s talk about your project. I’ll ask a few questions at a time — just answer in your own words. If you don’t know something, mark it as “I’m not sure” and move on.",
     available: "Available",
     notAvailable: "Not yet available",
-    title: "Discovery Interview",
-    start: "Start conversation",
-    notStarted: "The Client has not started the conversation yet.",
-    answer: "Your reply",
-    answerPlaceholder: "Write your reply…",
-    submit: "Send reply",
-    skip: "I’m not sure",
+    title: "Interview",
+    start: "Start the conversation",
+    notStarted: "The client has not started the conversation yet.",
+    answerPlaceholder: "Your answer…",
+    notSure: "I’m not sure",
+    notSureMarked: "Marked as “I’m not sure”",
+    answeredProgress: "{answered} of {total} answered",
+    submit: "Send answers",
     pause: "Pause conversation",
     resume: "Resume conversation",
     finish: "Finish early",
     finishConfirm:
-      "Finish discovery now and mark the Project Brief as potentially incomplete?",
-    takeover: "Take over response permission",
+      "Finish the interview now? The project brief may be less complete.",
+    takeover: "Take over answering",
     observer:
-      "Another device can reply right now. You can follow the conversation here or take over.",
+      "Another device can answer right now. You can follow the conversation here or take over.",
     freelancer:
-      "You are viewing the Client’s conversation. Only the Client’s Responding Device can reply or make corrections.",
-    processing: "I’m considering that and preparing the next question…",
-    starting: "I’m getting the conversation ready…",
+      "You are viewing the client’s conversation. Only the client’s answering device can reply or make corrections.",
+    workingLabel: "Working on the next questions",
+    startingLabel: "Getting the conversation ready",
+    thinking: [
+      "Thinking…",
+      "Finding the next questions…",
+      "Connecting the dots…",
+      "Imagining something great…",
+      "Putting it all together…",
+    ],
+    starting: [
+      "Getting the conversation ready…",
+      "Reading what we know so far…",
+      "Preparing your questions…",
+    ],
     takingLonger:
-      "This is taking a little longer. Your reply is saved, so it is safe to leave and come back.",
+      "This is taking a little longer. Your answers are saved, so it’s safe to leave and come back.",
     checkingMaterial:
-      "I’m checking the new Project Material before we continue. You can come back when it is ready.",
+      "I’m reading the new files before we continue. You can come back once they’re ready.",
     retry: "Try again",
+    interrupted: "The last step was interrupted.",
+    paused: "The conversation is paused.",
     confirmReady:
-      "I think we have enough to prepare the Project Brief. Would you like to finish, or is there more we should discuss?",
-    confirm: "Finish conversation",
-    continue: "There’s more to discuss",
+      "I think I have everything I need to prepare the project brief. Shall we finish here, or is there more you’d like to add?",
+    confirm: "Yes, we’re done",
+    continue: "I’d like to add more",
     completed:
-      "Thanks — the conversation is complete. The Freelancer can now review the result and prepare the Project Brief.",
+      "Thank you — that’s everything! The freelancer will now review what we discussed and prepare the project brief.",
     completedEarly:
-      "This conversation was deliberately finished early. The Project Brief may still have open questions.",
+      "This conversation was finished early, so the project brief may still have open questions.",
     correction: "Correction",
     coverage: "Coverage",
     systemEvents: "Project Material events",
@@ -62,55 +81,71 @@ const copy = {
     detailsHint:
       "Structured discovery state for Freelancer review. This is not shown in the Client’s conversation.",
     conversationActions: "Conversation options",
-    correct: "Correct this reply",
+    correct: "Correct this answer",
     cancelCorrection: "Cancel",
     correctionReason: "What changed?",
-    correctedAnswer: "Corrected reply",
+    correctedAnswer: "Corrected answer",
     client: "You",
     assistant: "Interviewer",
     skipped: "I’m not sure.",
-    saved: "Reply saved",
-    originalAnswer: "Original reply",
+    saved: "Saved",
+    originalAnswer: "Original answer",
     operation: "Current operation",
+    otherQuestions:
+      "Questions waiting for the client’s answers:",
   },
   de: {
     intro:
-      "Sprechen Sie ganz natürlich über das Projekt. Sie können etwas überspringen, wenn Sie es nicht wissen, und frühere Antworten jederzeit korrigieren.",
+      "Lassen Sie uns über Ihr Projekt sprechen. Ich stelle Ihnen ein paar Fragen auf einmal — antworten Sie einfach in Ihren eigenen Worten. Wenn Sie etwas nicht wissen, wählen Sie „Ich bin nicht sicher“.",
     available: "Verfügbar",
     notAvailable: "Noch nicht verfügbar",
-    title: "Discovery-Interview",
+    title: "Interview",
     start: "Gespräch beginnen",
     notStarted: "Der Client hat das Gespräch noch nicht begonnen.",
-    answer: "Ihre Antwort",
-    answerPlaceholder: "Schreiben Sie Ihre Antwort…",
-    submit: "Antwort senden",
-    skip: "Ich bin nicht sicher",
+    answerPlaceholder: "Ihre Antwort…",
+    notSure: "Ich bin nicht sicher",
+    notSureMarked: "Als „Ich bin nicht sicher“ markiert",
+    answeredProgress: "{answered} von {total} beantwortet",
+    submit: "Antworten senden",
     pause: "Gespräch pausieren",
     resume: "Gespräch fortsetzen",
     finish: "Vorzeitig beenden",
     finishConfirm:
-      "Discovery jetzt beenden und den Projektbrief als möglicherweise unvollständig markieren?",
-    takeover: "Antwortberechtigung übernehmen",
+      "Das Interview jetzt beenden? Der Projektbrief kann dann weniger vollständig sein.",
+    takeover: "Antworten übernehmen",
     observer:
-      "Ein anderes Gerät kann derzeit antworten. Sie können dem Gespräch hier folgen oder die Berechtigung übernehmen.",
+      "Ein anderes Gerät kann derzeit antworten. Sie können dem Gespräch hier folgen oder es übernehmen.",
     freelancer:
       "Sie sehen das Gespräch des Clients. Nur das Antwortgerät des Clients kann antworten oder Korrekturen vornehmen.",
-    processing:
-      "Ich denke darüber nach und bereite die nächste Frage vor…",
-    starting: "Ich bereite das Gespräch vor…",
+    workingLabel: "Die nächsten Fragen werden vorbereitet",
+    startingLabel: "Das Gespräch wird vorbereitet",
+    thinking: [
+      "Ich denke nach…",
+      "Ich suche die nächsten Fragen…",
+      "Ich verbinde die Punkte…",
+      "Ich stelle mir etwas Großartiges vor…",
+      "Ich füge alles zusammen…",
+    ],
+    starting: [
+      "Ich bereite das Gespräch vor…",
+      "Ich lese, was wir bisher wissen…",
+      "Ich bereite Ihre Fragen vor…",
+    ],
     takingLonger:
-      "Das dauert etwas länger. Ihre Antwort ist gespeichert; Sie können die Seite sicher verlassen und später zurückkehren.",
+      "Das dauert etwas länger. Ihre Antworten sind gespeichert; Sie können die Seite sicher verlassen und später zurückkehren.",
     checkingMaterial:
-      "Ich prüfe das neue Projektmaterial, bevor wir fortfahren. Sie können zurückkommen, sobald es bereit ist.",
+      "Ich lese die neuen Dateien, bevor wir weitermachen. Sie können zurückkommen, sobald sie bereit sind.",
     retry: "Erneut versuchen",
+    interrupted: "Der letzte Schritt wurde unterbrochen.",
+    paused: "Das Gespräch ist pausiert.",
     confirmReady:
-      "Ich denke, wir haben genug für den Projektbrief. Möchten Sie das Gespräch beenden oder sollten wir noch etwas besprechen?",
-    confirm: "Gespräch beenden",
-    continue: "Es gibt noch etwas zu besprechen",
+      "Ich denke, ich habe alles, was ich für den Projektbrief brauche. Sollen wir hier aufhören, oder möchten Sie noch etwas hinzufügen?",
+    confirm: "Ja, wir sind fertig",
+    continue: "Ich möchte noch etwas hinzufügen",
     completed:
-      "Vielen Dank — das Gespräch ist abgeschlossen. Der Freelancer kann das Ergebnis jetzt prüfen und den Projektbrief vorbereiten.",
+      "Vielen Dank — das war alles! Der Freelancer prüft jetzt unser Gespräch und erstellt den Projektbrief.",
     completedEarly:
-      "Dieses Gespräch wurde bewusst vorzeitig beendet. Im Projektbrief können noch offene Fragen verbleiben.",
+      "Dieses Gespräch wurde vorzeitig beendet. Im Projektbrief können noch offene Fragen verbleiben.",
     correction: "Korrektur",
     coverage: "Abdeckung",
     systemEvents: "Projektmaterial-Ereignisse",
@@ -126,9 +161,11 @@ const copy = {
     client: "Sie",
     assistant: "Interviewer",
     skipped: "Ich bin nicht sicher.",
-    saved: "Antwort gespeichert",
+    saved: "Gespeichert",
     originalAnswer: "Ursprüngliche Antwort",
     operation: "Aktueller Vorgang",
+    otherQuestions:
+      "Diese Fragen warten auf die Antworten des Clients:",
   },
 } as const;
 
@@ -157,6 +194,27 @@ const findingLabel = (
     contradiction: locale === "de" ? "Widerspruch" : "Contradiction",
   })[finding.type];
 
+const questionBatchOf = (
+  interview: DiscoveryInterviewView,
+): InterviewQuestion[] =>
+  interview.currentQuestions?.length
+    ? interview.currentQuestions
+    : interview.currentQuestion
+      ? [interview.currentQuestion]
+      : [];
+
+const entriesOf = (turn: InterviewTurn): InterviewTurnEntry[] =>
+  turn.entries?.length
+    ? turn.entries
+    : [
+        {
+          questionId: turn.question.id,
+          questionText: turn.question.text,
+          answer: turn.answer,
+          answerKind: turn.answerKind,
+        },
+      ];
+
 export const DiscoveryInterviewPanel = ({
   application,
   actor,
@@ -177,7 +235,8 @@ export const DiscoveryInterviewPanel = ({
   const canRespond = actor.kind === "client" && !readOnly;
   const [interview, setInterview] =
     useState<DiscoveryInterviewView | null>();
-  const [answer, setAnswer] = useState("");
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [unsure, setUnsure] = useState<Record<string, boolean>>({});
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [takingLonger, setTakingLonger] = useState(false);
@@ -217,9 +276,18 @@ export const DiscoveryInterviewPanel = ({
     return () => window.clearInterval(timer);
   }, [actor, application, canRespond, interview, refresh, room.id]);
 
+  const batch = interview ? questionBatchOf(interview) : [];
+  const batchKey = batch.map(({ id }) => id).join("|");
+
+  useEffect(() => {
+    setDrafts({});
+    setUnsure({});
+  }, [batchKey]);
+
   useEffect(() => {
     if (wasResponding.current && interview?.respondingDevice === false) {
-      setAnswer("");
+      setDrafts({});
+      setUnsure({});
       setCorrectingTurnId("");
       setCorrectedAnswer("");
       setCorrectionReason("");
@@ -258,37 +326,36 @@ export const DiscoveryInterviewPanel = ({
     }
   };
 
+  const answeredCount = batch.filter(
+    ({ id }) => unsure[id] || (drafts[id] ?? "").trim(),
+  ).length;
+  const canSubmit =
+    batch.length > 0 && answeredCount === batch.length && !busy;
+
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!interview?.currentQuestion) return;
+    if (!interview || !canSubmit) return;
     const succeeded = await perform(async () => {
       const contextPack = await application.contextPacks.latest(
         actor,
         room.id,
       );
-      return application.interviews.submitAnswer(actor, room.id, {
-        questionId: interview.currentQuestion!.id,
-        answer,
-        idempotencyKey: `answer:${operationId()}`,
+      return application.interviews.submitAnswers(actor, room.id, {
+        entries: batch.map(({ id }) => ({
+          questionId: id,
+          answer: unsure[id] ? "" : (drafts[id] ?? "").trim(),
+          answerKind: (unsure[id] ? "skip" : "answer") as
+            | "skip"
+            | "answer",
+        })),
+        idempotencyKey: `answers:${operationId()}`,
         contextPackRevisionId: contextPack?.id ?? null,
       });
     });
-    if (succeeded) setAnswer("");
-  };
-
-  const skip = async () => {
-    if (!interview?.currentQuestion) return;
-    await perform(async () => {
-      const contextPack = await application.contextPacks.latest(
-        actor,
-        room.id,
-      );
-      return application.interviews.skip(actor, room.id, {
-        questionId: interview.currentQuestion!.id,
-        idempotencyKey: `skip:${operationId()}`,
-        contextPackRevisionId: contextPack?.id ?? null,
-      });
-    });
+    if (succeeded) {
+      setDrafts({});
+      setUnsure({});
+    }
   };
 
   const addCorrection = async (event: FormEvent) => {
@@ -307,9 +374,14 @@ export const DiscoveryInterviewPanel = ({
     }
   };
 
-  const beginCorrection = (turnId: string, turnAnswer: string) => {
-    setCorrectingTurnId(turnId);
-    setCorrectedAnswer(turnAnswer);
+  const beginCorrection = (turn: InterviewTurn) => {
+    setCorrectingTurnId(turn.id);
+    setCorrectedAnswer(
+      entriesOf(turn)
+        .filter((entry) => entry.answerKind === "answer")
+        .map((entry) => entry.answer)
+        .join("\n"),
+    );
     setCorrectionReason("");
   };
 
@@ -340,13 +412,23 @@ export const DiscoveryInterviewPanel = ({
       (locale === "de"
         ? "Interview wird verarbeitet…"
         : "Processing interview…")
-    : text.processing;
+    : text.workingLabel;
 
   const canCorrect =
     canRespond &&
     interview?.respondingDevice &&
     interview.operationStatus !== "running" &&
     !["completed", "completed_early"].includes(interview.status);
+
+  const showAnswerForm = Boolean(
+    interview &&
+      interview.status === "active" &&
+      batch.length &&
+      available &&
+      canRespond &&
+      interview.respondingDevice &&
+      interview.operationStatus !== "running",
+  );
 
   if (!available && !interview) {
     return (
@@ -389,8 +471,11 @@ export const DiscoveryInterviewPanel = ({
       ) : null}
 
       {interview === undefined ? (
-        <p className="text-[var(--muted)]" role="status">
-          {text.starting}
+        <p className="text-[var(--muted)]">
+          <WorkingIndicator
+            label={text.startingLabel}
+            phrases={text.starting}
+          />
         </p>
       ) : null}
 
@@ -441,7 +526,10 @@ export const DiscoveryInterviewPanel = ({
                         acknowledgedDraftLoss: true,
                       }),
                     ).then((succeeded) => {
-                      if (succeeded) setAnswer("");
+                      if (succeeded) {
+                        setDrafts({});
+                        setUnsure({});
+                      }
                     });
                   }
                 }}
@@ -460,6 +548,7 @@ export const DiscoveryInterviewPanel = ({
               const corrections = interview.corrections.filter(
                 ({ turnId }) => turnId === turn.id,
               );
+              const entries = entriesOf(turn);
               return (
                 <li className="contents" key={turn.id}>
                   <article
@@ -470,9 +559,22 @@ export const DiscoveryInterviewPanel = ({
                       {text.assistant}
                     </span>
                     <div className="rounded-2xl rounded-tl-sm border border-[var(--line)] bg-white px-5 py-4 shadow-sm">
-                      <h3 className="m-0 text-lg leading-7">
-                        {turn.question.text}
-                      </h3>
+                      {entries.length > 1 ? (
+                        <ol className="m-0 list-decimal space-y-2 pl-5">
+                          {entries.map((entry) => (
+                            <li
+                              className="text-lg leading-7"
+                              key={entry.questionId}
+                            >
+                              {entry.questionText}
+                            </li>
+                          ))}
+                        </ol>
+                      ) : (
+                        <h3 className="m-0 text-lg leading-7">
+                          {entries[0]!.questionText}
+                        </h3>
+                      )}
                     </div>
                   </article>
 
@@ -484,11 +586,28 @@ export const DiscoveryInterviewPanel = ({
                       {text.client}
                     </span>
                     <div className="rounded-2xl rounded-tr-sm bg-[var(--green)] px-5 py-4 text-white shadow-sm">
-                      <p className="m-0 whitespace-pre-wrap">
-                        {turn.answerKind === "skip"
-                          ? text.skipped
-                          : turn.answer}
-                      </p>
+                      {entries.length > 1 ? (
+                        <ol className="m-0 list-none space-y-3 p-0">
+                          {entries.map((entry) => (
+                            <li key={entry.questionId}>
+                              <span className="mb-1 block text-xs font-bold text-white/70">
+                                {entry.questionText}
+                              </span>
+                              <p className="m-0 whitespace-pre-wrap">
+                                {entry.answerKind === "skip"
+                                  ? text.skipped
+                                  : entry.answer}
+                              </p>
+                            </li>
+                          ))}
+                        </ol>
+                      ) : (
+                        <p className="m-0 whitespace-pre-wrap">
+                          {entries[0]!.answerKind === "skip"
+                            ? text.skipped
+                            : entries[0]!.answer}
+                        </p>
+                      )}
                       <span className="mt-3 block text-xs font-bold text-white/70">
                         {text.saved}
                       </span>
@@ -519,9 +638,13 @@ export const DiscoveryInterviewPanel = ({
                         <h4 className="mb-3 mt-0">{text.correct}</h4>
                         <p className="mb-3 text-xs text-[var(--muted)]">
                           {text.originalAnswer}:{" "}
-                          {turn.answerKind === "skip"
-                            ? text.skipped
-                            : turn.answer}
+                          {entries
+                            .map((entry) =>
+                              entry.answerKind === "skip"
+                                ? text.skipped
+                                : entry.answer,
+                            )
+                            .join(" · ")}
                         </p>
                         <label className="mb-3 block">
                           <span className="mb-1 block text-sm font-bold">
@@ -571,7 +694,7 @@ export const DiscoveryInterviewPanel = ({
                         className={textButton}
                         disabled={busy}
                         type="button"
-                        onClick={() => beginCorrection(turn.id, turn.answer)}
+                        onClick={() => beginCorrection(turn)}
                       >
                         {text.correct}
                       </button>
@@ -586,22 +709,23 @@ export const DiscoveryInterviewPanel = ({
                 <article
                   aria-label={text.assistant}
                   className="mr-auto max-w-[min(42rem,92%)]"
-                  role="status"
                 >
                   <span className="mb-1 block text-xs font-extrabold uppercase tracking-[0.12em] text-[var(--muted)]">
                     {text.assistant}
                   </span>
                   <div className="rounded-2xl rounded-tl-sm border border-[var(--line)] bg-white px-5 py-4 shadow-sm">
-                    <p className="m-0">
-                      {interview.turns.length
-                        ? text.processing
-                        : text.starting}
-                    </p>
-                    <span className="mt-3 flex gap-1" aria-hidden="true">
-                      <span className="size-2 animate-pulse rounded-full bg-[var(--muted)]" />
-                      <span className="size-2 animate-pulse rounded-full bg-[var(--muted)] [animation-delay:150ms]" />
-                      <span className="size-2 animate-pulse rounded-full bg-[var(--muted)] [animation-delay:300ms]" />
-                    </span>
+                    <WorkingIndicator
+                      label={
+                        interview.turns.length
+                          ? text.workingLabel
+                          : text.startingLabel
+                      }
+                      phrases={
+                        interview.turns.length
+                          ? text.thinking
+                          : text.starting
+                      }
+                    />
                     {takingLonger ? (
                       <p className="mb-0 mt-3 text-sm text-[var(--muted)]">
                         {text.takingLonger}
@@ -634,11 +758,7 @@ export const DiscoveryInterviewPanel = ({
             interview.respondingDevice ? (
               <li>
                 <article className="mr-auto rounded-2xl border border-red-200 bg-red-50 p-4">
-                  <p>
-                    {locale === "de"
-                      ? "Die letzte Verarbeitung wurde unterbrochen."
-                      : "The last step was interrupted."}
-                  </p>
+                  <p>{text.interrupted}</p>
                   <button
                     className={primaryButton}
                     type="button"
@@ -657,11 +777,7 @@ export const DiscoveryInterviewPanel = ({
             {interview.status === "paused" ? (
               <li>
                 <article className="mr-auto rounded-2xl border border-[var(--line)] bg-white p-4">
-                  <p>
-                    {locale === "de"
-                      ? "Das Gespräch ist pausiert."
-                      : "The conversation is paused."}
-                  </p>
+                  <p>{text.paused}</p>
                   {canRespond && interview.respondingDevice ? (
                     <button
                       className={primaryButton}
@@ -757,7 +873,8 @@ export const DiscoveryInterviewPanel = ({
             ) : null}
 
             {interview.status === "active" &&
-            interview.currentQuestion &&
+            batch.length &&
+            !showAnswerForm &&
             !busy &&
             interview.operationStatus !== "running" ? (
               <li>
@@ -769,61 +886,119 @@ export const DiscoveryInterviewPanel = ({
                     {text.assistant}
                   </span>
                   <div className="rounded-2xl rounded-tl-sm border border-[var(--line)] bg-white px-5 py-4 shadow-sm">
-                    <h3 className="m-0 text-lg leading-7">
-                      {interview.currentQuestion.text}
-                    </h3>
+                    {actor.kind === "freelancer" ||
+                    interview.respondingDevice ? null : (
+                      <p className="mb-2 mt-0 text-sm text-[var(--muted)]">
+                        {text.otherQuestions}
+                      </p>
+                    )}
+                    {batch.length > 1 ? (
+                      <ol className="m-0 list-decimal space-y-2 pl-5">
+                        {batch.map((question) => (
+                          <li
+                            className="text-lg leading-7"
+                            key={question.id}
+                          >
+                            {question.text}
+                          </li>
+                        ))}
+                      </ol>
+                    ) : (
+                      <h3 className="m-0 text-lg leading-7">
+                        {batch[0]!.text}
+                      </h3>
+                    )}
                   </div>
                 </article>
               </li>
             ) : null}
           </ol>
 
-          {interview.status === "active" &&
-          interview.currentQuestion &&
-          available &&
-          canRespond &&
-          interview.respondingDevice &&
-          interview.operationStatus !== "running" ? (
+          {showAnswerForm ? (
             <form
-              className="sticky bottom-4 z-10 mt-6 rounded-2xl border border-[var(--line)] bg-[var(--surface)]/95 p-4 shadow-xl backdrop-blur"
+              className="sticky bottom-4 z-10 mt-6 space-y-4 rounded-2xl border border-[var(--line)] bg-[var(--surface)]/95 p-4 shadow-xl backdrop-blur"
               onSubmit={submit}
             >
-              <label className="block">
-                <span className="mb-2 block text-sm font-extrabold">
-                  {text.answer}
-                </span>
-                <textarea
-                  className="min-h-28 w-full resize-y border border-[var(--line)] bg-white p-3 shadow-inner"
-                  value={answer}
-                  onChange={(event) => setAnswer(event.target.value)}
-                  placeholder={text.answerPlaceholder}
-                  required
-                  rows={4}
-                />
-              </label>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
+              {batch.map((question, index) => (
+                <fieldset
+                  className="rounded-xl border border-[var(--line)] bg-white p-4 shadow-sm"
+                  disabled={busy}
+                  key={question.id}
+                >
+                  <h3 className="m-0 text-lg leading-7">
+                    {batch.length > 1 ? (
+                      <span className="mr-2 font-extrabold text-[var(--green)]">
+                        {index + 1}.
+                      </span>
+                    ) : null}
+                    {question.text}
+                  </h3>
+                  {unsure[question.id] ? (
+                    <p className="mb-0 mt-3 rounded-lg bg-[#f4f3ed] p-3 text-sm text-[var(--muted)]">
+                      {text.notSureMarked}
+                    </p>
+                  ) : (
+                    <label className="mt-3 block">
+                      <span className="sr-only">{question.text}</span>
+                      <textarea
+                        aria-label={question.text}
+                        className="min-h-20 w-full resize-y border border-[var(--line)] bg-white p-3 shadow-inner"
+                        value={drafts[question.id] ?? ""}
+                        onChange={(event) =>
+                          setDrafts((current) => ({
+                            ...current,
+                            [question.id]: event.target.value,
+                          }))
+                        }
+                        placeholder={text.answerPlaceholder}
+                        rows={2}
+                      />
+                    </label>
+                  )}
+                  <button
+                    aria-pressed={Boolean(unsure[question.id])}
+                    className={`${textButton} mt-1`}
+                    disabled={busy}
+                    onClick={() => {
+                      setUnsure((current) => ({
+                        ...current,
+                        [question.id]: !current[question.id],
+                      }));
+                      setDrafts((current) => ({
+                        ...current,
+                        [question.id]: "",
+                      }));
+                    }}
+                    type="button"
+                  >
+                    {text.notSure}
+                  </button>
+                </fieldset>
+              ))}
+              <div className="flex flex-wrap items-center gap-3">
                 <button
                   className={primaryButton}
-                  disabled={busy}
+                  disabled={!canSubmit}
                   type="submit"
                 >
                   {text.submit}
                 </button>
-                <button
-                  className={textButton}
-                  disabled={busy}
-                  onClick={() => void skip()}
-                  type="button"
+                <span
+                  aria-live="polite"
+                  className="text-sm font-bold text-[var(--muted)]"
                 >
-                  {text.skip}
-                </button>
+                  {text.answeredProgress
+                    .replace("{answered}", String(answeredCount))
+                    .replace("{total}", String(batch.length))}
+                </span>
               </div>
             </form>
           ) : null}
 
           {canRespond &&
           interview.respondingDevice &&
-          interview.status === "active" ? (
+          interview.status === "active" &&
+          interview.operationStatus === "idle" ? (
             <details className="mt-6 border-t border-[var(--line)] pt-4">
               <summary className="cursor-pointer font-bold text-[var(--muted)]">
                 {text.conversationActions}
