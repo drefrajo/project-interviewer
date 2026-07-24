@@ -64,28 +64,6 @@ export const createHostedInterviewService = (
       intervalMs: 500,
       load: async () => {
         const current = await get(actor, roomId);
-        if (
-          actor.kind === "client" &&
-          current?.status === "awaiting_confirmation" &&
-          current.operation?.operationType === "interview_turn"
-        ) {
-          const review = record(
-            await transport.mutation(references.interviews.beginReview, {
-              roomId,
-              sessionHash: actor.sessionId,
-            }),
-          );
-          if (review.reused !== true) {
-            await startWorkflow(
-              "interview_review",
-              roomId,
-              stringValue(review.interviewId, "interview id"),
-              stringValue(review.operationId, "operation id"),
-              actor.sessionId,
-            );
-          }
-          return null;
-        }
         return current;
       },
       isComplete: (current) =>

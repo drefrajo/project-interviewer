@@ -78,6 +78,34 @@ const commitResultReference = makeFunctionReference<
   },
   boolean
 >("workflows:commitResult");
+const getInterviewAnswerCountReference = makeFunctionReference<
+  "query",
+  { subjectId: string },
+  number | null
+>("workflows:getInterviewAnswerCount");
+const prepareReviewStepReference = makeFunctionReference<
+  "mutation",
+  {
+    operationId: GenericId<"durableOperations">;
+    subjectId: string;
+    agentProposesCompletion: boolean;
+  },
+  {
+    shouldReview: boolean;
+    reviewOperationId?: GenericId<"durableOperations">;
+  }
+>("workflows:prepareReviewStep");
+const commitCombinedTurnReviewReference = makeFunctionReference<
+  "mutation",
+  {
+    turnOperationId: GenericId<"durableOperations">;
+    reviewOperationId: GenericId<"durableOperations">;
+    subjectId: string;
+    agentResult: AiOperationResult;
+    reviewResult: AiOperationResult;
+  },
+  boolean
+>("workflows:commitCombinedTurnReview");
 
 export const loadDomainOperationContext = internalQueryGeneric({
   args: {
@@ -319,6 +347,176 @@ export const markMaterialProgress = internalMutationGeneric({
   },
 });
 
+export const getInterviewAnswerCount = internalQueryGeneric({
+  args: { subjectId: v.string() },
+  handler: async (context, args) => {
+    const interviewId = context.db.normalizeId(
+      "discoveryInterviews",
+      args.subjectId,
+    );
+    if (!interviewId) return null;
+    const interview = await context.db.get(interviewId);
+    return interview ? Number(interview.answerCount) : null;
+  },
+});
+
+export const prepareReviewStep = internalMutationGeneric({
+  args: {
+    operationId: v.id("durableOperations"),
+    subjectId: v.string(),
+    agentProposesCompletion: v.boolean(),
+  },
+  handler: async (context, args) => {
+    const operation = await context.db.get(args.operationId);
+    if (!operation) return { shouldReview: false };
+    const interviewId = context.db.normalizeId(
+      "discoveryInterviews",
+      args.subjectId,
+    );
+    if (!interviewId) return { shouldReview: false };
+    const interview = await context.db.get(interviewId);
+    if (!interview) return { shouldReview: false };
+    const needsUsageReview = Number(interview.answerCount) >= 12;
+    if (!args.agentProposesCompletion && !needsUsageReview) {
+      return { shouldReview: false };
+    }
+    const idempotencyKey = `interview_review:${interviewId}:${interview.answerCount}`;
+    const existing = await context.db
+      .query("durableOperations")
+      .withIndex("by_room", (query) =>
+        query.eq("roomId", operation.roomId),
+      )
+      .order("desc")
+      .collect()
+      .then((items) =>
+        items.find(
+          (item) =>
+            item.operationType === "interview_review" &&
+            item.idempotencyKey === idempotencyKey &&
+            (item.status === "pending" ||
+              item.status === "running" ||
+              item.status === "succeeded"),
+        ),
+      );
+    if (existing) {
+      return {
+        shouldReview: true,
+        reviewOperationId: existing._id as GenericId<"durableOperations">,
+      };
+    }
+    const now = Date.now();
+    const reviewOperationId = await context.db.insert("durableOperations", {
+      roomId: operation.roomId,
+      operationType: "interview_review",
+      subjectId: args.subjectId,
+      idempotencyKey,
+      status: "pending",
+      stage: "queued",
+      attemptCount: 1,
+      promptVersion: "software-project-interview-reviewer-v1",
+      schemaVersion: "interview-review-v1",
+      createdAt: now,
+      updatedAt: now,
+    });
+    return { shouldReview: true, reviewOperationId };
+  },
+});
+
+export const commitCombinedTurnReview = internalMutationGeneric({
+  args: {
+    turnOperationId: v.id("durableOperations"),
+    reviewOperationId: v.id("durableOperations"),
+    subjectId: v.string(),
+    agentResult: v.any(),
+    reviewResult: v.any(),
+  },
+  handler: async (context, args) => {
+    const turnOp = await context.db.get(args.turnOperationId);
+    const reviewOp = await context.db.get(args.reviewOperationId);
+    const room = turnOp ? await context.db.get(turnOp.roomId) : null;
+    if (
+      !turnOp ||
+      !reviewOp ||
+      room?.phase === "archived" ||
+      !canCommitOperationResult(
+        String(turnOp.status),
+        Boolean(room?.deletedAt),
+      )
+    ) {
+      return false;
+    }
+    const now = Date.now();
+    await commitInterviewUpdate(
+      context,
+      turnOp,
+      args.subjectId,
+      args.agentResult,
+      "interview_turn",
+      now,
+    );
+    await commitInterviewUpdate(
+      context,
+      reviewOp,
+      args.subjectId,
+      args.reviewResult,
+      "interview_review",
+      now,
+    );
+    const combinedMeta = {
+      model: args.reviewResult.metadata.model,
+      provider: args.reviewResult.metadata.provider,
+      inputTokens:
+        args.agentResult.metadata.inputTokens +
+        args.reviewResult.metadata.inputTokens,
+      outputTokens:
+        args.agentResult.metadata.outputTokens +
+        args.reviewResult.metadata.outputTokens,
+      ...((args.agentResult.metadata.estimatedCostUsd ?? 0) +
+          (args.reviewResult.metadata.estimatedCostUsd ?? 0) ===
+        0
+        ? {}
+        : {
+            estimatedCostUsd:
+              (args.agentResult.metadata.estimatedCostUsd ?? 0) +
+              (args.reviewResult.metadata.estimatedCostUsd ?? 0),
+          }),
+      latencyMs:
+        args.agentResult.metadata.latencyMs +
+        args.reviewResult.metadata.latencyMs,
+    };
+    await Promise.all([
+      context.db.patch(args.turnOperationId, {
+        status: "succeeded",
+        stage: "complete",
+        ...combinedMeta,
+        updatedAt: now,
+      }),
+      context.db.patch(args.reviewOperationId, {
+        status: "succeeded",
+        stage: "complete",
+        ...combinedMeta,
+        updatedAt: now,
+      }),
+    ]);
+    await context.db.insert("usageRecords", {
+      roomId: turnOp.roomId,
+      operationId: turnOp._id,
+      operationType: "interview_turn_with_review",
+      model: combinedMeta.model,
+      provider: combinedMeta.provider,
+      inputTokens: combinedMeta.inputTokens,
+      outputTokens: combinedMeta.outputTokens,
+      ...(combinedMeta.estimatedCostUsd === undefined
+        ? {}
+        : { estimatedCostUsd: combinedMeta.estimatedCostUsd }),
+      latencyMs: combinedMeta.latencyMs,
+      attemptCount: 1,
+      createdAt: now,
+    });
+    return true;
+  },
+});
+
 export const commitResult = internalMutationGeneric({
   args: {
     operationId: v.id("durableOperations"),
@@ -431,6 +629,43 @@ export const domainOperationWorkflow = workflowManager
           },
         },
       );
+      if (args.kind === "interview_turn") {
+        const agentProposesCompletion =
+          result.value.status === "awaiting_confirmation";
+        const reviewPrep = await step.runMutation(
+          prepareReviewStepReference,
+          {
+            operationId: args.operationId,
+            subjectId: args.subjectId,
+            agentProposesCompletion,
+          },
+        );
+        if (reviewPrep.shouldReview && reviewPrep.reviewOperationId) {
+          const reviewResult = await step.runAction(
+            executeDomainOperationReference,
+            {
+              operationId: reviewPrep.reviewOperationId,
+              kind: "interview_review",
+              subjectId: args.subjectId,
+            },
+            {
+              retry: {
+                maxAttempts: 2,
+                initialBackoffMs: 500,
+                base: 2,
+              },
+            },
+          );
+          await step.runMutation(commitCombinedTurnReviewReference, {
+            turnOperationId: args.operationId,
+            reviewOperationId: reviewPrep.reviewOperationId,
+            subjectId: args.subjectId,
+            agentResult: result,
+            reviewResult,
+          });
+          return;
+        }
+      }
       await step.runMutation(commitResultReference, {
         ...args,
         result,
