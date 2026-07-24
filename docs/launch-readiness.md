@@ -1,91 +1,59 @@
 # Launch readiness
 
-## Machine-verifiable gates
+## Machine gate
 
-Run the complete local gate:
+Run:
 
 ```sh
 bun run verify
 ```
 
-This runs the full test suite, the versioned fixture evaluation, TypeScript,
-ESLint, and a production build. The evaluation report is written to
-`.scratch/file-first-discovery/evaluation-report.json`; a failed gate exits
-non-zero.
+The gate contains only tests that protect a user-visible flow, an authorization/privacy boundary, or irreversible data behavior:
 
-The `file-first-discovery-eval-v1` corpus contains only synthetic,
-de-identified inputs and expectations. The runner executes those inputs
-through the public domain application and deterministic local adapters, then
-derives its observations from persisted Project Material, retrieval results,
-Interview Turns, Discovery Findings, Project Brief items, lifecycle state, and
-operational metadata. It covers website, SaaS feature, mobile application, and
-integration projects, plus every difficult-path scenario in the MVP
-specification. Five fixtures mirror the planned human pilots: no files,
-German, conflicting Project Material, late upload, and an unrealistic
-constraint.
+- one deterministic browser flow from Creator Interview creation through Client Project Submission and Creator download;
+- focused Convex checks for Creator ownership, regenerated Interview Links, first-write-wins submission, and cascading deletion;
+- one provider-request contract check for pinned model settings, OpenRouter privacy requirements, and the minimal Cloudflare Email payload;
+- the production build with a strict Content Security Policy that never uses `unsafe-inline`; and
+- one integrated accessibility pass over the main Client flow at desktop and mobile widths.
 
-The report is deliberately threshold-based:
+Do not add lower-level tests that duplicate these behaviors.
 
-- File Analysis requires at least 95% source-supported factual claims, zero
-  deep scope statements, safe prompt-injection handling, and secret masking.
-- Retrieval requires at least 90% top-five hits, complete cross-language
-  observations, and zero cross-room results.
-- Interview checks evidence reuse, critical gaps, bounded follow-ups,
-  request/agreement separation, corrections, late material, and immutable
-  accepted history.
-- Brief checks zero unsupported agreed requirements, complete substantive
-  traceability, prominent critical issues, no invented commitments, and
-  readability.
-- Language requires the same machine safety, retrieval, and traceability gates
-  in English and German. Absolute human usefulness remains pending.
-- State and security checks turns, link revocation, responding-device
-  takeover, idempotent retries, cascading deletion/recovery, quotas,
-  throttling, the soft 40-turn checkpoint, bounded attempts, AI metadata, and
-  scrubbed audits.
+## Provider and language evaluation
 
-The deterministic domain and React tests exercise the complete core flow. After
-an authenticated Freelancer session is captured with
-`RUNTIME_BASE_URL=<url> bun run runtime:capture-session`, the separate
-`RUNTIME_BASE_URL=<url> bun run verify:runtime` gate drives that configured,
-running Convex-backed application in headless Chrome at 1280×720 and 390×844.
-It verifies
-keyboard-only skip navigation, Project Room creation, Project Material upload,
-Interview operation, Project Brief review, and Client Approval. It also checks
-accessible control names, live regions, actual overflow across those states,
-multiple computed WCAG 2.2 AA contrast surfaces and every visible interaction
-target, visible focus, reduced motion on an animated card, reachable phone
-navigation, and German document language.
+Before launch, run one representative website Interview in each supported pairing:
 
-## Human-only pilot gate
+- English with GPT-5.6 Terra;
+- German with GPT-5.6 Terra;
+- English with DeepSeek V4 Flash; and
+- German with DeepSeek V4 Flash.
 
-Machine completion does not claim that generated discovery is useful to real
-Freelancers and Clients. Before a public launch, complete these five projects
-with representative users and record both parties' judgment:
+Review whether each Interview reaches a useful Project Document efficiently, preserves supplied facts, marks unknown facts, writes credible first-draft copy, and generates three meaningfully different Visual Concepts. This is an opt-in launch evaluation rather than a broad deterministic test matrix.
 
-1. A project with no files.
-2. A German-language project.
-3. A project with conflicting Project Material.
-4. A project where material is uploaded late.
-5. A project with an unrealistic budget or timeline.
+## Security and privacy gate
 
-For each pilot, confirm that evidence was understood, questions were
-non-redundant, contradictions and gaps were surfaced, and the final brief was
-useful without inventing commitments. Re-run `bun run verify` after any
-resulting product change.
+Confirm in the configured production environment that:
 
-## Credential and deployment gate
+- Creator registration is allowlisted;
+- Google and GitHub sign-in work independently and matching emails cannot link or duplicate accounts;
+- Interview Links are unguessable, regeneration invalidates the prior link, and Client pages are not indexed;
+- every OpenRouter request requires zero data retention, denies data collection, and disables fallback;
+- no raw prompt, provider response, sensitive content, or Interview Link appears in diagnostic logs;
+- the global OpenRouter spend ceiling and per-Interview-Link rate limits are active;
+- Markdown disables raw HTML and accepts only safe HTTP(S) links;
+- the Content Security Policy has exact origins where possible and contains no `unsafe-inline`; and
+- confirmed Interview deletion removes the transcript, Project Document, Visual Concepts, Project Submission, and link capability.
 
-Every runtime mode requires a configured Convex deployment, Better Auth
-credentials, and OpenRouter models. Production launch additionally requires:
+## Operational gate
 
-- Convex project and deploy key;
-- Google and GitHub OAuth applications;
-- at least two production passkeys tested on the HTTPS domain;
-- OpenRouter account, API key, selected models, provider allowlist, and
-  verified zero-data-retention behavior;
-- Cloudflare account and approved production deployment;
-- final privacy, retention, monitoring, and incident-response review.
+Confirm that:
 
-Follow [setup.md](setup.md) for the exact variables and commands. No paid
-account creation, production mutation, or deployment is performed by the
-machine gate.
+- temporary AI and image failures retry twice and then expose a retry action;
+- successful Visual Concepts survive retry of a failed concept;
+- email delivery failure never blocks Project Submission;
+- an ambiguous email timeout is reported as delivery unknown rather than retried blindly;
+- the Creator can download a complete ZIP and each individual artifact; and
+- the submitted Client page is read-only and shows the Creator's business/display name and verified email.
+
+## Human approval
+
+The product is ready to open beyond the allowlist only after a representative Creator and Client complete the full flow on mobile and desktop, understand that Visual Concepts are rough directions rather than final designs, and judge the Project Submission sufficient to begin implementation.

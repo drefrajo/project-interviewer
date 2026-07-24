@@ -1,3 +1,0 @@
-# Protect secrets by default
-
-Shared Resources may contain labeled links, non-secret notes, usernames, and account identifiers, but never passwords, API keys, tokens, or other secrets; their URL and note validation remains application-owned. Project Material is sent to the configured AI provider in extracted source form for File Analysis, with provider-side handling responsible for identifying secrets. The application no longer performs a separate File Analysis secrets scan, redacts extracted text, or offers an override workflow. Dedicated password managers remain the intended way to share credentials.
