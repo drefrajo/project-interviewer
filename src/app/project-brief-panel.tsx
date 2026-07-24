@@ -180,7 +180,31 @@ export const ProjectBriefPanel = ({
     void refresh().catch((caught) =>
       setError(caught instanceof Error ? caught.message : String(caught)),
     );
+    const timer = window.setInterval(() => {
+      void refresh().catch(() => {});
+    }, 1_500);
+    return () => window.clearInterval(timer);
   }, [refresh]);
+
+  const autoTriggered = useRef(false);
+  useEffect(() => {
+    if (autoTriggered.current) return;
+    if (room.phase !== "freelancer_review") return;
+    if (actor.kind !== "freelancer") return;
+    if (!view) return;
+    if (view.draft || view.visibleReviewVersion) return;
+    if (view.operation?.status === "running") return;
+    autoTriggered.current = true;
+    application.briefs
+      .generate(actor, room.id, { idempotencyKey: `brief:${room.id}` })
+      .then((next) => {
+        setView(next);
+        if (next.draft) setMarkdown(next.draft.markdown);
+      })
+      .catch(() => {
+        autoTriggered.current = false;
+      });
+  }, [room.phase, view, actor, application, room.id]);
 
   useEffect(() => {
     if (actor.kind === "client") {
