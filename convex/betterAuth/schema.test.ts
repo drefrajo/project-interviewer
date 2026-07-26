@@ -2,25 +2,26 @@ import { describe, expect, it } from "vitest";
 import schema from "./schema";
 
 describe("local Better Auth component schema", () => {
-  it("includes the passkey plugin model and lookup indexes", () => {
+  it("supports OAuth sessions without account-linking or passkey tables", () => {
     const exported = JSON.parse(
       (schema as unknown as { export(): string }).export(),
     ) as {
       tables: Array<{
         tableName: string;
-        indexes: Array<{ indexDescriptor: string; fields: string[] }>;
+        documentType: {
+          type: "object";
+          value: Record<string, { optional?: boolean }>;
+        };
       }>;
     };
-    const passkey = exported.tables.find(
-      ({ tableName }) => tableName === "passkey",
-    );
-
-    expect(passkey).toBeDefined();
-    expect(passkey?.indexes).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ fields: ["userId"] }),
-        expect.objectContaining({ fields: ["credentialID"] }),
-      ]),
+    const names = exported.tables.map(({ tableName }) => tableName);
+    expect(names).toContain("user");
+    expect(names).toContain("account");
+    expect(names).toContain("session");
+    expect(names).not.toContain("passkey");
+    const user = exported.tables.find(({ tableName }) => tableName === "user");
+    expect(user?.documentType.value.provider).toEqual(
+      expect.objectContaining({ optional: true }),
     );
   });
 });

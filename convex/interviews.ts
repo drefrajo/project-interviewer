@@ -1,978 +1,242 @@
-import { mutationGeneric, queryGeneric } from "convex/server";
-import { v, type GenericId, type Value } from "convex/values";
+import { createThread } from "@convex-dev/agent";
+import { env, mutation, query } from "./_generated/server";
+import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
+import { requireCreatorProfile } from "./lib/auth";
 import {
-  requireClientRoom,
-  requireRoomActorFromSession,
-  requireWritableClientRoom,
-} from "./lib/server_authorization";
-import { asRecord } from "./lib/commit_values";
-import { recordAudit } from "./lib/audit";
-import { canRetryWorkflow } from "./lib/production_boundaries";
-import { enforceRateLimit } from "./lib/rate_limit";
+  createCapabilityToken,
+  hashCapability,
+  openCapabilityToken,
+  sealCapabilityToken,
+} from "./lib/capability_crypto";
+import { agentComponent } from "./lib/components";
+import {
+  assertLength,
+  interviewDto,
+  MAX_INSTRUCTIONS_LENGTH,
+} from "./lib/domain";
+import { clientLanguage, interviewModel } from "./schema";
+import { internalRefs } from "./internal_refs";
 
-const clientArgs = {
-  roomId: v.id("projectRooms"),
-  sessionHash: v.string(),
-};
-
-type OperationDocument = Readonly<{
-  _id: GenericId<"durableOperations">;
-  operationType: string;
-  status: string;
-  stage: string;
-  attemptCount: number;
-  model?: string;
-  provider?: string;
-  promptVersion?: string;
-  schemaVersion: string;
-  contextPackRevisionId?: string;
-  inputTokens?: number;
-  outputTokens?: number;
-  estimatedCostUsd?: number;
-  latencyMs?: number;
-  errorCode?: string;
-}>;
-
-const latestOperation = async (
-  context: Parameters<typeof requireRoomActorFromSession>[0],
-  roomId: Parameters<typeof requireRoomActorFromSession>[1],
-): Promise<OperationDocument | undefined> => {
-  const operations = await context.db
-    .query("durableOperations")
-    .withIndex("by_room", (query) => query.eq("roomId", roomId))
-    .order("desc")
-    .collect();
-  return operations.find((operation) =>
-    String(operation.operationType).startsWith("interview_"),
-  ) as unknown as OperationDocument | undefined;
-};
-
-export const get = queryGeneric({
-  args: {
-    roomId: v.id("projectRooms"),
-    sessionHash: v.optional(v.string()),
-  },
-  handler: async (context, args) => {
-    const actor = await requireRoomActorFromSession(
-      context,
-      args.roomId,
-      args.sessionHash,
-    );
-    const interview = await context.db
-      .query("discoveryInterviews")
-      .withIndex("by_room_purge", (query) => query.eq("roomId", args.roomId))
-      .first();
-    if (!interview) return null;
-    const [plan, turns, corrections, findings, events, lease, operation] =
-      await Promise.all([
-        context.db
-          .query("interviewPlans")
-          .withIndex("by_interview", (query) =>
-            query.eq("interviewId", interview._id),
-          )
-          .order("desc")
-          .first(),
-        context.db
-          .query("interviewTurns")
-          .withIndex("by_interview_sequence", (query) =>
-            query.eq("interviewId", interview._id),
-          )
-          .collect(),
-        context.db
-          .query("interviewCorrections")
-          .withIndex("by_interview", (query) =>
-            query.eq("interviewId", interview._id),
-          )
-          .collect(),
-        context.db
-          .query("discoveryFindings")
-          .withIndex("by_interview", (query) =>
-            query.eq("interviewId", interview._id),
-          )
-          .collect(),
-        context.db
-          .query("interviewEvents")
-          .withIndex("by_interview", (query) =>
-            query.eq("interviewId", interview._id),
-          )
-          .collect(),
-        context.db
-          .query("respondingDeviceLeases")
-          .withIndex("by_room_purge", (query) => query.eq("roomId", args.roomId))
-          .first(),
-        latestOperation(context, args.roomId),
-      ]);
-    const respondingDevice =
-      actor.kind === "client" &&
-      Boolean(lease && lease.deviceHash === actor.session.deviceHash);
-    return {
-      id: interview._id,
-      roomId: interview.roomId,
-      language: interview.language,
-      status: interview.status,
-      respondingDevice,
-      leaseVersion: lease?.leaseVersion ?? null,
-      currentQuestion: interview.currentQuestion,
-      currentQuestions: interview.currentQuestions?.length
-        ? interview.currentQuestions
-        : interview.currentQuestion
-          ? [interview.currentQuestion]
-          : undefined,
-      operationStatus: interview.operationStatus,
-      answerCount: interview.answerCount,
-      ...(plan
-        ? {
-            plan: {
-              profileId: plan.profileId,
-              profileVersion: plan.profileVersion,
-            },
-          }
-        : {}),
-      coverage:
-        plan?.coverageAreas.map(
-          (area: { id: string; label: string; status: string }) => ({
-            id: area.id,
-            label: area.label,
-            status: area.status,
-          }),
-        ) ?? [],
-      turns: turns.map((turn) => ({
-        ...turn,
-        id: turn._id,
-        contextPackRevisionId: turn.contextPackRevisionId ?? null,
-        contextPackRevision: turn.contextPackRevision ?? null,
-      })),
-      corrections: corrections.map((correction) => ({
-        ...correction,
-        id: correction._id,
-        deviceId: correction.deviceHash,
-      })),
-      findings: findings.map((finding) => ({
-        ...finding,
-        id: finding._id,
-        type: finding.findingType,
-      })),
-      events: events.map((event) => ({
-        ...event,
-        id: event._id,
-        type: event.eventType,
-      })),
-      unresolvedTopics: interview.unresolvedTopics,
-      completionRationale: interview.completionRationale,
-      incompleteReason: interview.incompleteReason,
-      reviewerBlockers: interview.reviewerBlockers,
-      usageReviewTriggered: interview.usageReviewTriggered,
-      ...(operation
-        ? {
-            operation: {
-              operationType: operation.operationType,
-              status: operation.status,
-              stage:
-                operation.status === "succeeded"
-                  ? "complete"
-                  : operation.operationType === "interview_planning"
-                    ? "planning"
-                    : operation.operationType === "interview_review"
-                      ? "reviewing"
-                      : "reasoning",
-              attemptCount: operation.attemptCount,
-              model: operation.model,
-              provider: operation.provider,
-              promptVersion: operation.promptVersion ?? "unknown",
-              schemaVersion: operation.schemaVersion,
-              contextPackRevisionId: operation.contextPackRevisionId,
-              inputTokens: operation.inputTokens,
-              outputTokens: operation.outputTokens,
-              estimatedCostUsd: operation.estimatedCostUsd,
-              latencyMs: operation.latencyMs,
-              errorCode: operation.errorCode,
-            },
-          }
-        : {}),
-    };
-  },
-});
-
-export const start = mutationGeneric({
-  args: clientArgs,
-  handler: async (context, args) => {
-    const actor = await requireWritableClientRoom(
-      context,
-      args.roomId,
-      args.sessionHash,
-    );
-    const existing = await context.db
-      .query("discoveryInterviews")
-      .withIndex("by_room_purge", (query) => query.eq("roomId", args.roomId))
-      .first();
-    if (existing) return { interviewId: existing._id, operationId: null };
-    const [room, activeMaterials, latestContext] = await Promise.all([
-      context.db.get(args.roomId),
-      context.db
-        .query("projectMaterials")
-        .withIndex("by_room_active", (query) =>
-          query.eq("roomId", args.roomId),
-        )
-        .collect()
-        .then((items) => items.filter((item) => item.active === true)),
-      context.db
-        .query("contextPackRevisions")
-        .withIndex("by_room_created", (query) =>
-          query.eq("roomId", args.roomId),
-        )
-        .order("desc")
-        .first(),
-    ]);
-    const allMaterialsTerminal = activeMaterials.every(
-      (material) =>
-        material.state === "analyzed" ||
-        material.state === "failed" ||
-        material.state === "unsupported",
-    );
-    if (
-      !room ||
-      room.interviewReadiness !== "ready" ||
-      !allMaterialsTerminal ||
-      !latestContext
-    ) {
-      throw new Error(
-        "Discovery can start only after Project Material is terminal and a current Context Pack exists.",
-      );
-    }
-    const profile = await context.db
-      .query("clientProfiles")
-      .withIndex("by_room_purge", (query) => query.eq("roomId", args.roomId))
-      .unique();
-    if (!profile) throw new Error("Client onboarding is required.");
-    const now = Date.now();
-    const interviewId = await context.db.insert("discoveryInterviews", {
-      roomId: args.roomId,
-      planId: "pending",
-      language: profile.interviewLanguage,
-      status: "planning",
-      operationStatus: "running",
-      answerCount: 0,
-      unresolvedTopics: [],
-      reviewerBlockers: [],
-      reviewedAnswerCount: 0,
-      usageReviewTriggered: false,
-      createdAt: now,
-      updatedAt: now,
-    });
-    await context.db.insert("respondingDeviceLeases", {
-      roomId: args.roomId,
-      interviewId: String(interviewId),
-      deviceHash: actor.session.deviceHash,
-      inviteVersion: actor.session.inviteVersion,
-      heartbeatAt: now,
-      leaseVersion: 1,
-      createdAt: now,
-      updatedAt: now,
-    });
-    const operationId = await context.db.insert("durableOperations", {
-      roomId: args.roomId,
-      operationType: "interview_planning",
-      subjectId: String(interviewId),
-      idempotencyKey: `interview_planning:${interviewId}`,
-      status: "pending",
-      stage: "queued",
-      attemptCount: 1,
-      promptVersion: "software-project-interview-planner-v1",
-      schemaVersion: "interview-plan-v1",
-      createdAt: now,
-      updatedAt: now,
-    });
-    return { interviewId, operationId };
-  },
-});
-
-const requireRespondingDevice = async (
-  context: Parameters<typeof requireClientRoom>[0],
-  args: { roomId: Parameters<typeof requireClientRoom>[1]; sessionHash: string },
+const ownedInterview = async (
+  ctx: QueryCtx | MutationCtx,
+  interviewId: Id<"interviews">,
 ) => {
-  const actor = await requireWritableClientRoom(
-    context,
-    args.roomId,
-    args.sessionHash,
-  );
-  const lease = await context.db
-    .query("respondingDeviceLeases")
-    .withIndex("by_room_purge", (query) => query.eq("roomId", args.roomId))
-    .first();
-  if (!lease || lease.deviceHash !== actor.session.deviceHash) {
-    throw new Error("This device does not have response permission.");
+  const creator = await requireCreatorProfile(ctx);
+  const interview = await ctx.db.get("interviews", interviewId);
+  if (!interview || interview.creatorId !== creator._id) {
+    throw new Error("Interview not found.");
   }
-  return { actor, lease };
+  return { creator, interview };
 };
 
-export const heartbeat = mutationGeneric({
-  args: clientArgs,
-  handler: async (context, args) => {
-    const { actor, lease } = await requireRespondingDevice(context, args);
-    await enforceRateLimit(context, {
-      roomId: args.roomId,
-      scope: "interview_heartbeat",
-      key: `${args.roomId}:${actor.session.deviceHash}`,
-      limit: 120,
-      windowMs: 60 * 1000,
-    });
-    const now = Date.now();
-    await context.db.patch(
-      lease._id as GenericId<"respondingDeviceLeases">,
-      {
-      heartbeatAt: now,
-      updatedAt: now,
-      },
-    );
-    return lease.leaseVersion;
-  },
-});
-
-export const takeover = mutationGeneric({
-  args: { ...clientArgs, acknowledgedDraftLoss: v.boolean() },
-  handler: async (context, args) => {
-    if (!args.acknowledgedDraftLoss) {
-      throw new Error("Draft-loss acknowledgement is required.");
-    }
-    const actor = await requireWritableClientRoom(
-      context,
-      args.roomId,
-      args.sessionHash,
-    );
-    await enforceRateLimit(context, {
-      roomId: args.roomId,
-      scope: "responding_device_takeover",
-      key: `${args.roomId}:${actor.session.deviceHash}`,
-      limit: 10,
-      windowMs: 5 * 60 * 1000,
-    });
-    const lease = await context.db
-      .query("respondingDeviceLeases")
-      .withIndex("by_room_purge", (query) => query.eq("roomId", args.roomId))
-      .first();
-    if (!lease) throw new Error("Interview lease not found.");
-    const now = Date.now();
-    await context.db.patch(lease._id, {
-      deviceHash: actor.session.deviceHash,
-      inviteVersion: actor.session.inviteVersion,
-      leaseVersion: lease.leaseVersion + 1,
-      heartbeatAt: now,
-      updatedAt: now,
-    });
-    await recordAudit(context, {
-      roomId: args.roomId,
-      actorKind: "client",
-      actorId: actor.actorId,
-      deviceHash: actor.session.deviceHash,
-      action: "interview.responding_device_taken_over",
-      now,
-    });
-  },
-});
-
-const acceptTurn = mutationGeneric({
-  args: {
-    ...clientArgs,
-    questionId: v.optional(v.string()),
-    answer: v.optional(v.string()),
-    answerKind: v.optional(
-      v.union(v.literal("answer"), v.literal("skip")),
-    ),
-    entries: v.optional(
-      v.array(
-        v.object({
-          questionId: v.string(),
-          answer: v.string(),
-          answerKind: v.union(
-            v.literal("answer"),
-            v.literal("skip"),
-          ),
-        }),
+export const list = query({
+  args: {},
+  handler: async (ctx) => {
+    const creator = await requireCreatorProfile(ctx);
+    const interviews = await ctx.db
+      .query("interviews")
+      .withIndex("by_creatorId_and_updatedAt", (q) =>
+        q.eq("creatorId", creator._id),
+      )
+      .order("desc")
+      .take(100);
+    return await Promise.all(
+      interviews.map((interview) =>
+        interviewDto(interview, (id) => ctx.storage.getUrl(id)),
       ),
-    ),
-    idempotencyKey: v.string(),
-    contextPackRevisionId: v.optional(v.id("contextPackRevisions")),
+    );
   },
-  handler: async (context, args) => {
-    const { actor } = await requireRespondingDevice(context, args);
-    const interview = await context.db
-      .query("discoveryInterviews")
-      .withIndex("by_room_purge", (query) => query.eq("roomId", args.roomId))
-      .first();
-    if (!interview) throw new Error("Interview not found.");
-    const existing = await context.db
-      .query("interviewTurns")
-      .withIndex("by_interview_idempotency", (query) =>
-        query.eq("interviewId", interview._id),
-      )
-      .collect()
-      .then((items) =>
-        items.find((item) => item.idempotencyKey === args.idempotencyKey),
-      );
-    if (existing) {
-      const operation = await context.db
-        .query("durableOperations")
-        .withIndex("by_idempotency", (query) =>
-          query.eq("roomId", args.roomId),
-        )
-        .collect()
-        .then((items) =>
-          items.find(
-            (item) =>
-              item.idempotencyKey ===
-              `interview_turn:${args.idempotencyKey}`,
-          ),
-        );
-      return { interviewId: interview._id, operationId: operation?._id };
-    }
-    type CurrentQuestion = {
-      id: string;
-      text: string;
-      coverageAreaId: string;
-      kind: "primary" | "follow_up" | "final_anything_else";
-      reason: string;
-      askedAt: number;
+});
+
+export const get = query({
+  args: { interviewId: v.id("interviews") },
+  handler: async (ctx, args) => {
+    const { interview } = await ownedInterview(ctx, args.interviewId);
+    const linkToken = await openCapabilityToken(
+      {
+        ciphertext: interview.linkTokenCiphertext,
+        iv: interview.linkTokenIv,
+      },
+      env.CAPABILITY_ENCRYPTION_SECRET,
+      `interview-link:${interview.linkHash}`,
+    );
+    return {
+      ...(await interviewDto(interview, (id) => ctx.storage.getUrl(id))),
+      linkToken,
     };
-    const batch: CurrentQuestion[] = interview.currentQuestions?.length
-      ? (interview.currentQuestions as CurrentQuestion[])
-      : interview.currentQuestion
-        ? [interview.currentQuestion as CurrentQuestion]
-        : [];
-    if (interview.status !== "active" || !batch.length) {
-      throw new Error("No question is active.");
-    }
-    if (interview.operationStatus === "running") {
-      throw new Error("The current question has changed.");
-    }
-    const entries =
-      args.entries ??
-      (args.questionId !== undefined &&
-      args.answer !== undefined &&
-      args.answerKind !== undefined
-        ? [
-            {
-              questionId: args.questionId,
-              answer: args.answer,
-              answerKind: args.answerKind,
-            },
-          ]
-        : []);
-    const batchIds = new Set(batch.map((question) => question.id));
+  },
+});
+
+export const create = mutation({
+  args: {
+    projectName: v.string(),
+    clientLanguage,
+    interviewModel,
+    instructions: v.string(),
+    acknowledgedDeepSeekRouting: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const creator = await requireCreatorProfile(ctx);
     if (
-      !entries.length ||
-      entries.length !== batch.length ||
-      entries.some((entry) => !batchIds.has(entry.questionId)) ||
-      new Set(entries.map((entry) => entry.questionId)).size !==
-        entries.length
+      args.interviewModel === "deepseek-v4-flash" &&
+      !args.acknowledgedDeepSeekRouting
     ) {
-      throw new Error(
-        "Every current question needs an answer before continuing.",
-      );
+      throw new Error("DeepSeek privacy routing must be acknowledged.");
     }
-    for (const entry of entries) {
-      if (entry.answerKind === "answer" && !entry.answer.trim()) {
-        throw new Error("An answer is required.");
-      }
-    }
-    const [contextPack, latestContext, activeMaterials] = await Promise.all([
-      args.contextPackRevisionId
-        ? context.db.get(args.contextPackRevisionId)
-        : null,
-      context.db
-        .query("contextPackRevisions")
-        .withIndex("by_room_created", (query) =>
-          query.eq("roomId", args.roomId),
-        )
-        .order("desc")
-        .first(),
-      context.db
-        .query("projectMaterials")
-        .withIndex("by_room_active", (query) =>
-          query.eq("roomId", args.roomId),
-        )
-        .collect()
-        .then((items) => items.filter((item) => item.active === true)),
-    ]);
-    if (
-      !contextPack ||
-      contextPack.roomId !== args.roomId ||
-      !latestContext ||
-      contextPack._id !== latestContext._id ||
-      activeMaterials.some(
-        (material) =>
-          material.state === "accepted" ||
-          material.state === "processing",
-      )
-    ) {
-      throw new Error(
-        "The latest Context Pack and terminal Project Material are required before answering.",
-      );
-    }
+    const projectName = assertLength("Project name", args.projectName, 160);
+    const instructions = assertLength(
+      "Interview Instructions",
+      args.instructions,
+      MAX_INSTRUCTIONS_LENGTH,
+    );
+    const token = createCapabilityToken();
+    const linkHash = await hashCapability(token);
+    const sealedToken = await sealCapabilityToken(
+      token,
+      env.CAPABILITY_ENCRYPTION_SECRET,
+      `interview-link:${linkHash}`,
+    );
+    const agentThreadId = await createThread(ctx, agentComponent, {
+      userId: creator._id,
+      title: projectName,
+    });
     const now = Date.now();
-    const firstQuestion = batch[0]!;
-    const firstEntry = entries.find(
-      (entry) => entry.questionId === firstQuestion.id,
-    )!;
-    const turnId = await context.db.insert("interviewTurns", {
-      roomId: args.roomId,
-      interviewId: interview._id,
-      sequence: interview.answerCount + 1,
-      question: firstQuestion,
-      answer:
-        firstEntry.answerKind === "skip" ? "" : firstEntry.answer.trim(),
-      answerKind: firstEntry.answerKind,
-      entries: batch.map((batched) => {
-        const entry = entries.find(
-          (candidate) => candidate.questionId === batched.id,
-        )!;
-        return {
-          questionId: batched.id,
-          questionText: batched.text,
-          answer: entry.answerKind === "skip" ? "" : entry.answer.trim(),
-          answerKind: entry.answerKind,
-        };
-      }),
-      idempotencyKey: args.idempotencyKey,
-      contextPackRevisionId: contextPack._id,
-      contextPackRevision: contextPack.revision,
-      acceptedAt: now,
-    });
-    await context.db.patch(interview._id, {
-      answerCount: interview.answerCount + 1,
-      operationStatus: "running",
-      usageReviewTriggered:
-        interview.usageReviewTriggered || interview.answerCount + 1 >= 12,
-      updatedAt: now,
-    });
-    const operationId = await context.db.insert("durableOperations", {
-      roomId: args.roomId,
-      operationType: "interview_turn",
-      subjectId: String(interview._id),
-      idempotencyKey: `interview_turn:${args.idempotencyKey}`,
-      status: "pending",
-      stage: "accepted",
-      attemptCount: 1,
-      promptVersion: "software-project-interview-agent-v1",
-      schemaVersion: "interview-agent-delta-v1",
-      contextPackRevisionId: String(contextPack._id),
+    const interviewId = await ctx.db.insert("interviews", {
+      creatorId: creator._id,
+      agentThreadId,
+      linkHash,
+      linkTokenCiphertext: sealedToken.ciphertext,
+      linkTokenIv: sealedToken.iv,
+      linkVersion: 1,
+      projectName,
+      clientLanguage: args.clientLanguage,
+      model: args.interviewModel,
+      instructions,
+      ...(args.acknowledgedDeepSeekRouting === undefined
+        ? {}
+        : {
+            deepseekPrivacyAcknowledged:
+              args.acknowledgedDeepSeekRouting,
+          }),
       createdAt: now,
       updatedAt: now,
+      step: "interview",
+      clientMessageCount: 0,
+      documentRevisionCount: 0,
+      concepts: [],
+      usage: { inputTokens: 0, outputTokens: 0, estimatedCostUsd: 0 },
     });
-    await recordAudit(context, {
-      roomId: args.roomId,
-      actorKind: "client",
-      actorId: actor.actorId,
-      deviceHash: actor.session.deviceHash,
-      action: "interview.answer_accepted",
-      now,
-    });
-    return { interviewId: interview._id, turnId, operationId };
+    return { interviewId, linkToken: token, linkVersion: 1 };
   },
 });
 
-export { acceptTurn };
-
-export const setStatus = mutationGeneric({
+export const updateBeforeStart = mutation({
   args: {
-    ...clientArgs,
-    status: v.union(v.literal("paused"), v.literal("active")),
+    interviewId: v.id("interviews"),
+    projectName: v.string(),
+    clientLanguage,
+    interviewModel,
+    instructions: v.string(),
+    acknowledgedDeepSeekRouting: v.optional(v.boolean()),
   },
-  handler: async (context, args) => {
-    const { actor } = await requireRespondingDevice(context, args);
-    const interview = await context.db
-      .query("discoveryInterviews")
-      .withIndex("by_room_purge", (query) => query.eq("roomId", args.roomId))
-      .first();
-    if (!interview) throw new Error("Interview not found.");
-    if (
-      (args.status === "paused" && interview.status !== "active") ||
-      (args.status === "active" && interview.status !== "paused") ||
-      interview.operationStatus !== "idle"
-    ) {
-      throw new Error("The requested Interview status transition is invalid.");
+  handler: async (ctx, args) => {
+    const { interview } = await ownedInterview(ctx, args.interviewId);
+    if (interview.frozenAt || interview.clientMessageCount > 0) {
+      throw new Error("Interview configuration is frozen.");
     }
-    await context.db.patch(interview._id, {
-      status: args.status,
+    if (
+      args.interviewModel === "deepseek-v4-flash" &&
+      !args.acknowledgedDeepSeekRouting
+    ) {
+      throw new Error("DeepSeek privacy routing must be acknowledged.");
+    }
+    await ctx.db.patch("interviews", interview._id, {
+      projectName: assertLength("Project name", args.projectName, 160),
+      clientLanguage: args.clientLanguage,
+      model: args.interviewModel,
+      instructions: assertLength(
+        "Interview Instructions",
+        args.instructions,
+        MAX_INSTRUCTIONS_LENGTH,
+      ),
+      deepseekPrivacyAcknowledged: args.acknowledgedDeepSeekRouting,
       updatedAt: Date.now(),
     });
-    await recordAudit(context, {
-      roomId: args.roomId,
-      actorKind: "client",
-      actorId: actor.actorId,
-      deviceHash: actor.session.deviceHash,
-      action:
-        args.status === "paused"
-          ? "interview.paused"
-          : "interview.resumed",
-    });
+    return interview._id;
   },
 });
 
-export const finishEarly = mutationGeneric({
-  args: {
-    ...clientArgs,
-    confirmed: v.boolean(),
-    reason: v.optional(v.string()),
-  },
-  handler: async (context, args) => {
-    const { actor } = await requireRespondingDevice(context, args);
-    if (!args.confirmed) throw new Error("Confirmation is required.");
-    const interview = await context.db
-      .query("discoveryInterviews")
-      .withIndex("by_room_purge", (query) => query.eq("roomId", args.roomId))
-      .first();
-    if (
-      !interview ||
-      !["active", "paused"].includes(String(interview.status)) ||
-      interview.operationStatus !== "idle"
-    ) {
-      throw new Error("Only an in-progress Interview may finish early.");
-    }
-    const now = Date.now();
-    await context.db.patch(interview._id, {
-      status: "completed_early",
-      operationStatus: "idle",
-      incompleteReason: args.reason?.trim() || "Client finished early.",
-      updatedAt: now,
-    });
-    await context.db.patch(args.roomId, {
-      phase: "freelancer_review",
-      updatedAt: now,
-      lastActivityAt: now,
-    });
-    await recordAudit(context, {
-      roomId: args.roomId,
-      actorKind: "client",
-      actorId: actor.actorId,
-      deviceHash: actor.session.deviceHash,
-      action: "interview.completed_early",
-      now,
-    });
-  },
-});
-
-export const correct = mutationGeneric({
-  args: {
-    ...clientArgs,
-    turnId: v.id("interviewTurns"),
-    correctedAnswer: v.string(),
-    reason: v.string(),
-  },
-  handler: async (context, args) => {
-    const { actor } = await requireRespondingDevice(context, args);
-    const turn = await context.db.get(args.turnId);
-    if (!turn || turn.roomId !== args.roomId) {
-      throw new Error("Interview Turn not found.");
-    }
-    const interview = await context.db.get(turn.interviewId);
-    if (
-      !interview ||
-      !["active", "paused"].includes(String(interview.status)) ||
-      interview.operationStatus !== "idle"
-    ) {
-      throw new Error(
-        "Corrections require an idle, in-progress Discovery Interview.",
-      );
-    }
-    if (!args.correctedAnswer.trim() || !args.reason.trim()) {
-      throw new Error("Correction and reason are required.");
-    }
-    await context.db.insert("interviewCorrections", {
-      roomId: args.roomId,
-      interviewId: turn.interviewId,
-      turnId: args.turnId,
-      correctedAnswer: args.correctedAnswer.trim(),
-      reason: args.reason.trim(),
-      deviceHash: actor.session.deviceHash,
-      createdAt: Date.now(),
-    });
-    const [findings, plan] = await Promise.all([
-      context.db
-        .query("discoveryFindings")
-        .withIndex("by_interview", (query) =>
-          query.eq("interviewId", turn.interviewId),
-        )
-        .collect(),
-      context.db
-        .query("interviewPlans")
-        .withIndex("by_interview", (query) =>
-          query.eq("interviewId", turn.interviewId),
-        )
-        .order("desc")
-        .first(),
-    ]);
-    await Promise.all(
-      findings
-        .filter((finding) =>
-          (Array.isArray(finding.sources) ? finding.sources : []).some(
-            (source: unknown) => {
-              const evidence = asRecord(source);
-              return (
-                evidence.type === "turn" &&
-                evidence.turnId === String(args.turnId)
-              );
-            },
-          ),
-        )
-        .map((finding) =>
-          context.db.patch(finding._id, {
-            status: "needs_reassessment",
-          }),
-        ),
+export const rotateLink = mutation({
+  args: { interviewId: v.id("interviews") },
+  handler: async (ctx, args) => {
+    const { interview } = await ownedInterview(ctx, args.interviewId);
+    const token = createCapabilityToken();
+    const linkHash = await hashCapability(token);
+    const sealedToken = await sealCapabilityToken(
+      token,
+      env.CAPABILITY_ENCRYPTION_SECRET,
+      `interview-link:${linkHash}`,
     );
-    if (plan) {
-      const coverage = (
-        Array.isArray(plan.coverageAreas) ? plan.coverageAreas : []
-      ).map((rawArea: unknown) => {
-        const area = asRecord(rawArea);
-        const affected = (
-          Array.isArray(area.evidence) ? area.evidence : []
-        ).some((source: unknown) => {
-          const evidence = asRecord(source);
-          return (
-            evidence.type === "turn" &&
-            evidence.turnId === String(args.turnId)
-          );
-        });
-        return affected
-          ? {
-              ...area,
-              status: "partial",
-              rationale:
-                "A Client correction requires this coverage to be reassessed.",
-              openQuestions: [
-                ...(Array.isArray(area.openQuestions)
-                  ? area.openQuestions
-                  : []),
-                "Reassess the corrected answer.",
-              ],
-            }
-          : area;
-      });
-      await context.db.patch(plan._id, {
-        coverageAreas: coverage as Value[],
-        updatedAt: Date.now(),
-      });
-    }
-    await recordAudit(context, {
-      roomId: args.roomId,
-      actorKind: "client",
-      actorId: actor.actorId,
-      deviceHash: actor.session.deviceHash,
-      action: "interview.correction_added",
+    const linkVersion = interview.linkVersion + 1;
+    await ctx.db.patch("interviews", interview._id, {
+      linkHash,
+      linkTokenCiphertext: sealedToken.ciphertext,
+      linkTokenIv: sealedToken.iv,
+      linkVersion,
+      updatedAt: Date.now(),
     });
+    return { linkToken: token, linkVersion };
   },
 });
 
-export const confirmCompletion = mutationGeneric({
-  args: { ...clientArgs, confirmed: v.boolean() },
-  handler: async (context, args) => {
-    const { actor } = await requireRespondingDevice(context, args);
-    const interview = await context.db
-      .query("discoveryInterviews")
-      .withIndex("by_room_purge", (query) => query.eq("roomId", args.roomId))
-      .first();
-    if (!interview || interview.status !== "awaiting_confirmation") {
-      throw new Error("Discovery is not awaiting Client confirmation.");
+export const remove = mutation({
+  args: {
+    interviewId: v.id("interviews"),
+    confirmation: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const { interview } = await ownedInterview(ctx, args.interviewId);
+    if (args.confirmation !== interview.projectName) {
+      throw new Error("Deletion confirmation does not match the project name.");
     }
-    const now = Date.now();
-    if (args.confirmed) {
-      const [turns, operations] = await Promise.all([
-        context.db
-          .query("interviewTurns")
-          .withIndex("by_interview_sequence", (query) =>
-            query.eq("interviewId", interview._id),
-          )
-          .collect(),
-        context.db
-          .query("durableOperations")
-          .withIndex("by_room", (query) =>
-            query.eq("roomId", args.roomId),
-          )
-          .collect(),
-      ]);
-      const finalQuestionAnswered = turns.some(
-        (turn) => turn.question.kind === "final_anything_else",
-      );
-      const reviewerCleared = operations.some(
-        (operation) =>
-          operation.operationType === "interview_review" &&
-          operation.status === "succeeded" &&
-          operation.idempotencyKey ===
-            `interview_review:${interview._id}:${interview.answerCount}`,
-      );
-      if (
-        interview.status !== "awaiting_confirmation" ||
-        interview.reviewerBlockers.length > 0 ||
-        interview.reviewedAnswerCount !== interview.answerCount ||
-        !finalQuestionAnswered ||
-        !reviewerCleared
-      ) {
-        throw new Error(
-          "Completion requires agent assessment, reviewer clearance, the final anything-else answer, and Client confirmation.",
-        );
-      }
-      await context.db.patch(interview._id, {
-        status: "completed",
-        operationStatus: "idle",
-        updatedAt: now,
-      });
-      await context.db.patch(args.roomId, {
-        phase: "freelancer_review",
-        updatedAt: now,
-        lastActivityAt: now,
-      });
-    } else {
-      const followUp = {
-        id: `question_${crypto.randomUUID()}`,
-        text:
-          interview.language === "de"
-            ? "Was sollten wir vor dem Abschluss noch klären?"
-            : "What should we clarify before completing discovery?",
-        coverageAreaId: "final",
-        kind: "follow_up" as const,
-        reason: "The Client asked to continue discovery.",
-        askedAt: now,
-      };
-      await context.db.patch(interview._id, {
-        status: "active",
-        operationStatus: "idle",
-        currentQuestion: followUp,
-        currentQuestions: [followUp],
-        updatedAt: now,
-      });
+    for (const concept of interview.concepts) {
+      if (concept.imageId) await ctx.storage.delete(concept.imageId);
     }
-    await recordAudit(context, {
-      roomId: args.roomId,
-      actorKind: "client",
-      actorId: actor.actorId,
-      deviceHash: actor.session.deviceHash,
-      action: args.confirmed
-        ? "interview.completion_confirmed"
-        : "interview.completion_declined",
-      now,
+    await ctx.runMutation(agentComponent.threads.deleteAllForThreadIdAsync, {
+      threadId: interview.agentThreadId,
     });
+    await ctx.db.delete("interviews", interview._id);
+    return null;
   },
 });
 
-export const retry = mutationGeneric({
-  args: clientArgs,
-  handler: async (context, args) => {
-    const { actor } = await requireRespondingDevice(context, args);
-    const interview = await context.db
-      .query("discoveryInterviews")
-      .withIndex("by_room_purge", (query) => query.eq("roomId", args.roomId))
-      .first();
-    if (
-      !interview ||
-      interview.status !== "retryable" ||
-      interview.operationStatus !== "retryable"
-    ) {
-      throw new Error("No interrupted Interview step can be retried.");
+export const retry = mutation({
+  args: { interviewId: v.id("interviews") },
+  handler: async (ctx, args) => {
+    const { interview } = await ownedInterview(ctx, args.interviewId);
+    if (!interview.operation || interview.operation.status !== "failed") {
+      throw new Error("Interview has no failed operation to retry.");
     }
-    const operation = await latestOperation(context, args.roomId);
-    if (
-      !operation ||
-      (operation.status !== "retryable" &&
-        operation.status !== "cancelled")
-    ) {
-      throw new Error("No interrupted interview step can be retried.");
-    }
-    if (!canRetryWorkflow(Number(operation.attemptCount))) {
-      throw new Error("The interview retry limit has been reached.");
-    }
-    const now = Date.now();
-    await context.db.patch(
-      operation._id as GenericId<"durableOperations">,
-      {
-      status: "pending",
-      stage: "queued",
-      attemptCount: Number(operation.attemptCount) + 1,
-      workflowId: undefined,
-      errorCode: undefined,
-      updatedAt: now,
-      },
-    );
-    await context.db.patch(interview._id, {
-      operationStatus: "running",
-      updatedAt: now,
-    });
-    await recordAudit(context, {
-      roomId: args.roomId,
-      actorKind: "client",
-      actorId: actor.actorId,
-      deviceHash: actor.session.deviceHash,
-      action: "interview.operation_retried",
-      now,
-    });
-    return {
-      interviewId: interview._id,
-      operationId: operation._id,
-      operationType: operation.operationType,
+    const operation = {
+      kind: interview.operation.kind,
+      status: "pending" as const,
+      attempt: interview.operation.attempt,
+      ...(interview.operation.input
+        ? { input: interview.operation.input }
+        : {}),
+      ...(interview.operation.startedAt
+        ? { startedAt: interview.operation.startedAt }
+        : {}),
     };
-  },
-});
-
-export const beginReview = mutationGeneric({
-  args: clientArgs,
-  handler: async (context, args) => {
-    const { actor } = await requireRespondingDevice(context, args);
-    const interview = await context.db
-      .query("discoveryInterviews")
-      .withIndex("by_room_purge", (query) => query.eq("roomId", args.roomId))
-      .first();
-    if (!interview || interview.status !== "awaiting_confirmation") {
-      throw new Error("Discovery is not ready for completion review.");
-    }
-    const idempotencyKey = `interview_review:${interview._id}:${interview.answerCount}`;
-    const existing = await context.db
-      .query("durableOperations")
-      .withIndex("by_room", (query) => query.eq("roomId", args.roomId))
-      .order("desc")
-      .collect()
-      .then((items) =>
-        items.find(
-          (item) =>
-            item.operationType === "interview_review" &&
-            item.idempotencyKey === idempotencyKey &&
-            (item.status === "pending" ||
-              item.status === "running" ||
-              item.status === "succeeded"),
-        ),
-      );
-    if (existing) {
-      return {
-        interviewId: interview._id,
-        operationId: existing._id,
-        reused: true,
-      };
-    }
-    const now = Date.now();
-    const operationId = await context.db.insert("durableOperations", {
-      roomId: args.roomId,
-      operationType: "interview_review",
-      subjectId: String(interview._id),
-      idempotencyKey,
-      status: "pending",
-      stage: "queued",
-      attemptCount: 1,
-      promptVersion: "software-project-interview-reviewer-v1",
-      schemaVersion: "interview-review-v1",
-      createdAt: now,
-      updatedAt: now,
+    await ctx.db.patch("interviews", interview._id, {
+      operation,
+      updatedAt: Date.now(),
     });
-    await context.db.patch(interview._id, {
-      operationStatus: "running",
-      updatedAt: now,
+    await ctx.scheduler.runAfter(0, internalRefs.jobs.runPending, {
+      interviewId: interview._id,
     });
-    await recordAudit(context, {
-      roomId: args.roomId,
-      actorKind: "client",
-      actorId: actor.actorId,
-      deviceHash: actor.session.deviceHash,
-      action: "interview.completion_review_started",
-      now,
-    });
-    return { interviewId: interview._id, operationId, reused: false };
+    return null;
   },
 });

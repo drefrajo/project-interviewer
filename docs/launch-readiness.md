@@ -8,15 +8,23 @@ Run:
 bun run verify
 ```
 
-The gate contains only tests that protect a user-visible flow, an authorization/privacy boundary, or irreversible data behavior:
+The deterministic repository gate contains only tests that protect a user-visible flow, an authorization/privacy boundary, or irreversible data behavior:
 
-- one deterministic browser flow from Creator Interview creation through Client Project Submission and Creator download;
 - focused Convex checks for Creator ownership, regenerated Interview Links, first-write-wins submission, and cascading deletion;
 - one provider-request contract check for pinned model settings, OpenRouter privacy requirements, and the minimal Cloudflare Email payload;
 - the production build with a strict Content Security Policy that never uses `unsafe-inline`; and
-- one integrated accessibility pass over the main Client flow at desktop and mobile widths.
+- TypeScript and ESLint checks.
 
 Do not add lower-level tests that duplicate these behaviors.
+
+The configured application gate additionally runs one browser flow against the
+real React application and a dedicated Convex development deployment. Replace
+AI, image, and email calls only at their narrow Convex boundaries. Verify
+Creator Interview creation, the complete Client Interview and Document Review,
+three concepts, Visual Direction selection, immutable submission, Creator
+visibility, and ZIP download. Include one accessibility pass at desktop and
+mobile widths and inspect the served Content Security Policy. This gate must
+not use a production deployment.
 
 ## Provider and language evaluation
 
@@ -38,7 +46,7 @@ Confirm in the configured production environment that:
 - Interview Links are unguessable, regeneration invalidates the prior link, and Client pages are not indexed;
 - every OpenRouter request requires zero data retention, denies data collection, and disables fallback;
 - no raw prompt, provider response, sensitive content, or Interview Link appears in diagnostic logs;
-- the global OpenRouter spend ceiling and per-Interview-Link rate limits are active;
+- the OpenRouter account-level spend limit and application per-Interview-Link rate limits are active;
 - Markdown disables raw HTML and accepts only safe HTTP(S) links;
 - the Content Security Policy has exact origins where possible and contains no `unsafe-inline`; and
 - confirmed Interview deletion removes the transcript, Project Document, Visual Concepts, Project Submission, and link capability.

@@ -22,6 +22,7 @@ export const tables = {
     createdAt: v.number(),
     updatedAt: v.number(),
     userId: v.optional(v.union(v.null(), v.string())),
+    provider: v.optional(v.union(v.null(), v.string())),
   })
     .index("email_name", ["email","name"])
     .index("name", ["name"])
@@ -66,19 +67,6 @@ export const tables = {
   })
     .index("expiresAt", ["expiresAt"])
     .index("identifier", ["identifier"]),
-  passkey: defineTable({
-    name: v.optional(v.union(v.null(), v.string())),
-    publicKey: v.string(),
-    userId: v.string(),
-    credentialID: v.string(),
-    counter: v.number(),
-    deviceType: v.string(),
-    backedUp: v.boolean(),
-    transports: v.optional(v.union(v.null(), v.string())),
-    createdAt: v.optional(v.union(v.null(), v.number())),
-    aaguid: v.optional(v.union(v.null(), v.string())),
-  })
-    .index("userId", ["userId"]),
   jwks: defineTable({
     publicKey: v.string(),
     privateKey: v.string(),

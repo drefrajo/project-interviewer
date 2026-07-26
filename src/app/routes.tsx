@@ -1,74 +1,62 @@
 import { Navigate, type RouteObject } from "react-router-dom";
-import type { ReactNode } from "react";
-import type {
-  FreelancerActor,
-  ProjectInterviewer,
-} from "../domain/project-interviewer";
-import { ApplicationShell } from "./application-shell";
-import { ClientEntry, FreelancerProjectRoom } from "./project-room";
-import { Workspace } from "./workspace";
-import { useI18n } from "./i18n";
-import type { MaterialUploadStore } from "../application/material-upload-store";
-
-export interface RouteContext {
-  application: ProjectInterviewer;
-  freelancer: FreelancerActor;
-  materialFileStore?: MaterialUploadStore;
-}
+import type { ProductionAuthClient } from "../infrastructure/auth-client";
+import { ClientInterviewPage } from "./client/client-interview-page";
+import { CreatorAuthGate } from "./creator/creator-auth-gate";
+import { CreatorShell } from "./creator/creator-shell";
+import { InterviewDetailPage } from "./creator/interview-detail-page";
+import { InterviewForm } from "./creator/interview-form";
+import { InterviewsPage } from "./creator/interviews-page";
+import { SettingsPage } from "./creator/settings-page";
+import { TemplatesPage } from "./creator/templates-page";
 
 export const createRoutes = (
-  application: ProjectInterviewer,
-  freelancer: FreelancerActor,
-  materialFileStore?: MaterialUploadStore,
-): RouteObject[] => {
-  const context: RouteContext = {
-    application,
-    freelancer,
-    ...(materialFileStore ? { materialFileStore } : {}),
-  };
-  return [
-    {
-      element: <ApplicationShell />,
-      children: [
-        {
-          index: true,
-          element: (
-            <FreelancerBoundary>
-              <Workspace {...context} />
-            </FreelancerBoundary>
-          ),
-        },
-        {
-          path: "rooms/:roomId",
-          element: (
-            <FreelancerBoundary>
-              <FreelancerProjectRoom {...context} />
-            </FreelancerBoundary>
-          ),
-        },
-        { path: "invite/:inviteToken", element: <ClientEntry {...context} /> },
-        { path: "*", element: <Navigate replace to="/" /> },
-      ],
-    },
-  ];
-};
+  authClient: ProductionAuthClient,
+): RouteObject[] => [
+  {
+    path: "/i/:interviewToken",
+    element: <ClientInterviewPage />,
+  },
+  {
+    path: "/privacy",
+    element: <PrivacyPage />,
+  },
+  {
+    element: (
+      <CreatorAuthGate authClient={authClient}>
+        <CreatorShell authClient={authClient} />
+      </CreatorAuthGate>
+    ),
+    children: [
+      { index: true, element: <Navigate replace to="/interviews" /> },
+      { path: "interviews", element: <InterviewsPage /> },
+      { path: "interviews/new", element: <InterviewForm /> },
+      { path: "interviews/:interviewId", element: <InterviewDetailPage /> },
+      { path: "interviews/:interviewId/edit", element: <InterviewForm /> },
+      { path: "templates", element: <TemplatesPage /> },
+      { path: "settings", element: <SettingsPage /> },
+    ],
+  },
+  { path: "*", element: <Navigate replace to="/interviews" /> },
+];
 
-const FreelancerBoundary = ({ children }: { children: ReactNode }) => {
-  const { t } = useI18n();
-  if (sessionStorage.getItem("project-interviewer.actor-mode") === "client") {
-    return (
-      <main
-        className="flex min-h-[calc(100vh-4.5rem)] items-center justify-center px-4 py-8 sm:px-8"
-        id="main-content"
-      >
-        <section className="w-full max-w-xl border border-line bg-surface p-6 shadow-[0_1.5rem_4rem_rgb(19_34_29_/_7%)] sm:p-8">
-          <h1 className="mb-3 font-display text-3xl leading-tight font-extrabold tracking-tight text-ink sm:text-4xl">
-            {t("signInRequired")}
-          </h1>
-          <p className="mb-0 leading-7 text-muted">{t("clientBoundary")}</p>
-        </section>
-      </main>
-    );
-  }
-  return children;
-};
+const PrivacyPage = () => (
+  <main className="mx-auto max-w-3xl px-4 py-12 sm:px-8" id="main-content">
+    <h1 className="font-display text-4xl font-extrabold">AI processing and privacy</h1>
+    <div className="mt-6 space-y-4 leading-7 text-muted">
+      <p>
+        Interview responses are processed through OpenRouter by the model family
+        shown before an Interview starts. Requests require zero data retention,
+        deny provider data collection, and disable fallback.
+      </p>
+      <p>
+        Responses, the Project Document, Visual Concepts, and the final Project
+        Submission are shared with the named Creator. Do not provide sensitive
+        personal data.
+      </p>
+      <p>
+        Interview Links are bearer capabilities. Anyone who receives the link can
+        access that Interview until the Creator regenerates or deletes it.
+      </p>
+    </div>
+  </main>
+);

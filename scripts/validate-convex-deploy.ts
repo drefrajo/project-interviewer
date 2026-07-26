@@ -1,13 +1,10 @@
-import {
-  readDeploymentEnvironment,
-} from "../src/infrastructure/environment";
+const deployKey = process.env.CONVEX_DEPLOY_KEY?.trim();
 
-try {
-  readDeploymentEnvironment(process.env);
-  process.stdout.write("Convex deploy-machine environment is valid.\n");
-} catch (error) {
-  const message =
-    error instanceof Error ? error.message : "Unknown configuration error.";
-  process.stderr.write(`Convex deploy validation failed: ${message}\n`);
+if (!deployKey) {
+  process.stderr.write(
+    "Convex deploy validation failed: missing CONVEX_DEPLOY_KEY.\n",
+  );
   process.exitCode = 1;
+} else {
+  process.stdout.write("Convex deploy-machine environment is valid.\n");
 }

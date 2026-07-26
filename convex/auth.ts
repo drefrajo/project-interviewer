@@ -1,44 +1,46 @@
 import { createClient } from "@convex-dev/better-auth";
 import type { ComponentApi as BetterAuthComponentApi } from "@convex-dev/better-auth/_generated/component.js";
 import { convex, crossDomain } from "@convex-dev/better-auth/plugins";
-import { passkey } from "@better-auth/passkey";
+import { APIError } from "better-auth/api";
 import { betterAuth, type BetterAuthOptions } from "better-auth";
 import { componentsGeneric, queryGeneric } from "convex/server";
 import authConfig from "./auth.config";
-import { authMethodGuard } from "./auth_method_guard";
 import authSchema from "./betterAuth/schema";
-import { readOAuthProviderConfiguration } from "../src/infrastructure/oauth-provider-configuration";
+import {
+  oauthProviderFromCallbackPath,
+  parseCreatorAllowlist,
+  readOAuthConfiguration,
+} from "./lib/oauth";
 
 const components = componentsGeneric();
 
 export const authComponent = createClient(
   components.betterAuth as unknown as BetterAuthComponentApi,
-  {
-    local: {
-      schema: authSchema,
-    },
-  },
+  { local: { schema: authSchema } },
 );
 
-type EnvironmentSource = Readonly<
-  Record<string, string | undefined>
->;
+type EnvironmentSource = Readonly<{
+  SITE_URL?: string | undefined;
+  CONVEX_SITE_URL?: string | undefined;
+  BETTER_AUTH_SECRET?: string | undefined;
+  CREATOR_ALLOWLIST?: string | undefined;
+  GOOGLE_CLIENT_ID?: string | undefined;
+  GOOGLE_CLIENT_SECRET?: string | undefined;
+  GITHUB_CLIENT_ID?: string | undefined;
+  GITHUB_CLIENT_SECRET?: string | undefined;
+}>;
 
-const requiredEnvironment = (
-  source: EnvironmentSource,
-  name: string,
-): string => {
+const required = (source: EnvironmentSource, name: keyof EnvironmentSource) => {
   const value = source[name];
-  if (!value) {
-    throw new Error(`Missing Better Auth environment variable: ${name}`);
-  }
+  if (!value) throw new Error(`Missing Better Auth environment variable: ${name}`);
   return value;
 };
 
 const schemaGenerationEnvironment = {
   SITE_URL: "http://localhost:5173",
   CONVEX_SITE_URL: "http://127.0.0.1:3211",
-  BETTER_AUTH_SECRET: "schema-generation-secret-at-least-32-chars",
+  BETTER_AUTH_SECRET: "schema-generation-secret-at-least-32-characters",
+  CREATOR_ALLOWLIST: "creator@example.com",
   GOOGLE_CLIENT_ID: "schema-generation-client",
   GOOGLE_CLIENT_SECRET: "schema-generation-secret",
 } satisfies EnvironmentSource;
@@ -47,46 +49,67 @@ export const createAuthOptions = (
   context: Parameters<typeof authComponent.adapter>[0],
   source: EnvironmentSource = schemaGenerationEnvironment,
 ) => {
-  const siteUrl = requiredEnvironment(source, "SITE_URL");
-  const convexSiteUrl = requiredEnvironment(
-    source,
-    "CONVEX_SITE_URL",
-  );
-  const oauth = readOAuthProviderConfiguration(source);
-
+  const siteUrl = required(source, "SITE_URL");
+  const oauth = readOAuthConfiguration(source);
+  const allowlist = parseCreatorAllowlist(source.CREATOR_ALLOWLIST);
   return {
     appName: "Project Interviewer",
-    secret: requiredEnvironment(source, "BETTER_AUTH_SECRET"),
-    baseURL: convexSiteUrl,
+    secret: required(source, "BETTER_AUTH_SECRET"),
+    baseURL: required(source, "CONVEX_SITE_URL"),
     trustedOrigins: [siteUrl],
-    rateLimit: {
-      enabled: true,
-      window: 60,
-      max: 60,
-      customRules: {
-        "/sign-in/social": { window: 60, max: 10 },
-        "/passkey/authenticate": { window: 60, max: 10 },
-        "/passkey/register": { window: 60, max: 10 },
-      },
-    },
     database: authComponent.adapter(context),
     emailAndPassword: { enabled: false },
     socialProviders: oauth.socialProviders,
+    user: {
+      additionalFields: {
+        provider: {
+          type: "string",
+          required: false,
+          input: false,
+        },
+      },
+    },
     account: {
       accountLinking: {
-        enabled: true,
+        enabled: false,
         disableImplicitLinking: true,
         allowUnlinkingAll: false,
         trustedProviders: [],
       },
     },
+    databaseHooks: {
+      user: {
+        create: {
+          before: async (user, hookContext) => {
+            if (
+              !user.emailVerified ||
+              !allowlist.has(user.email.trim().toLowerCase())
+            ) {
+              throw new APIError("FORBIDDEN", {
+                message: "Creator registration is not allowed for this email.",
+              });
+            }
+            const provider = oauthProviderFromCallbackPath(
+              hookContext?.path,
+              hookContext?.params?.id,
+            );
+            if (!provider) {
+              throw new APIError("FORBIDDEN", {
+                message: "Creator registration requires Google or GitHub.",
+              });
+            }
+            return { data: { ...user, provider } };
+          },
+        },
+      },
+    },
+    rateLimit: {
+      enabled: true,
+      window: 60,
+      max: 60,
+      customRules: { "/sign-in/social": { window: 60, max: 10 } },
+    },
     plugins: [
-      passkey({
-        rpID: new URL(siteUrl).hostname,
-        origin: siteUrl,
-        registration: { requireSession: true },
-      }),
-      authMethodGuard,
       crossDomain({ siteUrl }),
       convex({ authConfig }),
     ],
@@ -99,6 +122,7 @@ export const createAuth = (
 
 export const getProviderAvailability = queryGeneric({
   args: {},
-  handler: () =>
-    readOAuthProviderConfiguration(process.env).availability,
+  handler: () => readOAuthConfiguration(process.env).availability,
 });
+
+export const { getAuthUser } = authComponent.clientApi();

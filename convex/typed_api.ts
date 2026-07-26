@@ -1,10 +1,3 @@
-/**
- * Credential-free Convex API typing.
- *
- * The module graph yields the same function-reference types as generated
- * Convex API output without requiring a selected deployment during local
- * builds. Production codegen can coexist with this source-owned contract.
- */
 import {
   anyApi,
   type ApiFromModules,
@@ -12,31 +5,25 @@ import {
   type FunctionReference,
 } from "convex/server";
 import type * as auth from "./auth";
-import type * as briefs from "./briefs";
-import type * as deletion from "./deletion";
+import type * as client from "./client";
+import type * as creatorProfiles from "./creator_profiles";
+import type * as downloads from "./downloads";
+import type * as downloadsData from "./downloads_data";
 import type * as interviews from "./interviews";
-import type * as inviteActions from "./invite_actions";
-import type * as invites from "./invites";
-import type * as materials from "./materials";
-import type * as operations from "./operations";
-import type * as projectHome from "./project_home";
-import type * as rooms from "./rooms";
-import type * as search from "./search";
-import type * as workflows from "./workflows";
+import type * as jobs from "./jobs";
+import type * as templates from "./templates";
+import type * as transcripts from "./transcripts";
 
 type FullApi = ApiFromModules<{
   auth: typeof auth;
-  briefs: typeof briefs;
-  deletion: typeof deletion;
+  client: typeof client;
+  "creator_profiles": typeof creatorProfiles;
+  downloads: typeof downloads;
+  "downloads_data": typeof downloadsData;
   interviews: typeof interviews;
-  "invite_actions": typeof inviteActions;
-  invites: typeof invites;
-  materials: typeof materials;
-  operations: typeof operations;
-  "project_home": typeof projectHome;
-  rooms: typeof rooms;
-  search: typeof search;
-  workflows: typeof workflows;
+  jobs: typeof jobs;
+  templates: typeof templates;
+  transcripts: typeof transcripts;
 }>;
 
 export const api = anyApi as unknown as FilterApi<

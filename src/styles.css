@@ -1,10 +1,9 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap");
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
 @theme {
-  --font-sans: "DM Sans", system-ui, sans-serif;
-  --font-display: "Manrope", system-ui, sans-serif;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --color-ink: #13221d;
   --color-muted: #64716c;
   --color-line: #d9ddd5;
@@ -14,20 +13,14 @@
   --color-coral: #ed744d;
   --color-canvas: #f4f3ed;
 }
-
 :root {
   color: #13221d;
   background: #f4f3ed;
-  font-family: "DM Sans", system-ui, sans-serif;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  --ink: #13221d;
-  --muted: #64716c;
   --line: #d9ddd5;
-  --surface: #fffefa;
   --green: #174f3d;
-  --green-bright: #c9f06b;
-  --orange: #ed744d;
   --focus: #255dff;
 }
 
@@ -36,6 +29,7 @@ html {
 }
 
 body {
+  margin: 0;
   min-width: 320px;
   min-height: 100vh;
 }
@@ -43,7 +37,6 @@ body {
 h1,
 h2,
 h3 {
-  font-family: "Manrope", system-ui, sans-serif;
   letter-spacing: -0.035em;
 }
 
@@ -53,13 +46,13 @@ h3 {
 }
 
 .skip-link {
-  background: var(--ink);
+  background: #13221d;
   color: white;
   left: 1rem;
   padding: 0.75rem 1rem;
   position: fixed;
   top: -5rem;
-  z-index: 20;
+  z-index: 50;
 }
 
 .skip-link:focus {
@@ -67,31 +60,16 @@ h3 {
 }
 
 @media print {
-  .skip-link,
-  #main-content > aside,
-  [role="tablist"],
-  #room-panel-material,
-  #room-panel-interview,
-  #room-panel-brief > header,
-  #room-panel-brief button,
-  #room-panel-brief textarea,
-  #room-panel-brief details,
-  #room-panel-brief [aria-live="polite"] {
+  nav,
+  button,
+  .skip-link {
     display: none !important;
   }
 
-  #main-content,
-  #main-content > div,
-  #room-panel-brief {
-    display: block !important;
+  main {
     margin: 0 !important;
-    min-height: 0 !important;
+    max-width: none !important;
     padding: 0 !important;
-  }
-
-  #room-panel-brief {
-    color: #000;
-    font-size: 11pt;
   }
 }
 
