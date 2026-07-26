@@ -19,6 +19,10 @@ import {
 } from "../shared/form-controls";
 import { OperationFeedback } from "../shared/operation-feedback";
 import { SafeMarkdown } from "../shared/safe-markdown";
+import {
+  visualDirectionMarkdown,
+  VisualDirectionSummary,
+} from "../shared/visual-direction-summary";
 
 const linkFrom = (
   result: string | { interviewUrl?: string; linkToken?: string },
@@ -184,10 +188,38 @@ export const InterviewDetailPage = () => {
         </div>
       </section>
       <div className="mt-7">
-        <OperationFeedback
-          onRetry={() => void perform(() => retry({ interviewId }))}
-          operation={interview.operation}
-        />
+        {interview.status === "submitted" && interview.operation ? (
+          <section className="rounded-xl border border-line bg-surface p-5">
+            <p className="font-display text-lg font-extrabold">
+              Email notification
+            </p>
+            <p className="mt-2 leading-7 text-muted">
+              {interview.operation.state === "pending"
+                ? "Sending in the background. The project submission is already complete."
+                : interview.operation.message ===
+                    "EMAIL_CONFIGURATION_MISSING"
+                  ? "Not configured for this deployment. The project submission is complete and available below."
+                  : "The notification could not be delivered. The project submission remains complete and available below."}
+            </p>
+            {interview.operation.state === "failed" ? (
+              <button
+                className={`${secondaryButton} mt-4`}
+                disabled={busy}
+                onClick={() =>
+                  void perform(() => retry({ interviewId }))
+                }
+                type="button"
+              >
+                <RotateCw aria-hidden="true" size={16} /> Retry notification
+              </button>
+            ) : null}
+          </section>
+        ) : (
+          <OperationFeedback
+            onRetry={() => void perform(() => retry({ interviewId }))}
+            operation={interview.operation}
+          />
+        )}
       </div>
       <section className="mt-9">
         <div className="flex flex-wrap items-end justify-between gap-4">
@@ -288,7 +320,10 @@ export const InterviewDetailPage = () => {
                 onClick={() =>
                   downloadText(
                     `${interview.projectName}-visual-direction.md`,
-                    `# Visual Direction\n\n\`\`\`json\n${JSON.stringify(interview.visualDirection, null, 2)}\n\`\`\`\n`,
+                    visualDirectionMarkdown(
+                      interview.visualDirection!,
+                      interview.concepts ?? [],
+                    ),
                   )
                 }
                 type="button"
@@ -296,9 +331,11 @@ export const InterviewDetailPage = () => {
                 <Download aria-hidden="true" size={16} /> Markdown
               </button>
             </div>
-            <pre className="mt-3 whitespace-pre-wrap font-sans leading-7 text-muted">
-              {JSON.stringify(interview.visualDirection, null, 2)}
-            </pre>
+            <VisualDirectionSummary
+              concepts={interview.concepts ?? []}
+              direction={interview.visualDirection}
+              language="en"
+            />
           </section>
         ) : null}
       </section>

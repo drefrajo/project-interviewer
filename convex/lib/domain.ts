@@ -56,11 +56,11 @@ export const assertHttpUrls = (links: string[]) => {
 };
 
 export const dashboardStatus = (interview: Doc<"interviews">) => {
-  if (interview.operation?.status === "failed") {
-    return "needs_attention" as const;
-  }
   if (interview.submission) {
     return "submitted" as const;
+  }
+  if (interview.operation?.status === "failed") {
+    return "needs_attention" as const;
   }
   if (!interview.frozenAt) {
     return "not_started" as const;

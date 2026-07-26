@@ -6,13 +6,16 @@ export const OperationFeedback = ({
   operation,
   onRetry,
   language = "en",
+  hidePending = false,
 }: {
   operation?: { state: "pending" | "failed"; message?: string } | null | undefined;
   onRetry?: () => void;
   language?: "en" | "de";
+  hidePending?: boolean;
 }) => {
   if (!operation) return null;
   if (operation.state === "pending") {
+    if (hidePending) return null;
     return (
       <div className="rounded-lg border border-line bg-white p-4">
         <WorkingIndicator

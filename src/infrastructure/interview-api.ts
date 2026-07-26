@@ -36,12 +36,17 @@ export interface VisualConcept {
   state?: "pending" | "ready" | "failed";
 }
 
-export interface VisualDirection {
-  kind: "concept" | "inspiration_links";
-  conceptId?: string;
-  inspirationLinks?: string[];
-  note?: string;
-}
+export type VisualDirection =
+  | {
+      kind: "concept";
+      conceptId: string;
+      note?: string;
+    }
+  | {
+      kind: "inspiration_links";
+      inspirationLinks: string[];
+      note?: string;
+    };
 
 export interface TranscriptMessage {
   id: string;

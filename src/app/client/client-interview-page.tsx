@@ -80,7 +80,9 @@ export const ClientInterviewPage = () => {
   }
 
   const text = CLIENT_COPY[interview.clientLanguage];
-  const pending = busy || interview.operation?.state === "pending";
+  const submitted = interview.step === "submitted";
+  const pending =
+    busy || (!submitted && interview.operation?.state === "pending");
   return (
     <div className="min-h-screen bg-canvas text-ink">
       <a className="skip-link" href="#main-content">
@@ -123,8 +125,9 @@ export const ClientInterviewPage = () => {
           </p>
         ) : null}
         <OperationFeedback
+          hidePending={interview.step === "concepts"}
           language={interview.clientLanguage}
-          operation={interview.operation}
+          operation={submitted ? null : interview.operation}
           onRetry={() =>
             void perform(() => retry({ token: interviewToken }))
           }

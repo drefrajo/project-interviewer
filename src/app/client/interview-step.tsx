@@ -21,7 +21,9 @@ export const InterviewStepView = ({
   const text = CLIENT_COPY[language];
   const [draft, setDraft] = useState("");
   const end = useRef<HTMLDivElement>(null);
-  useEffect(() => end.current?.scrollIntoView({ block: "nearest" }), [messages]);
+  useEffect(() => {
+    end.current?.scrollIntoView({ block: "nearest" });
+  }, [messages]);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();

@@ -1,21 +1,7 @@
-import type {
-  ClientInterviewView,
-  ClientLanguage,
-  VisualDirection,
-} from "../../infrastructure/interview-api";
+import type { ClientInterviewView } from "../../infrastructure/interview-api";
 import { SafeMarkdown } from "../shared/safe-markdown";
+import { VisualDirectionSummary } from "../shared/visual-direction-summary";
 import { CLIENT_COPY } from "./client-copy";
-
-const directionText = (
-  direction: VisualDirection | undefined,
-  language: ClientLanguage,
-) => {
-  if (!direction) return language === "de" ? "Nicht verfügbar" : "Unavailable";
-  if (direction.kind === "concept") {
-    return `${language === "de" ? "Ausgewähltes Konzept" : "Selected concept"}: ${direction.conceptId ?? "—"}`;
-  }
-  return direction.inspirationLinks?.join("\n") ?? "—";
-};
 
 export const SubmittedStep = ({
   interview,
@@ -59,14 +45,19 @@ export const SubmittedStep = ({
       </section>
       <section className="mt-7 rounded-xl border border-line bg-surface p-5">
         <h2 className="font-display text-2xl font-extrabold">Visual Direction</h2>
-        <p className="mt-3 whitespace-pre-wrap leading-7 text-muted">
-          {directionText(interview.visualDirection, interview.clientLanguage)}
-        </p>
-        {interview.visualDirection?.note ? (
-          <p className="mt-3 border-l-4 border-lime pl-4 leading-7">
-            {interview.visualDirection.note}
+        {interview.visualDirection ? (
+          <VisualDirectionSummary
+            concepts={interview.concepts ?? []}
+            direction={interview.visualDirection}
+            language={interview.clientLanguage}
+          />
+        ) : (
+          <p className="mt-3 leading-7 text-muted">
+            {interview.clientLanguage === "de"
+              ? "Nicht verfügbar"
+              : "Unavailable"}
           </p>
-        ) : null}
+        )}
       </section>
       <footer className="mt-7 text-sm text-muted">
         {interview.creator.displayName} · {interview.creator.email}
@@ -74,4 +65,3 @@ export const SubmittedStep = ({
     </section>
   );
 };
-

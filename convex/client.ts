@@ -273,7 +273,7 @@ export const retry = mutation({
     });
     const operation = {
       kind: interview.operation.kind,
-      attempt: interview.operation.attempt,
+      attempt: 0,
       ...(interview.operation.input ? { input: interview.operation.input } : {}),
       ...(interview.operation.startedAt
         ? { startedAt: interview.operation.startedAt }

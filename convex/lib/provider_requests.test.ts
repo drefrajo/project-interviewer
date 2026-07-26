@@ -41,7 +41,23 @@ describe("provider request privacy contract", () => {
     expect(JSON.parse(String(image.init.body))).toMatchObject({
       model: "openai/gpt-image-2",
       quality: "medium",
-      size: "1536x1024",
+      aspect_ratio: "3:2",
+    });
+    expect(image.url).toBe("https://openrouter.ai/api/v1/images");
+    expect(JSON.parse(String(image.init.body))).not.toHaveProperty("size");
+  });
+
+  it("enables provider-compatible JSON mode for concept seeds", () => {
+    const request = buildOpenRouterTextRequest({
+      apiKey: "secret",
+      model: "deepseek-v4-flash",
+      operation: "concept_prompt",
+      messages: [{ role: "user", content: "private" }],
+    });
+
+    expect(JSON.parse(String(request.init.body))).toMatchObject({
+      max_tokens: 4096,
+      response_format: { type: "json_object" },
     });
   });
 
@@ -66,5 +82,21 @@ describe("provider request privacy contract", () => {
     expect(request.init.headers).toMatchObject({
       "idempotency-key": "submission_123",
     });
+  });
+
+  it("names missing email configuration without exposing a generic error", () => {
+    expect(() =>
+      buildCloudflareEmailRequest({
+        apiUrl: undefined,
+        apiToken: undefined,
+        from: undefined,
+        to: "creator@example.test",
+        projectName: "Website",
+        dashboardUrl: "https://app.example.test/interviews/123",
+        submissionId: "submission_123",
+      }),
+    ).toThrow(
+      expect.objectContaining({ name: "EMAIL_CONFIGURATION_MISSING" }),
+    );
   });
 });

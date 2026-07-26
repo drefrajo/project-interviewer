@@ -17,6 +17,28 @@ const isHttpUrl = (value: string) => {
   }
 };
 
+const ConceptImageSkeleton = () => (
+  <div
+    aria-hidden="true"
+    className="aspect-[3/2] animate-pulse bg-[#e6ebe3]"
+  />
+);
+
+const ConceptCardSkeleton = () => (
+  <article
+    aria-hidden="true"
+    className="overflow-hidden rounded-xl border-2 border-line bg-white"
+    data-testid="concept-skeleton"
+  >
+    <ConceptImageSkeleton />
+    <div className="space-y-3 p-4">
+      <div className="h-5 w-2/3 animate-pulse rounded bg-[#e6ebe3]" />
+      <div className="h-3 w-full animate-pulse rounded bg-[#eef2eb]" />
+      <div className="h-3 w-4/5 animate-pulse rounded bg-[#eef2eb]" />
+    </div>
+  </article>
+);
+
 export const ConceptsStep = ({
   language,
   concepts,
@@ -57,58 +79,76 @@ export const ConceptsStep = ({
     <section className="mx-auto w-full max-w-6xl">
       <h1 className="font-display text-3xl font-extrabold">{text.conceptsTitle}</h1>
       <p className="mt-3 max-w-3xl leading-7 text-muted">{text.conceptsIntro}</p>
-      <div className="mt-7 grid gap-5 lg:grid-cols-3">
-        {concepts.map((concept) => (
-          <label
-            className={`overflow-hidden rounded-xl border-2 bg-white ${
-              selected === concept.id && mode === "concept"
-                ? "border-forest"
-                : "border-line"
-            }`}
-            key={concept.id}
-          >
-            {concept.imageUrl ? (
-              <img
-                alt={`${concept.name}, rough visual direction`}
-                className="aspect-[3/2] w-full object-cover"
-                src={concept.imageUrl}
-              />
-            ) : (
-              <div className="grid aspect-[3/2] place-items-center bg-[#eef2eb] px-5 text-center font-bold text-muted">
-                {concept.state === "failed"
-                  ? language === "de"
-                    ? "Konzept konnte nicht erstellt werden"
-                    : "Concept could not be generated"
-                  : language === "de"
-                    ? "Konzept wird erstellt…"
-                    : "Concept is being generated…"}
-              </div>
-            )}
-            <span className="block p-4">
-              <span className="flex items-start gap-3">
-                <input
-                  checked={selected === concept.id && mode === "concept"}
-                  className="mt-1 size-5"
-                  disabled={concept.state !== "ready" && !concept.imageUrl}
-                  name="visual-concept"
-                  onChange={() => {
-                    setMode("concept");
-                    setSelected(concept.id);
-                  }}
-                  type="radio"
-                />
-                <span>
-                  <strong className="block font-display text-xl">{concept.name}</strong>
-                  {concept.description ? (
-                    <span className="mt-1 block text-sm leading-6 text-muted">
-                      {concept.description}
+      {pending && concepts.length === 0 ? (
+        <p className="sr-only" role="status">
+          {language === "de"
+            ? "Visuelle Entwürfe werden erstellt…"
+            : "Visual concepts are being created…"}
+        </p>
+      ) : null}
+      <div
+        aria-busy={pending}
+        className="mt-7 grid gap-5 lg:grid-cols-3"
+      >
+        {pending && concepts.length === 0
+          ? Array.from({ length: 3 }, (_, index) => (
+              <ConceptCardSkeleton key={index} />
+            ))
+          : concepts.map((concept) => (
+              <label
+                className={`overflow-hidden rounded-xl border-2 bg-white ${
+                  selected === concept.id && mode === "concept"
+                    ? "border-forest"
+                    : "border-line"
+                }`}
+                key={concept.id}
+              >
+                {concept.imageUrl ? (
+                  <img
+                    alt={`${concept.name}, rough visual direction`}
+                    className="aspect-[3/2] w-full object-cover"
+                    src={concept.imageUrl}
+                  />
+                ) : pending && concept.state !== "failed" ? (
+                  <ConceptImageSkeleton />
+                ) : (
+                  <div className="grid aspect-[3/2] place-items-center bg-[#eef2eb] px-5 text-center font-bold text-muted">
+                    {concept.state === "failed"
+                      ? language === "de"
+                        ? "Konzept konnte nicht erstellt werden"
+                        : "Concept could not be generated"
+                      : language === "de"
+                        ? "Konzept wird erstellt…"
+                        : "Concept is being generated…"}
+                  </div>
+                )}
+                <span className="block p-4">
+                  <span className="flex items-start gap-3">
+                    <input
+                      checked={selected === concept.id && mode === "concept"}
+                      className="mt-1 size-5"
+                      disabled={concept.state !== "ready" && !concept.imageUrl}
+                      name="visual-concept"
+                      onChange={() => {
+                        setMode("concept");
+                        setSelected(concept.id);
+                      }}
+                      type="radio"
+                    />
+                    <span>
+                      <strong className="block font-display text-xl">
+                        {concept.name}
+                      </strong>
+                      {concept.description ? (
+                        <span className="mt-1 block text-sm leading-6 text-muted">
+                          {concept.description}
+                        </span>
+                      ) : null}
                     </span>
-                  ) : null}
+                  </span>
                 </span>
-              </span>
-            </span>
-          </label>
-        ))}
+              </label>
+            ))}
       </div>
       <section className="mt-7 rounded-xl border border-line bg-surface p-5">
         <label className="flex items-center gap-3 font-bold">
@@ -193,4 +233,3 @@ export const ConceptsStep = ({
     </section>
   );
 };
-

@@ -222,7 +222,7 @@ export const retry = mutation({
     const operation = {
       kind: interview.operation.kind,
       status: "pending" as const,
-      attempt: interview.operation.attempt,
+      attempt: 0,
       ...(interview.operation.input
         ? { input: interview.operation.input }
         : {}),

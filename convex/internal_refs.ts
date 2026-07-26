@@ -53,6 +53,7 @@ export const internalRefs = {
         interviewId: Id<"interviews">;
         concepts: Doc<"interviews">["concepts"];
         hasFailure: boolean;
+        errorCode?: string;
       },
       null
     >("jobs:completeConcepts"),
