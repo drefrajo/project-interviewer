@@ -91,7 +91,9 @@ export const getByLink = query({
       interviewId: interview._id,
       started: Boolean(interview.startedAt ?? interview.frozenAt),
       modelFamily:
-        interview.model === "gpt-5.6-terra" ? "GPT-5.6" : "DeepSeek V4",
+        interview.model === "gpt-5.6-terra"
+          ? "GPT-5.6 Terra"
+          : "DeepSeek V4 Flash",
       creator: {
         displayName: creator.displayName,
         email: creator.email,
@@ -99,8 +101,9 @@ export const getByLink = query({
       disclosure: {
         approximateMinutes: 10,
         modelFamily:
-          interview.model === "gpt-5.6-terra" ? "GPT-5.6" : "DeepSeek V4",
-        privacyUrl: "https://openrouter.ai/privacy",
+          interview.model === "gpt-5.6-terra"
+            ? "GPT-5.6 Terra"
+            : "DeepSeek V4 Flash",
       },
     };
   },

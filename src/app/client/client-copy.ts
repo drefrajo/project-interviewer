@@ -15,6 +15,8 @@ export const CLIENT_COPY = {
     conceptsTitle: "Choose a visual direction",
     conceptsIntro:
       "These are rough directions, not final designs. Choose one, or provide up to three public inspiration links.",
+    conceptsPending:
+      "We’re creating three Visual Concepts. Please wait—this may take a moment.",
     selectConcept: "Select this concept",
     inspiration: "None of these fit — use inspiration links",
     note: "Optional note",
@@ -40,6 +42,8 @@ export const CLIENT_COPY = {
     conceptsTitle: "Visuelle Richtung wählen",
     conceptsIntro:
       "Dies sind grobe Richtungen, keine finalen Designs. Wählen Sie eine aus oder geben Sie bis zu drei öffentliche Inspirationslinks an.",
+    conceptsPending:
+      "Wir erstellen drei visuelle Konzepte. Bitte warten Sie – dies kann einen Moment dauern.",
     selectConcept: "Dieses Konzept wählen",
     inspiration: "Keines passt – Inspirationslinks verwenden",
     note: "Optionale Notiz",
@@ -52,4 +56,3 @@ export const CLIENT_COPY = {
       "Der Creator hat diese unveränderliche Projektübergabe erhalten.",
   },
 } as const satisfies Record<ClientLanguage, object>;
-

@@ -45,8 +45,21 @@ const allowedElements = [
  * non-HTTP(S) navigation. Keeping the policy here gives both Creator and
  * Client views one security seam.
  */
-export const SafeMarkdown = ({ markdown }: { markdown: string }) => (
-  <article className="prose prose-slate min-w-0 max-w-none overflow-x-auto rounded-xl border border-line bg-white p-5 [overflow-wrap:anywhere] prose-a:text-forest">
+export const SafeMarkdown = ({
+  markdown,
+  variant = "card",
+}: {
+  markdown: string;
+  variant?: "card" | "plain";
+}) => (
+  <div
+    className={`prose prose-slate min-w-0 max-w-none overflow-x-auto [overflow-wrap:anywhere] prose-a:text-forest [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 ${
+      variant === "card"
+        ? "rounded-xl border border-line bg-white p-5"
+        : "bg-transparent p-0"
+    }`}
+    data-markdown-variant={variant}
+  >
     <ReactMarkdown
       allowedElements={[...allowedElements]}
       components={{
@@ -72,6 +85,5 @@ export const SafeMarkdown = ({ markdown }: { markdown: string }) => (
     >
       {markdown}
     </ReactMarkdown>
-  </article>
+  </div>
 );
-

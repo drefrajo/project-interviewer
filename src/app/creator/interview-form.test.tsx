@@ -107,6 +107,69 @@ describe("Create Interview template language", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("defaults to DeepSeek V4 Flash without routing warnings", () => {
+    renderForm();
+
+    expect(
+      screen.getByRole("combobox", { name: "Interview Model" }),
+    ).toHaveValue("deepseek-v4-flash");
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/privacy-compliant DeepSeek route/i),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/German-language support is less certain/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it("translates into the currently selected Client Language", async () => {
+    const user = userEvent.setup();
+    const translate = vi.fn(
+      async ({
+        targetLanguage,
+      }: {
+        instructions: string;
+        targetLanguage: "en" | "de";
+      }) => ({
+        instructions:
+          targetLanguage === "de"
+            ? "Deutsche Übersetzung"
+            : "English translation",
+      }),
+    );
+    convex.useAction.mockReturnValue(translate);
+    renderForm();
+
+    const languageSelect = screen.getByRole("combobox", {
+      name: "Client Language",
+    });
+    const instructions = screen.getByRole("textbox", {
+      name: /^Interview Instructions/,
+    });
+
+    await user.type(instructions, "Source instructions");
+    await user.click(
+      screen.getByRole("button", { name: "Translate to English" }),
+    );
+
+    expect(translate).toHaveBeenLastCalledWith({
+      instructions: "Source instructions",
+      targetLanguage: "en",
+    });
+    expect(languageSelect).toHaveValue("en");
+
+    await user.selectOptions(languageSelect, "de");
+    await user.click(
+      screen.getByRole("button", { name: "Translate to German" }),
+    );
+
+    expect(translate).toHaveBeenLastCalledWith({
+      instructions: "English translation",
+      targetLanguage: "de",
+    });
+    expect(languageSelect).toHaveValue("de");
+  });
+
   it("switches an untouched built-in to the selected language", async () => {
     const user = userEvent.setup();
     renderForm();

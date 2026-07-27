@@ -14,28 +14,57 @@ const invalidConceptSeeds = (name: string) => {
 };
 
 export const parseConceptSeeds = (content: string): ConceptSeed[] => {
-  let parsed: { concepts?: Array<Partial<ConceptSeed>> };
+  let parsed: unknown;
   try {
     parsed = parseProviderJson(content);
   } catch {
     throw invalidConceptSeeds("CONCEPT_SEEDS_INVALID_JSON");
   }
-  if (!Array.isArray(parsed.concepts) || parsed.concepts.length !== 3) {
+  const concepts =
+    Array.isArray(parsed)
+      ? parsed
+      : typeof parsed === "object" &&
+          parsed !== null &&
+          "concepts" in parsed &&
+          Array.isArray(parsed.concepts)
+        ? parsed.concepts
+        : null;
+  if (!concepts || concepts.length !== 3) {
     throw invalidConceptSeeds("CONCEPT_SEEDS_INVALID_SHAPE");
   }
-  return parsed.concepts.map((concept, index) => {
-    if (
-      typeof concept.name !== "string" ||
-      typeof concept.rationale !== "string" ||
-      typeof concept.prompt !== "string"
-    ) {
+  return concepts.map((value: unknown, index) => {
+    if (typeof value !== "object" || value === null) {
+      throw invalidConceptSeeds("CONCEPT_SEEDS_INVALID_SHAPE");
+    }
+    const concept = value as Record<string, unknown>;
+    const name =
+      typeof concept.name === "string"
+        ? concept.name.trim()
+        : typeof concept.title === "string"
+          ? concept.title.trim()
+          : "";
+    const rationale =
+      typeof concept.rationale === "string"
+        ? concept.rationale.trim()
+        : typeof concept.description === "string"
+          ? concept.description.trim()
+          : "";
+    const prompt =
+      typeof concept.prompt === "string"
+        ? concept.prompt.trim()
+        : typeof concept.imagePrompt === "string"
+          ? concept.imagePrompt.trim()
+          : typeof concept.image_prompt === "string"
+            ? concept.image_prompt.trim()
+            : "";
+    if (!name || !rationale || !prompt) {
       throw invalidConceptSeeds("CONCEPT_SEEDS_INVALID_SHAPE");
     }
     return {
       id: `concept_${index + 1}`,
-      name: concept.name,
-      rationale: concept.rationale,
-      prompt: concept.prompt,
+      name,
+      rationale,
+      prompt,
     };
   });
 };

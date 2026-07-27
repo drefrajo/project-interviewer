@@ -43,11 +43,9 @@ export const buildOpenRouterTextRequest = (args: {
         allow_fallbacks: false,
         require_parameters: true,
       },
-      ...(args.operation === "concept_prompt"
-        ? {
-            max_tokens: 4096,
-            response_format: { type: "json_object" as const },
-          }
+      ...(args.operation === "concept_prompt" ? { max_tokens: 4096 } : {}),
+      ...(args.operation === "concept_prompt" || args.operation === "interview"
+        ? { response_format: { type: "json_object" as const } }
         : {}),
       ...(args.model === "gpt-5.6-terra"
         ? { reasoning: { effort: "medium" } }

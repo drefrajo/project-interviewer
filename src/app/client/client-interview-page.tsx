@@ -10,6 +10,7 @@ import { OperationFeedback } from "../shared/operation-feedback";
 import { ConceptsStep } from "./concepts-step";
 import { CLIENT_COPY } from "./client-copy";
 import { DocumentReviewStep } from "./document-review-step";
+import { activeInterviewMainClassName } from "./interview-layout";
 import { InterviewStepView } from "./interview-step";
 import { SubmittedStep } from "./submitted-step";
 import { WelcomeStep } from "./welcome-step";
@@ -83,8 +84,16 @@ export const ClientInterviewPage = () => {
   const submitted = interview.step === "submitted";
   const pending =
     busy || (!submitted && interview.operation?.state === "pending");
+  const showingInterview =
+    (interview.started || entered) && interview.step === "interview";
   return (
-    <div className="min-h-screen bg-canvas text-ink">
+    <div
+      className={
+        showingInterview
+          ? "grid h-dvh grid-rows-[auto_auto_minmax(0,1fr)] overflow-hidden bg-canvas text-ink"
+          : "min-h-screen bg-canvas text-ink"
+      }
+    >
       <a className="skip-link" href="#main-content">
         {interview.clientLanguage === "de"
           ? "Zum Hauptinhalt springen"
@@ -118,14 +127,23 @@ export const ClientInterviewPage = () => {
           </ol>
         </nav>
       ) : null}
-      <main className="px-4 py-8 sm:px-8 sm:py-12" id="main-content">
+      <main
+        className={
+          showingInterview
+            ? activeInterviewMainClassName
+            : "px-4 py-8 sm:px-8 sm:py-12"
+        }
+        id="main-content"
+      >
         {error ? (
           <p className="mx-auto mb-5 max-w-3xl rounded-lg border border-[#e9b29e] bg-[#fff1e7] p-4 font-bold text-[#852f21]" role="alert">
             {error}
           </p>
         ) : null}
         <OperationFeedback
-          hidePending={interview.step === "concepts"}
+          hidePending={
+            interview.step === "concepts" || interview.step === "interview"
+          }
           language={interview.clientLanguage}
           operation={submitted ? null : interview.operation}
           onRetry={() =>

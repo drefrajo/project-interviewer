@@ -15,7 +15,7 @@ const copy = {
     shared: "Your responses and final handoff are shared with the named Creator.",
     sensitive: "Do not submit sensitive personal data.",
     concepts: "Visual Concepts are rough directions, not final designs.",
-    privacy: "Privacy information",
+    providers: "External providers are used for AI functionality.",
     model: "Interview model",
     start: "Start interview",
   },
@@ -28,7 +28,7 @@ const copy = {
       "Ihre Antworten und die endgültige Übergabe werden mit dem genannten Creator geteilt.",
     sensitive: "Übermitteln Sie keine sensiblen personenbezogenen Daten.",
     concepts: "Visuelle Konzepte sind grobe Richtungen, keine finalen Designs.",
-    privacy: "Datenschutzinformationen",
+    providers: "Für KI-Funktionen werden externe Anbieter verwendet.",
     model: "Interviewmodell",
     start: "Interview starten",
   },
@@ -64,14 +64,7 @@ export const WelcomeStep = ({
           <strong className="text-ink">{text.model}:</strong>{" "}
           {interview.modelFamily}
         </p>
-        <a
-          className="font-bold text-forest"
-          href="/privacy"
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          {text.privacy}
-        </a>
+        <p className="mt-1">{text.providers}</p>
         <p className="mt-2">
           {interview.creator.displayName} · {interview.creator.email}
         </p>

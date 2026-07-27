@@ -14,8 +14,27 @@ describe("ConceptsStep", () => {
     );
 
     expect(screen.getAllByTestId("concept-skeleton")).toHaveLength(3);
-    expect(
-      screen.getByText("Visuelle Entwürfe werden erstellt…"),
-    ).toBeInTheDocument();
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent(
+      "Wir erstellen drei visuelle Konzepte. Bitte warten Sie – dies kann einen Moment dauern.",
+    );
+    expect(status).toBeVisible();
+  });
+
+  it("does not show the generation notice during final submission", () => {
+    render(
+      <ConceptsStep
+        concepts={[
+          { id: "concept_1", name: "One", state: "ready" },
+          { id: "concept_2", name: "Two", state: "ready" },
+          { id: "concept_3", name: "Three", state: "ready" },
+        ]}
+        language="en"
+        onSubmit={vi.fn()}
+        pending
+      />,
+    );
+
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 });

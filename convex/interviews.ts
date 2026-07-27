@@ -79,12 +79,6 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     const creator = await requireCreatorProfile(ctx);
-    if (
-      args.interviewModel === "deepseek-v4-flash" &&
-      !args.acknowledgedDeepSeekRouting
-    ) {
-      throw new Error("DeepSeek privacy routing must be acknowledged.");
-    }
     const projectName = assertLength("Project name", args.projectName, 160);
     const instructions = assertLength(
       "Interview Instructions",
@@ -114,12 +108,6 @@ export const create = mutation({
       clientLanguage: args.clientLanguage,
       model: args.interviewModel,
       instructions,
-      ...(args.acknowledgedDeepSeekRouting === undefined
-        ? {}
-        : {
-            deepseekPrivacyAcknowledged:
-              args.acknowledgedDeepSeekRouting,
-          }),
       createdAt: now,
       updatedAt: now,
       step: "interview",
@@ -146,12 +134,6 @@ export const updateBeforeStart = mutation({
     if (interview.frozenAt || interview.clientMessageCount > 0) {
       throw new Error("Interview configuration is frozen.");
     }
-    if (
-      args.interviewModel === "deepseek-v4-flash" &&
-      !args.acknowledgedDeepSeekRouting
-    ) {
-      throw new Error("DeepSeek privacy routing must be acknowledged.");
-    }
     await ctx.db.patch("interviews", interview._id, {
       projectName: assertLength("Project name", args.projectName, 160),
       clientLanguage: args.clientLanguage,
@@ -161,7 +143,6 @@ export const updateBeforeStart = mutation({
         args.instructions,
         MAX_INSTRUCTIONS_LENGTH,
       ),
-      deepseekPrivacyAcknowledged: args.acknowledgedDeepSeekRouting,
       updatedAt: Date.now(),
     });
     return interview._id;

@@ -4,6 +4,7 @@ import type {
   SelectHTMLAttributes,
   TextareaHTMLAttributes,
 } from "react";
+import { forwardRef } from "react";
 
 const control =
   "min-h-11 w-full rounded-lg border border-line bg-white px-3 py-2 text-ink shadow-sm outline-none transition focus:border-forest";
@@ -28,9 +29,17 @@ export const TextInput = (
   props: InputHTMLAttributes<HTMLInputElement>,
 ) => <input {...props} className={`${control} ${props.className ?? ""}`} />;
 
-export const TextArea = (
-  props: TextareaHTMLAttributes<HTMLTextAreaElement>,
-) => <textarea {...props} className={`${control} ${props.className ?? ""}`} />;
+export const TextArea = forwardRef<
+  HTMLTextAreaElement,
+  TextareaHTMLAttributes<HTMLTextAreaElement>
+>((props, ref) => (
+  <textarea
+    {...props}
+    className={`${control} ${props.className ?? ""}`}
+    ref={ref}
+  />
+));
+TextArea.displayName = "TextArea";
 
 export const Select = (
   props: SelectHTMLAttributes<HTMLSelectElement>,
@@ -44,4 +53,3 @@ export const secondaryButton =
 
 export const dangerButton =
   "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[#e9b29e] bg-white px-4 py-2 text-sm font-extrabold text-[#852f21] transition hover:bg-[#fff1e7] disabled:cursor-not-allowed disabled:opacity-55";
-

@@ -8,6 +8,7 @@ import {
 import type { Doc } from "./_generated/dataModel";
 import type { ActionCtx } from "./_generated/server";
 import { agentComponent } from "./lib/components";
+import { generateConceptsInParallel } from "./lib/concept_generation";
 import { parseConceptSeeds } from "./lib/concept_seeds";
 import { buildInterviewMessages } from "./lib/interview_messages";
 import { parseInterviewOutput } from "./lib/interview_output";
@@ -82,8 +83,11 @@ these rules. Respect these Creator Interview Instructions:
 
 ${interview.instructions}
 
-Return JSON only. While more information is needed return
+Return exactly one JSON object and nothing else. Never use Markdown code fences
+or add prose before or after the JSON object. While more information is needed return
 {"kind":"question","content":"your Client-facing response","suggestedReplies":[]}.
+The content field may use ordinary Markdown lists but must never contain Markdown
+code fences.
 You may include up to four concise Suggested Replies when they would help the
 Client answer faster. Each reply must stand on its own, remain editable, and be
 at most 240 characters.
@@ -379,7 +383,7 @@ const conceptSeeds = async (interview: Doc<"interviews">) => {
       {
         role: "system",
         content:
-          "Return JSON only: an array named concepts containing exactly three visually and structurally distinct website directions. Each has name, rationale, and a detailed image prompt for a polished desktop homepage showing the first viewport plus enough lower-page context. They are rough directions, not final designs.",
+          'Return exactly one JSON object matching {"concepts":[{"name":"...","rationale":"...","prompt":"..."}]}. The concepts array must contain exactly three visually and structurally distinct website directions. Each prompt must describe a polished desktop homepage showing the first viewport plus enough lower-page context. These are rough directions, not final designs. Do not add prose or Markdown fences.',
       },
       { role: "user", content: interview.projectDocument },
     ],
@@ -397,11 +401,11 @@ const imageBlob = async (prompt: string) => {
   try {
     response = await fetch(request.url, {
       ...request.init,
-      signal: AbortSignal.timeout(15_000),
+      signal: AbortSignal.timeout(120_000),
     });
   } catch {
-    const error = new Error("Email delivery outcome is unknown.");
-    error.name = "EMAIL_DELIVERY_UNKNOWN";
+    const error = new Error("Image generation request failed.");
+    error.name = "IMAGE_GENERATION_REQUEST_FAILED";
     throw error;
   }
   if (!response.ok) throw new Error(`Image generation failed (${response.status}).`);
@@ -437,26 +441,11 @@ const runConceptGeneration = async (
         }))
       : await conceptSeeds(interview);
   const existing = new Map(interview.concepts.map((item) => [item.id, item]));
-  const concepts = [];
-  let hasFailure = false;
-  for (const seed of seeds) {
-    const prior = existing.get(seed.id);
-    if (prior?.status === "ready") {
-      concepts.push(prior);
-      continue;
-    }
-    try {
-      const imageId = await ctx.storage.store(await imageBlob(seed.prompt));
-      concepts.push({ ...seed, imageId, status: "ready" as const });
-    } catch {
-      hasFailure = true;
-      concepts.push({
-        ...seed,
-        status: "failed" as const,
-        errorCode: "IMAGE_GENERATION_FAILED",
-      });
-    }
-  }
+  const { concepts, hasFailure } = await generateConceptsInParallel(
+    seeds,
+    existing,
+    async (seed) => ctx.storage.store(await imageBlob(seed.prompt)),
+  );
   await ctx.runMutation(internalRefs.jobs.completeConcepts, {
     interviewId: interview._id,
     concepts,

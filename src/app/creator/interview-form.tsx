@@ -62,11 +62,10 @@ export const InterviewForm = () => {
   const [clientLanguage, setClientLanguage] =
     useState<ClientLanguage>("en");
   const [interviewModel, setInterviewModel] =
-    useState<InterviewModel>("gpt-5.6-terra");
+    useState<InterviewModel>("deepseek-v4-flash");
   const [instructions, setInstructions] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [templateBaseline, setTemplateBaseline] = useState("");
-  const [acknowledgedRouting, setAcknowledgedRouting] = useState(false);
   const [translating, setTranslating] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -97,7 +96,6 @@ export const InterviewForm = () => {
   );
   const editedSinceTemplate =
     Boolean(selectedTemplate) && instructions !== templateBaseline;
-  const deepSeek = interviewModel === "deepseek-v4-flash";
 
   const selectTemplate = (templateId: string) => {
     const template = templates?.find((candidate) => candidate._id === templateId);
@@ -158,8 +156,7 @@ export const InterviewForm = () => {
   };
 
   const translateInstructions = async () => {
-    const targetLanguage: ClientLanguage =
-      clientLanguage === "en" ? "de" : "en";
+    const targetLanguage = clientLanguage;
     if (
       editedSinceTemplate &&
       !window.confirm(
@@ -180,7 +177,6 @@ export const InterviewForm = () => {
       setInstructions(translated);
       setSelectedTemplateId("");
       setTemplateBaseline("");
-      setClientLanguage(targetLanguage);
       setTemplateNotice(
         "Translation updated this Interview only. Save it separately if you want a new Private Interview Template.",
       );
@@ -193,7 +189,6 @@ export const InterviewForm = () => {
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (deepSeek && !acknowledgedRouting) return;
     setBusy(true);
     setError("");
     const input = {
@@ -201,7 +196,6 @@ export const InterviewForm = () => {
       clientLanguage,
       interviewModel,
       instructions: instructions.trim(),
-      acknowledgedDeepSeekRouting: acknowledgedRouting,
     };
     try {
       if (interviewId) {
@@ -281,40 +275,16 @@ export const InterviewForm = () => {
           <Field label="Interview Model">
             <Select
               disabled={translating}
-              onChange={(event) => {
-                setInterviewModel(event.target.value as InterviewModel);
-                setAcknowledgedRouting(false);
-              }}
+              onChange={(event) =>
+                setInterviewModel(event.target.value as InterviewModel)
+              }
               value={interviewModel}
             >
-              <option value="gpt-5.6-terra">GPT-5.6 Terra</option>
               <option value="deepseek-v4-flash">DeepSeek V4 Flash</option>
+              <option value="gpt-5.6-terra">GPT-5.6 Terra</option>
             </Select>
           </Field>
         </div>
-        {deepSeek ? (
-          <section className="rounded-lg border border-[#e9b29e] bg-[#fff1e7] p-4 text-sm leading-6">
-            {clientLanguage === "de" ? (
-              <p className="mb-2 font-bold text-[#852f21]">
-                DeepSeek’s documented German-language support is less certain.
-              </p>
-            ) : null}
-            <label className="flex items-start gap-3">
-              <input
-                checked={acknowledgedRouting}
-                className="mt-0.5 size-5 shrink-0"
-                onChange={(event) => setAcknowledgedRouting(event.target.checked)}
-                required
-                type="checkbox"
-              />
-              <span>
-                I understand that a privacy-compliant DeepSeek route may process
-                data outside Azure or the EU. The application still requires zero
-                retention, denies data collection, and disables fallback.
-              </span>
-            </label>
-          </section>
-        ) : null}
         <Field
           hint="A template prefills this field; it never governs the Interview after copying."
           label="Optional Interview Template"
@@ -338,7 +308,7 @@ export const InterviewForm = () => {
           label="Interview Instructions"
         >
           <TextArea
-            className="min-h-80 font-mono text-sm leading-6"
+            className="min-h-80 font-sans text-base leading-7"
             disabled={translating}
             maxLength={50_000}
             onChange={(event) => setInstructions(event.target.value)}
@@ -367,7 +337,7 @@ export const InterviewForm = () => {
               <Languages aria-hidden="true" size={17} />
               {translating
                 ? "Translating with DeepSeek V4 Flash…"
-                : `Translate to ${clientLanguage === "en" ? "German" : "English"}`}
+                : `Translate to ${clientLanguage === "en" ? "English" : "German"}`}
             </button>
             <button
               className={secondaryButton}
@@ -394,8 +364,7 @@ export const InterviewForm = () => {
               busy ||
               translating ||
               !projectName.trim() ||
-              !instructions.trim() ||
-              (deepSeek && !acknowledgedRouting)
+              !instructions.trim()
             }
             type="submit"
           >

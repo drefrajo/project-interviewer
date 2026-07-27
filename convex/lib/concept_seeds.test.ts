@@ -30,8 +30,36 @@ ${JSON.stringify({ concepts }, null, 2)}
     );
   });
 
-  it("names schema mismatches", () => {
-    expect(() => parseConceptSeeds(JSON.stringify(concepts))).toThrow(
+  it("accepts a top-level array from a provider that ignores the wrapper", () => {
+    expect(parseConceptSeeds(JSON.stringify(concepts))).toEqual([
+      { id: "concept_1", ...concepts[0] },
+      { id: "concept_2", ...concepts[1] },
+      { id: "concept_3", ...concepts[2] },
+    ]);
+  });
+
+  it("normalizes common provider field aliases", () => {
+    expect(
+      parseConceptSeeds(
+        JSON.stringify({
+          concepts: concepts.map((concept) => ({
+            title: concept.name,
+            description: concept.rationale,
+            imagePrompt: concept.prompt,
+          })),
+        }),
+      ),
+    ).toEqual([
+      { id: "concept_1", ...concepts[0] },
+      { id: "concept_2", ...concepts[1] },
+      { id: "concept_3", ...concepts[2] },
+    ]);
+  });
+
+  it("still names incomplete shapes", () => {
+    expect(() =>
+      parseConceptSeeds(JSON.stringify({ concepts: concepts.slice(0, 2) })),
+    ).toThrow(
       expect.objectContaining({ name: "CONCEPT_SEEDS_INVALID_SHAPE" }),
     );
   });

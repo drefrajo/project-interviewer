@@ -168,7 +168,6 @@ interface InterviewApi {
         clientLanguage: ClientLanguage;
         interviewModel: InterviewModel;
         instructions: string;
-        acknowledgedDeepSeekRouting?: boolean;
       },
       { interviewId: string; interviewUrl?: string; linkToken?: string } | string
     >;
@@ -178,7 +177,6 @@ interface InterviewApi {
       clientLanguage: ClientLanguage;
       interviewModel: InterviewModel;
       instructions: string;
-      acknowledgedDeepSeekRouting?: boolean;
     }>;
     rotateLink: Mutation<
       { interviewId: string },

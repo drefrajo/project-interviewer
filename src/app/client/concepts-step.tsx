@@ -56,6 +56,10 @@ export const ConceptsStep = ({
   const [links, setLinks] = useState([""]);
   const [note, setNote] = useState("");
   const [confirming, setConfirming] = useState(false);
+  const creatingConcepts =
+    pending &&
+    (concepts.length < 3 ||
+      concepts.some((concept) => concept.state !== "ready"));
   const normalizedLinks = links.map((link) => link.trim()).filter(Boolean);
   const valid = useMemo(
     () =>
@@ -79,16 +83,18 @@ export const ConceptsStep = ({
     <section className="mx-auto w-full max-w-6xl">
       <h1 className="font-display text-3xl font-extrabold">{text.conceptsTitle}</h1>
       <p className="mt-3 max-w-3xl leading-7 text-muted">{text.conceptsIntro}</p>
-      {pending && concepts.length === 0 ? (
-        <p className="sr-only" role="status">
-          {language === "de"
-            ? "Visuelle Entwürfe werden erstellt…"
-            : "Visual concepts are being created…"}
+      {creatingConcepts ? (
+        <p
+          aria-atomic="true"
+          className="mt-5 max-w-3xl rounded-lg border border-line bg-[#eef2eb] p-4 font-bold text-forest"
+          role="status"
+        >
+          {text.conceptsPending}
         </p>
       ) : null}
       <div
-        aria-busy={pending}
-        className="mt-7 grid gap-5 lg:grid-cols-3"
+        aria-busy={creatingConcepts}
+        className={`${creatingConcepts ? "mt-5" : "mt-7"} grid gap-5 lg:grid-cols-3`}
       >
         {pending && concepts.length === 0
           ? Array.from({ length: 3 }, (_, index) => (
