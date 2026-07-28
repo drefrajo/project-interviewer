@@ -22,8 +22,20 @@ export const OperationFeedback = ({
           label={language === "de" ? "Wird verarbeitet" : "Working"}
           phrases={
             language === "de"
-              ? ["Antwort wird vorbereitet…", "Fast fertig…"]
-              : ["Preparing the next step…", "Almost there…"]
+              ? [
+                  "Antwort wird vorbereitet…",
+                  "Der Gesprächsverlauf wird geprüft…",
+                  "Die wichtigsten Details werden zusammengeführt…",
+                  "Der nächste Schritt wird formuliert…",
+                  "Fast fertig…",
+                ]
+              : [
+                  "Preparing the next step…",
+                  "Reviewing the conversation so far…",
+                  "Pulling together the key details…",
+                  "Shaping the next response…",
+                  "Almost there…",
+                ]
           }
         />
       </div>

@@ -6,6 +6,7 @@ import {
 } from "../../infrastructure/interview-api";
 import type { ProductionAuthClient } from "../../infrastructure/auth-client";
 import { primaryButton, secondaryButton } from "../shared/form-controls";
+import { LegalFooter } from "../shared/legal-footer";
 
 type OAuthProviderId = "google" | "github";
 
@@ -66,48 +67,51 @@ export const CreatorAuthGate = ({
   }
   if (!session.data) {
     return (
-      <main className="grid min-h-screen place-items-center bg-canvas px-4" id="main-content">
-        <section className="w-full max-w-xl rounded-2xl border border-line bg-surface p-6 shadow-xl sm:p-9">
-          <p className="text-xs font-extrabold tracking-[0.14em] text-forest uppercase">
-            Creator workspace
-          </p>
-          <h1 className="mt-2 font-display text-4xl font-extrabold tracking-tight">
-            Sign in to Project Interviewer
-          </h1>
-          <p className="mt-4 leading-7 text-muted">
-            Use the provider that owns your account. Google and GitHub identities
-            are never silently linked, even when they share an email address.
-          </p>
-          {error ? (
-            <p className="mt-5 rounded-lg border border-[#e9b29e] bg-[#fff1e7] p-4 font-bold text-[#852f21]" role="alert">
-              {friendlyAuthError(error, attemptedProvider)}
+      <div className="flex min-h-screen flex-col bg-canvas">
+        <main className="grid flex-1 place-items-center px-4" id="main-content">
+          <section className="w-full max-w-xl rounded-2xl border border-line bg-surface p-6 shadow-xl sm:p-9">
+            <p className="text-xs font-extrabold tracking-[0.14em] text-forest uppercase">
+              Creator workspace
             </p>
-          ) : null}
-          <div className="mt-7 grid gap-3 sm:grid-cols-2">
-            {providers?.google !== false ? (
-              <button
-                className={primaryButton}
-                onClick={() => void signIn("google")}
-                type="button"
-              >
-                Continue with Google
-              </button>
+            <h1 className="mt-2 font-display text-4xl font-extrabold tracking-tight">
+              Sign in to Project Interviewer
+            </h1>
+            <p className="mt-4 leading-7 text-muted">
+              Use the provider that owns your account. Google and GitHub identities
+              are never silently linked, even when they share an email address.
+            </p>
+            {error ? (
+              <p className="mt-5 rounded-lg border border-[#e9b29e] bg-[#fff1e7] p-4 font-bold text-[#852f21]" role="alert">
+                {friendlyAuthError(error, attemptedProvider)}
+              </p>
             ) : null}
-            {providers?.github !== false ? (
-              <button
-                className={secondaryButton}
-                onClick={() => void signIn("github")}
-                type="button"
-              >
-                Continue with GitHub
-              </button>
-            ) : null}
-          </div>
-          <p className="mt-5 text-sm leading-6 text-muted">
-            Registration is restricted to the deployment allowlist.
-          </p>
-        </section>
-      </main>
+            <div className="mt-7 grid gap-3 sm:grid-cols-2">
+              {providers?.google !== false ? (
+                <button
+                  className={primaryButton}
+                  onClick={() => void signIn("google")}
+                  type="button"
+                >
+                  Continue with Google
+                </button>
+              ) : null}
+              {providers?.github !== false ? (
+                <button
+                  className={secondaryButton}
+                  onClick={() => void signIn("github")}
+                  type="button"
+                >
+                  Continue with GitHub
+                </button>
+              ) : null}
+            </div>
+            <p className="mt-5 text-sm leading-6 text-muted">
+              Registration is restricted to the deployment allowlist.
+            </p>
+          </section>
+        </main>
+        <LegalFooter />
+      </div>
     );
   }
   if (profile === null) {
@@ -146,11 +150,14 @@ export const friendlyAuthError = (
 };
 
 const AuthenticationLoading = ({ label }: { label: string }) => (
-  <main className="grid min-h-screen place-items-center bg-canvas" id="main-content">
-    <p className="font-bold text-muted" role="status">
-      {label}
-    </p>
-  </main>
+  <div className="flex min-h-screen flex-col bg-canvas">
+    <main className="grid flex-1 place-items-center" id="main-content">
+      <p className="font-bold text-muted" role="status">
+        {label}
+      </p>
+    </main>
+    <LegalFooter />
+  </div>
 );
 
 export type { CreatorProfile };

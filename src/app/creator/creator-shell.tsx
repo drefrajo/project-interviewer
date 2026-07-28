@@ -3,6 +3,7 @@ import { FileText, LogOut, Settings, Shapes } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
 import type { ProductionAuthClient } from "../../infrastructure/auth-client";
 import { interviewApi } from "../../infrastructure/interview-api";
+import { LegalFooter } from "../shared/legal-footer";
 
 const tabs = [
   { to: "/interviews", label: "Interviews", icon: FileText },
@@ -17,7 +18,7 @@ export const CreatorShell = ({
 }) => {
   const profile = useQuery(interviewApi.creator_profiles.getCurrent, {});
   return (
-    <div className="min-h-screen bg-canvas text-ink">
+    <div className="flex min-h-screen flex-col bg-canvas text-ink">
       <a className="skip-link" href="#main-content">
         Skip to main content
       </a>
@@ -68,8 +69,10 @@ export const CreatorShell = ({
           ))}
         </div>
       </nav>
-      <Outlet />
+      <div className="flex-1">
+        <Outlet />
+      </div>
+      <LegalFooter />
     </div>
   );
 };
-

@@ -7,6 +7,7 @@ import {
   type VisualDirection,
 } from "../../infrastructure/interview-api";
 import { OperationFeedback } from "../shared/operation-feedback";
+import { LegalFooter } from "../shared/legal-footer";
 import { ConceptsStep } from "./concepts-step";
 import { CLIENT_COPY } from "./client-copy";
 import { DocumentReviewStep } from "./document-review-step";
@@ -66,17 +67,20 @@ export const ClientInterviewPage = () => {
   }
   if (interview === null) {
     return (
-      <main className="grid min-h-screen place-items-center px-4" id="main-content">
-        <section className="max-w-xl rounded-xl border border-line bg-surface p-6">
-          <h1 className="font-display text-3xl font-extrabold">
-            Interview unavailable
-          </h1>
-          <p className="mt-3 leading-7 text-muted">
-            This Interview Link is invalid or has been replaced. Ask the Creator
-            for the current link.
-          </p>
-        </section>
-      </main>
+      <div className="flex min-h-screen flex-col bg-canvas">
+        <main className="grid flex-1 place-items-center px-4" id="main-content">
+          <section className="max-w-xl rounded-xl border border-line bg-surface p-6">
+            <h1 className="font-display text-3xl font-extrabold">
+              Interview unavailable
+            </h1>
+            <p className="mt-3 leading-7 text-muted">
+              This Interview Link is invalid or has been replaced. Ask the Creator
+              for the current link.
+            </p>
+          </section>
+        </main>
+        <LegalFooter />
+      </div>
     );
   }
 
@@ -91,7 +95,7 @@ export const ClientInterviewPage = () => {
       className={
         showingInterview
           ? "grid h-dvh grid-rows-[auto_auto_minmax(0,1fr)] overflow-hidden bg-canvas text-ink"
-          : "min-h-screen bg-canvas text-ink"
+          : "flex min-h-screen flex-col bg-canvas text-ink"
       }
     >
       <a className="skip-link" href="#main-content">
@@ -131,7 +135,7 @@ export const ClientInterviewPage = () => {
         className={
           showingInterview
             ? activeInterviewMainClassName
-            : "px-4 py-8 sm:px-8 sm:py-12"
+            : "flex-1 px-4 py-8 sm:px-8 sm:py-12"
         }
         id="main-content"
       >
@@ -199,14 +203,20 @@ export const ClientInterviewPage = () => {
           <SubmittedStep interview={interview} />
         )}
       </main>
+      {!showingInterview ? (
+        <LegalFooter language={interview.clientLanguage} />
+      ) : null}
     </div>
   );
 };
 
 const ClientLoading = ({ label }: { label: string }) => (
-  <main className="grid min-h-screen place-items-center" id="main-content">
-    <p className="font-bold text-muted" role="status">
-      {label}
-    </p>
-  </main>
+  <div className="flex min-h-screen flex-col bg-canvas">
+    <main className="grid flex-1 place-items-center" id="main-content">
+      <p className="font-bold text-muted" role="status">
+        {label}
+      </p>
+    </main>
+    <LegalFooter />
+  </div>
 );

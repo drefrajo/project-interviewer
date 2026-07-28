@@ -1,9 +1,11 @@
+@import "@fontsource-variable/manrope/wght.css";
+@import "@fontsource-variable/space-grotesk/wght.css";
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
 @theme {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-display: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-sans: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk Variable", "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
   --color-ink: #13221d;
   --color-muted: #64716c;
   --color-line: #d9ddd5;
@@ -16,7 +18,7 @@
 :root {
   color: #13221d;
   background: #f4f3ed;
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   --line: #d9ddd5;

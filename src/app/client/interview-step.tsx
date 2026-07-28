@@ -21,6 +21,9 @@ const composerActivity = {
       "Reviewing the conversation so far…",
       "Identifying the most useful next detail…",
       "Drafting a concise follow-up question…",
+      "Connecting the important pieces…",
+      "Checking that the question is clear…",
+      "Finding a helpful way forward…",
     ],
   },
   de: {
@@ -30,6 +33,9 @@ const composerActivity = {
       "Der bisherige Gesprächsverlauf wird geprüft…",
       "Das hilfreichste nächste Detail wird ermittelt…",
       "Eine kurze Anschlussfrage wird formuliert…",
+      "Die wichtigen Zusammenhänge werden verbunden…",
+      "Die Frage wird auf Klarheit geprüft…",
+      "Ein hilfreicher nächster Schritt wird gesucht…",
     ],
   },
 } as const satisfies Record<ClientLanguage, object>;

@@ -17,10 +17,6 @@ export const createRoutes = (
     element: <ClientInterviewPage />,
   },
   {
-    path: "/privacy",
-    element: <PrivacyPage />,
-  },
-  {
     element: (
       <CreatorAuthGate authClient={authClient}>
         <CreatorShell authClient={authClient} />
@@ -38,25 +34,3 @@ export const createRoutes = (
   },
   { path: "*", element: <Navigate replace to="/interviews" /> },
 ];
-
-const PrivacyPage = () => (
-  <main className="mx-auto max-w-3xl px-4 py-12 sm:px-8" id="main-content">
-    <h1 className="font-display text-4xl font-extrabold">AI processing and privacy</h1>
-    <div className="mt-6 space-y-4 leading-7 text-muted">
-      <p>
-        Interview responses are processed through OpenRouter by the model family
-        shown before an Interview starts. Requests require zero data retention,
-        deny provider data collection, and disable fallback.
-      </p>
-      <p>
-        Responses, the Project Document, Visual Concepts, and the final Project
-        Submission are shared with the named Creator. Do not provide sensitive
-        personal data.
-      </p>
-      <p>
-        Interview Links are bearer capabilities. Anyone who receives the link can
-        access that Interview until the Creator regenerates or deletes it.
-      </p>
-    </div>
-  </main>
-);
