@@ -11,7 +11,7 @@ export const SubmittedStep = ({
   const text = CLIENT_COPY[interview.clientLanguage];
   return (
     <section className="mx-auto w-full max-w-5xl">
-      <header className="rounded-xl bg-forest p-6 text-white sm:p-8">
+      <header className="rounded-xl bg-forest p-6 text-white dark:bg-forest-strong sm:p-8">
         <p className="text-xs font-extrabold tracking-[0.14em] text-lime uppercase">
           {interview.projectName}
         </p>
@@ -30,7 +30,7 @@ export const SubmittedStep = ({
         <h2 className="font-display text-2xl font-extrabold">Visual Concepts</h2>
         <div className="mt-3 grid gap-4 md:grid-cols-3">
           {(interview.concepts ?? []).map((concept) => (
-            <figure className="overflow-hidden rounded-xl border border-line bg-white" key={concept.id}>
+            <figure className="overflow-hidden rounded-xl border border-line bg-surface" key={concept.id}>
               {concept.imageUrl ? (
                 <img
                   alt={`${concept.name}, rough visual direction`}

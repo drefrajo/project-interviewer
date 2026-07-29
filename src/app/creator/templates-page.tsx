@@ -134,7 +134,7 @@ const TemplateGroup = ({
                 <div className="flex gap-1">
                   <button
                     aria-label={`Edit ${template.name}`}
-                    className="inline-grid size-11 place-items-center rounded-lg hover:bg-[#eef2eb]"
+                    className="inline-grid size-11 place-items-center rounded-lg transition hover:bg-soft"
                     onClick={() => onEdit(template)}
                     type="button"
                   >
@@ -142,7 +142,7 @@ const TemplateGroup = ({
                   </button>
                   <button
                     aria-label={`Delete ${template.name}`}
-                    className="inline-grid size-11 place-items-center rounded-lg text-[#852f21] hover:bg-[#fff1e7]"
+                    className="inline-grid size-11 place-items-center rounded-lg text-error-text transition hover:bg-error-surface"
                     onClick={() => onDelete(template)}
                     type="button"
                   >

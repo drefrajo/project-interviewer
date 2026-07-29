@@ -27,7 +27,7 @@ export const ConfirmDialog = ({
     <div
       aria-labelledby="confirmation-title"
       aria-modal="true"
-      className="fixed inset-0 z-30 grid place-items-center bg-[rgb(19_34_29_/_55%)] p-4"
+      className="fixed inset-0 z-30 grid place-items-center bg-overlay p-4"
       role="dialog"
     >
       <section className="w-full max-w-lg rounded-xl border border-line bg-surface p-6 shadow-2xl">

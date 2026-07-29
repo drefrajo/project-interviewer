@@ -7,7 +7,7 @@ import type {
 import { forwardRef } from "react";
 
 const control =
-  "min-h-11 w-full rounded-lg border border-line bg-white px-3 py-2 text-ink shadow-sm outline-none transition focus:border-forest";
+  "min-h-11 w-full rounded-lg border border-line bg-surface px-3 py-2 text-ink shadow-sm outline-none transition focus:border-forest";
 
 export const Field = ({
   label,
@@ -46,10 +46,10 @@ export const Select = (
 ) => <select {...props} className={`${control} ${props.className ?? ""}`} />;
 
 export const primaryButton =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-forest px-4 py-2 text-sm font-extrabold text-white transition hover:bg-[#0f3d2f] disabled:cursor-not-allowed disabled:opacity-55";
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-forest px-4 py-2 text-sm font-extrabold text-white transition hover:bg-forest-strong dark:bg-forest-strong disabled:cursor-not-allowed disabled:opacity-55";
 
 export const secondaryButton =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-line bg-white px-4 py-2 text-sm font-extrabold text-ink transition hover:bg-[#f1f3ed] disabled:cursor-not-allowed disabled:opacity-55";
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-line bg-surface px-4 py-2 text-sm font-extrabold text-ink transition hover:bg-soft-hover disabled:cursor-not-allowed disabled:opacity-55";
 
 export const dangerButton =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-[#e9b29e] bg-white px-4 py-2 text-sm font-extrabold text-[#852f21] transition hover:bg-[#fff1e7] disabled:cursor-not-allowed disabled:opacity-55";
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-error-border bg-surface px-4 py-2 text-sm font-extrabold text-error-text transition hover:bg-error-surface disabled:cursor-not-allowed disabled:opacity-55";

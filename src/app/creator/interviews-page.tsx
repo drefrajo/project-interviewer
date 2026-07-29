@@ -60,10 +60,10 @@ export const InterviewsPage = () => {
                 <span
                   className={`rounded-full px-2.5 py-1 text-xs font-extrabold ${
                     interview.status === "needs_attention"
-                      ? "bg-[#fff1e7] text-[#852f21]"
+                      ? "bg-error-surface text-error-text"
                       : interview.status === "submitted"
-                        ? "bg-lime text-forest"
-                        : "bg-[#e3ede8] text-forest"
+                        ? "bg-lime text-forest dark:text-forest-strong"
+                        : "bg-soft text-forest"
                   }`}
                 >
                   {statusCopy[interview.status]}
@@ -101,4 +101,3 @@ export const InterviewsPage = () => {
     </main>
   );
 };
-

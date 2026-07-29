@@ -63,7 +63,7 @@ export const VisualDirectionSummary = ({
       );
     }
     return (
-      <article className="mt-4 grid overflow-hidden rounded-xl border border-line bg-white sm:grid-cols-[minmax(14rem,20rem)_1fr]">
+      <article className="mt-4 grid overflow-hidden rounded-xl border border-line bg-surface sm:grid-cols-[minmax(14rem,20rem)_1fr]">
         {concept.imageUrl ? (
           <img
             alt={`${concept.name}, rough visual direction`}
@@ -73,7 +73,7 @@ export const VisualDirectionSummary = ({
         ) : (
           <div
             aria-hidden="true"
-            className="aspect-[3/2] bg-[#eef2eb]"
+            className="aspect-[3/2] bg-soft"
           />
         )}
         <div className="p-5 sm:p-6">
@@ -100,7 +100,7 @@ export const VisualDirectionSummary = ({
   }
 
   return (
-    <div className="mt-4 rounded-xl border border-line bg-white p-5 sm:p-6">
+    <div className="mt-4 rounded-xl border border-line bg-surface p-5 sm:p-6">
       <p className="text-xs font-extrabold tracking-[0.14em] text-forest uppercase">
         {text.inspiration}
       </p>

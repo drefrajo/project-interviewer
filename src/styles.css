@@ -3,37 +3,90 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
-@theme {
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
   --font-sans: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Space Grotesk Variable", "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
-  --color-ink: #13221d;
-  --color-muted: #64716c;
-  --color-line: #d9ddd5;
-  --color-surface: #fffefa;
-  --color-forest: #174f3d;
-  --color-lime: #c9f06b;
-  --color-coral: #ed744d;
-  --color-canvas: #f4f3ed;
+  --color-ink: var(--app-ink);
+  --color-muted: var(--app-muted);
+  --color-line: var(--app-line);
+  --color-surface: var(--app-surface);
+  --color-forest: var(--app-forest);
+  --color-forest-strong: var(--app-forest-strong);
+  --color-lime: var(--app-lime);
+  --color-coral: var(--app-coral);
+  --color-canvas: var(--app-canvas);
+  --color-soft: var(--app-soft);
+  --color-soft-strong: var(--app-soft-strong);
+  --color-soft-hover: var(--app-soft-hover);
+  --color-error-border: var(--app-error-border);
+  --color-error-surface: var(--app-error-surface);
+  --color-error-text: var(--app-error-text);
+  --color-overlay: var(--app-overlay);
 }
+
 :root {
-  color: #13221d;
-  background: #f4f3ed;
+  color-scheme: light;
+  --app-ink: #13221d;
+  --app-muted: #64716c;
+  --app-line: #d9ddd5;
+  --app-surface: #fffefa;
+  --app-forest: #174f3d;
+  --app-forest-strong: #0f3d2f;
+  --app-lime: #c9f06b;
+  --app-coral: #ed744d;
+  --app-canvas: #f4f3ed;
+  --app-soft: #eef2eb;
+  --app-soft-strong: #e6ebe3;
+  --app-soft-hover: #f1f3ed;
+  --app-error-border: #e9b29e;
+  --app-error-surface: #fff1e7;
+  --app-error-text: #852f21;
+  --app-overlay: rgb(19 34 29 / 55%);
   font-family: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  --line: #d9ddd5;
-  --green: #174f3d;
+  --line: var(--app-line);
+  --green: var(--app-forest);
   --focus: #255dff;
+}
+
+:root.dark {
+  color-scheme: dark;
+  --app-ink: #edf0ef;
+  --app-muted: #aeb4b2;
+  --app-line: #3b3f41;
+  --app-surface: #1b1d1f;
+  --app-forest: #659f83;
+  --app-forest-strong: #2d654e;
+  --app-lime: #cce786;
+  --app-coral: #f38a62;
+  --app-canvas: #111315;
+  --app-soft: #272a2c;
+  --app-soft-strong: #34383a;
+  --app-soft-hover: #303437;
+  --app-error-border: #c8755d;
+  --app-error-surface: #422b27;
+  --app-error-text: #ffb09a;
+  --app-overlay: rgb(0 0 0 / 68%);
+  --line: #3b3f41;
+  --green: #659f83;
+  --focus: #8aaaff;
 }
 
 html {
   scroll-behavior: smooth;
+  background: var(--app-canvas);
 }
 
 body {
+  color: var(--app-ink);
+  background: var(--app-canvas);
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  transition: background-color 180ms ease, color 180ms ease;
 }
 
 h1,
@@ -48,8 +101,8 @@ h3 {
 }
 
 .skip-link {
-  background: #13221d;
-  color: white;
+  background: var(--app-ink);
+  color: var(--app-canvas);
   left: 1rem;
   padding: 0.75rem 1rem;
   position: fixed;

@@ -7,6 +7,7 @@ import {
 import type { ProductionAuthClient } from "../../infrastructure/auth-client";
 import { primaryButton, secondaryButton } from "../shared/form-controls";
 import { LegalFooter } from "../shared/legal-footer";
+import { ThemeToggle } from "../shared/theme-toggle";
 
 type OAuthProviderId = "google" | "github";
 
@@ -70,9 +71,12 @@ export const CreatorAuthGate = ({
       <div className="flex min-h-screen flex-col bg-canvas">
         <main className="grid flex-1 place-items-center px-4" id="main-content">
           <section className="w-full max-w-xl rounded-2xl border border-line bg-surface p-6 shadow-xl sm:p-9">
-            <p className="text-xs font-extrabold tracking-[0.14em] text-forest uppercase">
-              Creator workspace
-            </p>
+            <div className="flex items-center justify-between gap-4">
+              <p className="text-xs font-extrabold tracking-[0.14em] text-forest uppercase">
+                Creator workspace
+              </p>
+              <ThemeToggle />
+            </div>
             <h1 className="mt-2 font-display text-4xl font-extrabold tracking-tight">
               Sign in to Project Interviewer
             </h1>
@@ -81,7 +85,7 @@ export const CreatorAuthGate = ({
               are never silently linked, even when they share an email address.
             </p>
             {error ? (
-              <p className="mt-5 rounded-lg border border-[#e9b29e] bg-[#fff1e7] p-4 font-bold text-[#852f21]" role="alert">
+              <p className="mt-5 rounded-lg border border-error-border bg-error-surface p-4 font-bold text-error-text" role="alert">
                 {friendlyAuthError(error, attemptedProvider)}
               </p>
             ) : null}

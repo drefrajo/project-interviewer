@@ -8,6 +8,7 @@ import {
 } from "../../infrastructure/interview-api";
 import { OperationFeedback } from "../shared/operation-feedback";
 import { LegalFooter } from "../shared/legal-footer";
+import { ThemeToggle } from "../shared/theme-toggle";
 import { ConceptsStep } from "./concepts-step";
 import { CLIENT_COPY } from "./client-copy";
 import { DocumentReviewStep } from "./document-review-step";
@@ -106,13 +107,16 @@ export const ClientInterviewPage = () => {
       <header className="border-b border-line bg-surface px-4 py-4 sm:px-8">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-5">
           <span className="font-display font-extrabold">{interview.projectName}</span>
-          <span className="text-sm text-muted">{interview.creator.displayName}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted">{interview.creator.displayName}</span>
+            <ThemeToggle />
+          </div>
         </div>
       </header>
       {interview.started || entered ? (
         <nav
           aria-label={interview.clientLanguage === "de" ? "Fortschritt" : "Progress"}
-          className="border-b border-line bg-white px-4 py-3"
+          className="border-b border-line bg-surface px-4 py-3"
         >
           <ol className="mx-auto grid max-w-3xl grid-cols-4 gap-2">
             {text.steps.map((label, index) => (
@@ -140,7 +144,7 @@ export const ClientInterviewPage = () => {
         id="main-content"
       >
         {error ? (
-          <p className="mx-auto mb-5 max-w-3xl rounded-lg border border-[#e9b29e] bg-[#fff1e7] p-4 font-bold text-[#852f21]" role="alert">
+          <p className="mx-auto mb-5 max-w-3xl rounded-lg border border-error-border bg-error-surface p-4 font-bold text-error-text" role="alert">
             {error}
           </p>
         ) : null}

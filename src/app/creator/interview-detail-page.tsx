@@ -133,7 +133,7 @@ export const InterviewDetailPage = () => {
         </div>
       </header>
       {error ? (
-        <p className="mt-5 rounded-lg border border-[#e9b29e] bg-[#fff1e7] p-4 font-bold text-[#852f21]" role="alert">
+        <p className="mt-5 rounded-lg border border-error-border bg-error-surface p-4 font-bold text-error-text" role="alert">
           {error}
         </p>
       ) : null}
@@ -144,7 +144,7 @@ export const InterviewDetailPage = () => {
           Interview. Regenerating it invalidates the old link immediately.
         </p>
         {interviewUrl ? (
-          <code className="mt-4 block overflow-x-auto rounded-lg bg-[#eef2eb] p-3 text-sm">
+          <code className="mt-4 block overflow-x-auto rounded-lg bg-soft p-3 text-sm">
             {interviewUrl}
           </code>
         ) : (
@@ -279,7 +279,7 @@ export const InterviewDetailPage = () => {
             <h3 className="font-display text-2xl font-extrabold">Visual Concepts</h3>
             <div className="mt-3 grid gap-4 md:grid-cols-3">
               {interview.concepts.map((concept) => (
-                <figure className="overflow-hidden rounded-xl border border-line bg-white" key={concept.id}>
+                <figure className="overflow-hidden rounded-xl border border-line bg-surface" key={concept.id}>
                   {concept.imageUrl ? (
                     <img
                       alt={`${concept.name}, rough visual direction`}
@@ -287,7 +287,7 @@ export const InterviewDetailPage = () => {
                       src={concept.imageUrl}
                     />
                   ) : (
-                    <div className="grid aspect-[3/2] place-items-center bg-[#eef2eb] px-5 text-center text-muted">
+                    <div className="grid aspect-[3/2] place-items-center bg-soft px-5 text-center text-muted">
                       {concept.state === "failed" ? "Generation failed" : "Generating…"}
                     </div>
                   )}

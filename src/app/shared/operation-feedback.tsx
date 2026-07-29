@@ -17,7 +17,7 @@ export const OperationFeedback = ({
   if (operation.state === "pending") {
     if (hidePending) return null;
     return (
-      <div className="rounded-lg border border-line bg-white p-4">
+      <div className="rounded-lg border border-line bg-surface p-4">
         <WorkingIndicator
           label={language === "de" ? "Wird verarbeitet" : "Working"}
           phrases={
@@ -43,7 +43,7 @@ export const OperationFeedback = ({
   }
   return (
     <div
-      className="flex flex-col items-start gap-3 rounded-lg border border-[#e9b29e] bg-[#fff1e7] p-4 text-[#852f21]"
+      className="flex flex-col items-start gap-3 rounded-lg border border-error-border bg-error-surface p-4 text-error-text"
       role="alert"
     >
       <p className="flex gap-2 font-bold">

@@ -317,12 +317,12 @@ export const InterviewForm = () => {
           />
         </Field>
         {templateNotice ? (
-          <p className="rounded-lg bg-[#eef2eb] p-3 text-sm font-bold text-forest" role="status">
+          <p className="rounded-lg bg-soft p-3 text-sm font-bold text-forest" role="status">
             {templateNotice}
           </p>
         ) : null}
         {error ? (
-          <p className="rounded-lg border border-[#e9b29e] bg-[#fff1e7] p-4 font-bold text-[#852f21]" role="alert">
+          <p className="rounded-lg border border-error-border bg-error-surface p-4 font-bold text-error-text" role="alert">
             {error}
           </p>
         ) : null}

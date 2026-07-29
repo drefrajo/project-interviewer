@@ -20,21 +20,21 @@ const isHttpUrl = (value: string) => {
 const ConceptImageSkeleton = () => (
   <div
     aria-hidden="true"
-    className="aspect-[3/2] animate-pulse bg-[#e6ebe3]"
+    className="aspect-[3/2] animate-pulse bg-soft-strong"
   />
 );
 
 const ConceptCardSkeleton = () => (
   <article
     aria-hidden="true"
-    className="overflow-hidden rounded-xl border-2 border-line bg-white"
+    className="overflow-hidden rounded-xl border-2 border-line bg-surface"
     data-testid="concept-skeleton"
   >
     <ConceptImageSkeleton />
     <div className="space-y-3 p-4">
-      <div className="h-5 w-2/3 animate-pulse rounded bg-[#e6ebe3]" />
-      <div className="h-3 w-full animate-pulse rounded bg-[#eef2eb]" />
-      <div className="h-3 w-4/5 animate-pulse rounded bg-[#eef2eb]" />
+      <div className="h-5 w-2/3 animate-pulse rounded bg-soft-strong" />
+      <div className="h-3 w-full animate-pulse rounded bg-soft" />
+      <div className="h-3 w-4/5 animate-pulse rounded bg-soft" />
     </div>
   </article>
 );
@@ -86,7 +86,7 @@ export const ConceptsStep = ({
       {creatingConcepts ? (
         <p
           aria-atomic="true"
-          className="mt-5 max-w-3xl rounded-lg border border-line bg-[#eef2eb] p-4 font-bold text-forest"
+        className="mt-5 max-w-3xl rounded-lg border border-line bg-soft p-4 font-bold text-forest"
           role="status"
         >
           {text.conceptsPending}
@@ -102,7 +102,7 @@ export const ConceptsStep = ({
             ))
           : concepts.map((concept) => (
               <label
-                className={`overflow-hidden rounded-xl border-2 bg-white ${
+                className={`overflow-hidden rounded-xl border-2 bg-surface ${
                   selected === concept.id && mode === "concept"
                     ? "border-forest"
                     : "border-line"
@@ -118,7 +118,7 @@ export const ConceptsStep = ({
                 ) : pending && concept.state !== "failed" ? (
                   <ConceptImageSkeleton />
                 ) : (
-                  <div className="grid aspect-[3/2] place-items-center bg-[#eef2eb] px-5 text-center font-bold text-muted">
+                  <div className="grid aspect-[3/2] place-items-center bg-soft px-5 text-center font-bold text-muted">
                     {concept.state === "failed"
                       ? language === "de"
                         ? "Konzept konnte nicht erstellt werden"
@@ -207,7 +207,7 @@ export const ConceptsStep = ({
         </label>
         {mode === "links" &&
         normalizedLinks.some((link) => !isHttpUrl(link)) ? (
-          <p className="mt-2 text-sm font-bold text-[#852f21]" role="alert">
+          <p className="mt-2 text-sm font-bold text-error-text" role="alert">
             {language === "de"
               ? "Verwenden Sie nur vollständige HTTP(S)-Links."
               : "Use complete HTTP(S) links only."}

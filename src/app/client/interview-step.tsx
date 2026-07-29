@@ -69,7 +69,7 @@ const ComposerWorking = ({
     <div
       aria-label={activeLabel}
       aria-live="polite"
-      className="absolute inset-0 overflow-hidden rounded-lg border border-line bg-white/80 backdrop-blur-sm"
+      className="absolute inset-0 overflow-hidden rounded-lg border border-line bg-surface/80 backdrop-blur-sm"
       data-testid="composer-working"
       role="status"
     >
@@ -161,8 +161,8 @@ export const InterviewStepView = ({
           <article
             className={
               message.role === "client"
-                ? "ml-auto max-w-[90%] rounded-2xl rounded-br-sm bg-forest px-4 py-3 text-white sm:max-w-[80%]"
-                : "mr-auto max-w-[95%] rounded-2xl rounded-bl-sm border border-line bg-white px-4 py-3 sm:max-w-[85%]"
+                ? "ml-auto max-w-[90%] rounded-2xl rounded-br-sm bg-forest px-4 py-3 text-white dark:bg-forest-strong sm:max-w-[80%]"
+                : "mr-auto max-w-[95%] rounded-2xl rounded-bl-sm border border-line bg-surface px-4 py-3 sm:max-w-[85%]"
             }
             key={message.id}
           >
@@ -184,7 +184,7 @@ export const InterviewStepView = ({
           <div className="mb-3 flex flex-wrap gap-2">
             {suggestedReplies.map((reply) => (
               <button
-                className="rounded-full border border-line bg-white px-3 py-2 text-left text-sm font-bold text-forest"
+                className="rounded-full border border-line bg-surface px-3 py-2 text-left text-sm font-bold text-forest"
                 key={reply}
                 onClick={() => setDraft(reply)}
                 type="button"

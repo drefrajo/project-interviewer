@@ -4,6 +4,7 @@ import { NavLink, Outlet } from "react-router-dom";
 import type { ProductionAuthClient } from "../../infrastructure/auth-client";
 import { interviewApi } from "../../infrastructure/interview-api";
 import { LegalFooter } from "../shared/legal-footer";
+import { ThemeToggle } from "../shared/theme-toggle";
 
 const tabs = [
   { to: "/interviews", label: "Interviews", icon: FileText },
@@ -30,7 +31,7 @@ export const CreatorShell = ({
           >
             <span
               aria-hidden="true"
-              className="inline-grid size-9 place-items-center rounded-full bg-forest text-sm text-lime"
+              className="inline-grid size-9 place-items-center rounded-full bg-forest text-sm text-lime dark:bg-forest-strong"
             >
               PI
             </span>
@@ -38,9 +39,10 @@ export const CreatorShell = ({
           </NavLink>
           <div className="flex items-center gap-3 text-sm text-muted">
             <span className="hidden sm:inline">{profile?.displayName}</span>
+            <ThemeToggle />
             <button
               aria-label="Sign out"
-              className="inline-grid size-11 place-items-center rounded-lg hover:bg-[#eef2eb]"
+              className="inline-grid size-11 place-items-center rounded-lg transition hover:bg-soft"
               onClick={() => void authClient.signOut()}
               type="button"
             >
@@ -49,7 +51,7 @@ export const CreatorShell = ({
           </div>
         </div>
       </header>
-      <nav aria-label="Creator workspace" className="border-b border-line bg-white px-4 sm:px-8">
+      <nav aria-label="Creator workspace" className="border-b border-line bg-surface px-4 sm:px-8">
         <div className="mx-auto flex max-w-7xl gap-1 overflow-x-auto">
           {tabs.map(({ to, label, icon: Icon }) => (
             <NavLink

@@ -53,9 +53,9 @@ export const SafeMarkdown = ({
   variant?: "card" | "plain";
 }) => (
   <div
-    className={`prose prose-slate min-w-0 max-w-none overflow-x-auto [overflow-wrap:anywhere] prose-a:text-forest [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 ${
+    className={`prose prose-slate dark:prose-invert min-w-0 max-w-none overflow-x-auto [overflow-wrap:anywhere] prose-a:text-forest [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 ${
       variant === "card"
-        ? "rounded-xl border border-line bg-white p-5"
+        ? "rounded-xl border border-line bg-surface p-5"
         : "bg-transparent p-0"
     }`}
     data-markdown-variant={variant}

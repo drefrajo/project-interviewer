@@ -59,7 +59,7 @@ export const WelcomeStep = ({
         <Disclosure icon={<ShieldAlert />} text={text.sensitive} />
         <Disclosure icon={<Sparkles />} text={text.concepts} />
       </dl>
-      <div className="mt-8 rounded-lg bg-[#eef2eb] p-4 text-sm leading-6 text-muted">
+      <div className="mt-8 rounded-lg bg-soft p-4 text-sm leading-6 text-muted">
         <p>
           <strong className="text-ink">{text.model}:</strong>{" "}
           {interview.modelFamily}
@@ -82,7 +82,7 @@ export const WelcomeStep = ({
 };
 
 const Disclosure = ({ icon, text }: { icon: ReactNode; text: string }) => (
-  <div className="flex gap-3 rounded-lg border border-line bg-white p-4">
+  <div className="flex gap-3 rounded-lg border border-line bg-surface p-4">
     <span aria-hidden="true" className="mt-0.5 text-forest">
       {icon}
     </span>
