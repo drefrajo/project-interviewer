@@ -4,7 +4,6 @@ import { authComponent } from "./auth";
 import { getCreatorProfile, requireIdentity } from "./lib/auth";
 import { assertLength } from "./lib/domain";
 import { isOAuthProviderId } from "./lib/oauth";
-import { BUILT_IN_TEMPLATES } from "./lib/templates";
 
 export const getCurrent = query({
   args: {},
@@ -63,29 +62,6 @@ export const upsertCurrent = mutation({
           updatedAt: now,
         });
 
-    for (const template of BUILT_IN_TEMPLATES) {
-      for (const sourceLanguage of ["en", "de"] as const) {
-        const existing = await ctx.db
-          .query("interviewTemplates")
-          .withIndex("by_builtInKey_and_sourceLanguage", (q) =>
-            q
-              .eq("builtInKey", template.key)
-              .eq("sourceLanguage", sourceLanguage),
-          )
-          .unique();
-        if (!existing) {
-          await ctx.db.insert("interviewTemplates", {
-            kind: "built_in",
-            builtInKey: template.key,
-            name: template.name,
-            sourceLanguage,
-            instructions: template[sourceLanguage],
-            createdAt: now,
-            updatedAt: now,
-          });
-        }
-      }
-    }
     return { id, displayName, email };
   },
 });

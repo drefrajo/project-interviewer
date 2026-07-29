@@ -4,8 +4,13 @@ import { useEffect, useState, type FormEvent } from "react";
 import {
   interviewApi,
   type ClientLanguage,
-  type InterviewTemplate,
+  type PrivateInterviewTemplate,
 } from "../../infrastructure/interview-api";
+import {
+  BUILT_IN_INTERVIEW_TEMPLATES,
+  privateInterviewTemplates,
+  type InterviewTemplate,
+} from "../../domain/interview-templates";
 import { ConfirmDialog } from "../shared/confirm-dialog";
 import {
   Field,
@@ -17,16 +22,17 @@ import {
 } from "../shared/form-controls";
 
 export const TemplatesPage = () => {
-  const templates = useQuery(interviewApi.templates.list, {});
+  const persistedTemplates = useQuery(interviewApi.templates.list, {});
+  const privateTemplates = privateInterviewTemplates(persistedTemplates);
   const create = useMutation(interviewApi.templates.create);
   const update = useMutation(interviewApi.templates.update);
   const remove = useMutation(interviewApi.templates.remove);
-  const [editing, setEditing] = useState<InterviewTemplate | "new" | null>(null);
-  const [deleting, setDeleting] = useState<InterviewTemplate | null>(null);
+  const [editing, setEditing] = useState<
+    PrivateInterviewTemplate | "new" | null
+  >(null);
+  const [deleting, setDeleting] =
+    useState<PrivateInterviewTemplate | null>(null);
   const [busy, setBusy] = useState(false);
-  const builtIn = templates?.filter((template) => template.kind === "built_in") ?? [];
-  const privateTemplates =
-    templates?.filter((template) => template.kind === "private") ?? [];
 
   const deleteTemplate = async () => {
     if (!deleting) return;
@@ -76,10 +82,10 @@ export const TemplatesPage = () => {
       ) : null}
       <TemplateGroup
         empty="Built-in templates are not available."
-        templates={builtIn}
+        templates={[...BUILT_IN_INTERVIEW_TEMPLATES]}
         title="Built-in Interview Templates"
       />
-      <TemplateGroup
+      <TemplateGroup<PrivateInterviewTemplate>
         empty="No Private Interview Templates yet."
         onDelete={setDeleting}
         onEdit={setEditing}
@@ -103,7 +109,7 @@ export const TemplatesPage = () => {
   );
 };
 
-const TemplateGroup = ({
+const TemplateGroup = <Template extends InterviewTemplate>({
   title,
   empty,
   templates,
@@ -112,9 +118,9 @@ const TemplateGroup = ({
 }: {
   title: string;
   empty: string;
-  templates: InterviewTemplate[];
-  onEdit?(template: InterviewTemplate): void;
-  onDelete?(template: InterviewTemplate): void;
+  templates: Template[];
+  onEdit?(template: Template): void;
+  onDelete?(template: Template): void;
 }) => (
   <section className="mt-10">
     <h2 className="font-display text-2xl font-extrabold">{title}</h2>
@@ -171,7 +177,7 @@ const TemplateForm = ({
   onCancel,
   onSave,
 }: {
-  template?: InterviewTemplate;
+  template?: PrivateInterviewTemplate;
   busy: boolean;
   onCancel(): void;
   onSave(input: {

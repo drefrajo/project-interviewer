@@ -7,8 +7,11 @@ import {
   interviewIdFrom,
   type ClientLanguage,
   type InterviewModel,
-  type InterviewTemplate,
 } from "../../infrastructure/interview-api";
+import {
+  builtInInterviewTemplateForLanguage,
+  interviewTemplates,
+} from "../../domain/interview-templates";
 import {
   Field,
   primaryButton,
@@ -18,35 +21,15 @@ import {
   TextInput,
 } from "../shared/form-controls";
 
-const builtInForLanguage = (
-  template: InterviewTemplate,
-  language: ClientLanguage,
-  templates: readonly InterviewTemplate[] = [],
-) =>
-  template.kind === "built_in"
-    ? templates.find(
-        (candidate) =>
-          candidate.kind === "built_in" &&
-          candidate.sourceLanguage === language &&
-          (template.builtInKey && candidate.builtInKey
-            ? candidate.builtInKey === template.builtInKey
-            : candidate.name === template.name),
-      )
-    : undefined;
-
-const instructionsFor = (
-  template: InterviewTemplate,
-  language: ClientLanguage,
-  templates: readonly InterviewTemplate[] = [],
-) =>
-  builtInForLanguage(template, language, templates)?.instructions ??
-  template.instructions;
-
 export const InterviewForm = () => {
   const { interviewId } = useParams();
   const editing = Boolean(interviewId);
   const navigate = useNavigate();
-  const templates = useQuery(interviewApi.templates.list, {});
+  const privateTemplates = useQuery(interviewApi.templates.list, {});
+  const templates = useMemo(
+    () => interviewTemplates(privateTemplates),
+    [privateTemplates],
+  );
   const interview = useQuery(
     interviewApi.interviews.get,
     interviewId ? { interviewId } : "skip",
@@ -103,7 +86,9 @@ export const InterviewForm = () => {
       setSelectedTemplateId("");
       return;
     }
-    const next = instructionsFor(template, clientLanguage, templates);
+    const next =
+      builtInInterviewTemplateForLanguage(template, clientLanguage)
+        ?.instructions ?? template.instructions;
     if (
       instructions.trim() &&
       instructions !== templateBaseline &&
@@ -131,10 +116,9 @@ export const InterviewForm = () => {
           "Client Language changed. Your edited Interview Instructions were kept.",
         );
       } else {
-        const translatedTemplate = builtInForLanguage(
+        const translatedTemplate = builtInInterviewTemplateForLanguage(
           selectedTemplate,
           language,
-          templates ?? [],
         );
         if (translatedTemplate) {
           setSelectedTemplateId(translatedTemplate._id);

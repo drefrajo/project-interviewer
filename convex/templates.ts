@@ -9,28 +9,21 @@ export const list = query({
   args: {},
   handler: async (ctx) => {
     const creator = await requireCreatorProfile(ctx);
-    const [builtIn, privateTemplates] = await Promise.all([
-      ctx.db
-        .query("interviewTemplates")
-        .withIndex("by_kind", (q) => q.eq("kind", "built_in"))
-        .take(12),
-      ctx.db
-        .query("interviewTemplates")
-        .withIndex("by_ownerId", (q) => q.eq("ownerId", creator._id))
-        .order("desc")
-        .take(100),
-    ]);
-    return [...builtIn, ...privateTemplates].map((template) => ({
-      _id: template._id,
-      kind: template.kind,
-      ...(template.builtInKey
-        ? { builtInKey: template.builtInKey }
-        : {}),
-      name: template.name,
-      sourceLanguage: template.sourceLanguage,
-      instructions: template.instructions,
-      updatedAt: template.updatedAt,
-    }));
+    const privateTemplates = await ctx.db
+      .query("interviewTemplates")
+      .withIndex("by_ownerId", (q) => q.eq("ownerId", creator._id))
+      .order("desc")
+      .take(100);
+    return privateTemplates
+      .filter((template) => template.kind === "private")
+      .map((template) => ({
+        _id: template._id,
+        kind: "private" as const,
+        name: template.name,
+        sourceLanguage: template.sourceLanguage,
+        instructions: template.instructions,
+        updatedAt: template.updatedAt,
+      }));
   },
 });
 

@@ -1,7 +1,15 @@
 import type { FunctionReference } from "convex/server";
 import { api as sourceApi } from "../../convex/typed_api";
+import type {
+  ClientLanguage,
+  PrivateInterviewTemplate,
+} from "../domain/interview-templates";
 
-export type ClientLanguage = "en" | "de";
+export type {
+  ClientLanguage,
+  InterviewTemplate,
+  PrivateInterviewTemplate,
+} from "../domain/interview-templates";
 export type InterviewModel = "gpt-5.6-terra" | "deepseek-v4-flash";
 export type InterviewStep = "interview" | "review" | "concepts" | "submitted";
 export type InterviewStatus =
@@ -14,18 +22,6 @@ export interface CreatorProfile {
   displayName: string;
   email: string;
   provider?: "google" | "github" | null;
-}
-
-export interface InterviewTemplate {
-  _id: string;
-  builtInKey?: string;
-  name: string;
-  kind: "built_in" | "private";
-  sourceLanguage: ClientLanguage;
-  instructions: string;
-  englishInstructions?: string;
-  germanInstructions?: string;
-  updatedAt?: number;
 }
 
 export interface VisualConcept {
@@ -136,7 +132,7 @@ interface InterviewApi {
     updateDisplayName: Mutation<{ displayName: string }, CreatorProfile>;
   };
   templates: {
-    list: Query<Record<string, never>, InterviewTemplate[]>;
+    list: Query<Record<string, never>, PrivateInterviewTemplate[]>;
     create: Mutation<
       {
         name: string;

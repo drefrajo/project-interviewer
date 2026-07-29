@@ -2,7 +2,10 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { InterviewTemplate } from "../../infrastructure/interview-api";
+import {
+  BUILT_IN_INTERVIEW_TEMPLATES,
+  type PrivateInterviewTemplate,
+} from "../../domain/interview-templates";
 import { InterviewForm } from "./interview-form";
 
 const convex = vi.hoisted(() => ({
@@ -13,23 +16,7 @@ const convex = vi.hoisted(() => ({
 
 vi.mock("convex/react", () => convex);
 
-const templates: InterviewTemplate[] = [
-  {
-    _id: "built-in-en",
-    builtInKey: "single-page-business",
-    kind: "built_in",
-    name: "Single-page business website",
-    sourceLanguage: "en",
-    instructions: "English built-in instructions",
-  },
-  {
-    _id: "built-in-de",
-    builtInKey: "single-page-business",
-    kind: "built_in",
-    name: "Single-page business website",
-    sourceLanguage: "de",
-    instructions: "Deutsche Standardanweisungen",
-  },
+const privateTemplates: PrivateInterviewTemplate[] = [
   {
     _id: "private-en",
     kind: "private",
@@ -45,6 +32,12 @@ const templates: InterviewTemplate[] = [
     instructions: "Deutsche private Anweisungen",
   },
 ];
+const singlePageEnglish = BUILT_IN_INTERVIEW_TEMPLATES.find(
+  ({ _id }) => _id === "built-in:single-page-business:en",
+)!;
+const singlePageGerman = BUILT_IN_INTERVIEW_TEMPLATES.find(
+  ({ _id }) => _id === "built-in:single-page-business:de",
+)!;
 
 const renderForm = () =>
   render(
@@ -56,7 +49,7 @@ const renderForm = () =>
 describe("Create Interview template language", () => {
   beforeEach(() => {
     convex.useQuery.mockImplementation((_reference, args) =>
-      args === "skip" ? undefined : templates,
+      args === "skip" ? undefined : privateTemplates,
     );
     convex.useMutation.mockReturnValue(vi.fn(async () => null));
     convex.useAction.mockReturnValue(vi.fn(async () => ""));
@@ -183,13 +176,13 @@ describe("Create Interview template language", () => {
       name: /^Interview Instructions/,
     });
 
-    await user.selectOptions(templateSelect, "built-in-en");
-    expect(instructions).toHaveValue("English built-in instructions");
+    await user.selectOptions(templateSelect, singlePageEnglish._id);
+    expect(instructions).toHaveValue(singlePageEnglish.instructions);
 
     await user.selectOptions(languageSelect, "de");
 
-    expect(templateSelect).toHaveValue("built-in-de");
-    expect(instructions).toHaveValue("Deutsche Standardanweisungen");
+    expect(templateSelect).toHaveValue(singlePageGerman._id);
+    expect(instructions).toHaveValue(singlePageGerman.instructions);
   });
 
   it("keeps edited instructions instead of switching their built-in", async () => {
@@ -205,14 +198,14 @@ describe("Create Interview template language", () => {
       name: /^Interview Instructions/,
     });
 
-    await user.selectOptions(templateSelect, "built-in-en");
+    await user.selectOptions(templateSelect, singlePageEnglish._id);
     await user.type(instructions, " with owner edits");
     await user.selectOptions(languageSelect, "de");
 
     expect(languageSelect).toHaveValue("de");
     expect(templateSelect).toHaveValue("");
     expect(instructions).toHaveValue(
-      "English built-in instructions with owner edits",
+      `${singlePageEnglish.instructions} with owner edits`,
     );
   });
 
