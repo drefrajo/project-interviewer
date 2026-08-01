@@ -54,7 +54,12 @@ export const SettingsPage = () => {
           hint={text.settings.emailHint}
           label={text.settings.email}
         >
-          <TextInput disabled readOnly value={profile?.email ?? ""} />
+          <TextInput
+            className="disabled:cursor-not-allowed disabled:bg-soft disabled:text-muted disabled:opacity-75"
+            disabled
+            readOnly
+            value={profile?.email ?? ""}
+          />
         </Field>
         <div className="flex items-center gap-4">
           <button
