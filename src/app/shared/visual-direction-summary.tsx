@@ -10,12 +10,14 @@ const copy = {
     unavailable: "The selected concept is no longer available.",
     inspiration: "Selected inspiration",
     note: "Additional note",
+    rough: "rough visual direction",
   },
   de: {
     selected: "Ausgewähltes Konzept",
     unavailable: "Das ausgewählte Konzept ist nicht mehr verfügbar.",
     inspiration: "Ausgewählte Inspiration",
     note: "Zusätzliche Notiz",
+    rough: "grobe visuelle Richtung",
   },
 } satisfies Record<ClientLanguage, Record<string, string>>;
 
@@ -66,7 +68,7 @@ export const VisualDirectionSummary = ({
       <article className="mt-4 grid overflow-hidden rounded-xl border border-line bg-surface sm:grid-cols-[minmax(14rem,20rem)_1fr]">
         {concept.imageUrl ? (
           <img
-            alt={`${concept.name}, rough visual direction`}
+            alt={`${concept.name}, ${text.rough}`}
             className="aspect-[3/2] h-full w-full object-cover"
             src={concept.imageUrl}
           />

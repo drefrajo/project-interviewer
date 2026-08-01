@@ -23,6 +23,8 @@ import {
   visualDirectionMarkdown,
   VisualDirectionSummary,
 } from "../shared/visual-direction-summary";
+import { creatorCopy } from "./creator-copy";
+import { useCreatorLanguage } from "./creator-language";
 
 const linkFrom = (
   result: string | { interviewUrl?: string; linkToken?: string },
@@ -52,6 +54,8 @@ const downloadText = (filename: string, content: string) => {
 };
 
 export const InterviewDetailPage = () => {
+  const language = useCreatorLanguage();
+  const text = creatorCopy[language];
   const { interviewId = "" } = useParams();
   const navigate = useNavigate();
   const interview = useQuery(interviewApi.interviews.get, { interviewId });
@@ -78,11 +82,15 @@ export const InterviewDetailPage = () => {
     [interview, rotatedUrl],
   );
 
-  if (interview === undefined) return <DetailLoading />;
+  if (interview === undefined) {
+    return <DetailLoading label={text.form.formLoading} />;
+  }
   if (interview === null) {
     return (
       <main className="mx-auto max-w-3xl px-4 py-10" id="main-content">
-        <h1 className="font-display text-3xl font-extrabold">Interview unavailable</h1>
+        <h1 className="font-display text-3xl font-extrabold">
+          {text.detail.unavailable}
+        </h1>
       </main>
     );
   }
@@ -105,13 +113,13 @@ export const InterviewDetailPage = () => {
       <header className="flex flex-col items-start justify-between gap-5 lg:flex-row lg:items-end">
         <div>
           <p className="text-xs font-extrabold tracking-[0.14em] text-forest uppercase">
-            {interview.status.replace("_", " ")} · {interview.step}
+            {text.interviews.status[interview.status]} · {text.interviews.step[interview.step]}
           </p>
           <h1 className="mt-2 font-display text-4xl font-extrabold">
             {interview.projectName}
           </h1>
           <p className="mt-3 text-muted">
-            {interview.clientLanguage === "de" ? "German" : "English"} ·{" "}
+            {text.detail.language[interview.clientLanguage]} ·{" "}
             {interview.interviewModel === "gpt-5.6-terra"
               ? "GPT-5.6 Terra"
               : "DeepSeek V4 Flash"}
@@ -120,7 +128,7 @@ export const InterviewDetailPage = () => {
         <div className="flex flex-wrap gap-3">
           {!interview.configurationFrozen ? (
             <Link className={secondaryButton} to={`/interviews/${interviewId}/edit`}>
-              <Pencil aria-hidden="true" size={17} /> Edit configuration
+              <Pencil aria-hidden="true" size={17} /> {text.detail.editConfiguration}
             </Link>
           ) : null}
           <button
@@ -128,7 +136,7 @@ export const InterviewDetailPage = () => {
             onClick={() => setConfirmDelete(true)}
             type="button"
           >
-            <Trash2 aria-hidden="true" size={17} /> Delete
+            <Trash2 aria-hidden="true" size={17} /> {text.detail.delete}
           </button>
         </div>
       </header>
@@ -138,10 +146,11 @@ export const InterviewDetailPage = () => {
         </p>
       ) : null}
       <section className="mt-7 rounded-xl border border-line bg-surface p-5">
-        <h2 className="font-display text-2xl font-extrabold">Interview Link</h2>
+        <h2 className="font-display text-2xl font-extrabold">
+          {text.detail.interviewLink}
+        </h2>
         <p className="mt-2 text-sm leading-6 text-muted">
-          Anyone with this bearer link can start, resume, and view the final
-          Interview. Regenerating it invalidates the old link immediately.
+          {text.detail.linkDescription}
         </p>
         {interviewUrl ? (
           <code className="mt-4 block overflow-x-auto rounded-lg bg-soft p-3 text-sm">
@@ -149,7 +158,7 @@ export const InterviewDetailPage = () => {
           </code>
         ) : (
           <p className="mt-4 text-sm font-bold text-muted">
-            The link is only returned when created or regenerated.
+            {text.detail.linkUnavailable}
           </p>
         )}
         <div className="mt-4 flex flex-wrap gap-3">
@@ -162,7 +171,7 @@ export const InterviewDetailPage = () => {
             }}
             type="button"
           >
-            <Copy aria-hidden="true" size={17} /> {copied ? "Copied" : "Copy link"}
+          <Copy aria-hidden="true" size={17} /> {copied ? text.detail.copied : text.detail.copyLink}
           </button>
           <button
             className={secondaryButton}
@@ -171,7 +180,7 @@ export const InterviewDetailPage = () => {
               void perform(async () => {
                 if (
                   !window.confirm(
-                    "Regenerate this Interview Link? The current link will stop working immediately.",
+                    text.detail.confirmRegenerate,
                   )
                 ) {
                   return;
@@ -183,7 +192,7 @@ export const InterviewDetailPage = () => {
             }
             type="button"
           >
-            <RotateCw aria-hidden="true" size={17} /> Regenerate link
+            <RotateCw aria-hidden="true" size={17} /> {text.detail.regenerateLink}
           </button>
         </div>
       </section>
@@ -191,15 +200,15 @@ export const InterviewDetailPage = () => {
         {interview.status === "submitted" && interview.operation ? (
           <section className="rounded-xl border border-line bg-surface p-5">
             <p className="font-display text-lg font-extrabold">
-              Email notification
+              {text.detail.emailNotification}
             </p>
             <p className="mt-2 leading-7 text-muted">
               {interview.operation.state === "pending"
-                ? "Sending in the background. The project submission is already complete."
+                ? text.detail.emailPending
                 : interview.operation.message ===
                     "EMAIL_CONFIGURATION_MISSING"
-                  ? "Not configured for this deployment. The project submission is complete and available below."
-                  : "The notification could not be delivered. The project submission remains complete and available below."}
+                  ? text.detail.emailMissing
+                  : text.detail.emailFailed}
             </p>
             {interview.operation.state === "failed" ? (
               <button
@@ -210,12 +219,13 @@ export const InterviewDetailPage = () => {
                 }
                 type="button"
               >
-                <RotateCw aria-hidden="true" size={16} /> Retry notification
+                <RotateCw aria-hidden="true" size={16} /> {text.detail.retryNotification}
               </button>
             ) : null}
           </section>
         ) : (
           <OperationFeedback
+            language={language}
             onRetry={() => void perform(() => retry({ interviewId }))}
             operation={interview.operation}
           />
@@ -224,9 +234,11 @@ export const InterviewDetailPage = () => {
       <section className="mt-9">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h2 className="font-display text-3xl font-extrabold">Handoff artifacts</h2>
+            <h2 className="font-display text-3xl font-extrabold">
+              {text.detail.handoffArtifacts}
+            </h2>
             <p className="mt-2 text-muted">
-              The transcript remains secondary to the implementation direction.
+              {text.detail.handoffDescription}
             </p>
           </div>
           {interview.status === "submitted" ? (
@@ -244,7 +256,7 @@ export const InterviewDetailPage = () => {
               }
               type="button"
             >
-              <Download aria-hidden="true" size={17} /> Download ZIP
+              <Download aria-hidden="true" size={17} /> {text.detail.downloadZip}
             </button>
           ) : null}
         </div>
@@ -252,7 +264,7 @@ export const InterviewDetailPage = () => {
           <div className="mt-6">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <h3 className="font-display text-2xl font-extrabold">
-                Project Document
+                {text.detail.projectDocument}
               </h3>
               <button
                 className={secondaryButton}
@@ -264,31 +276,35 @@ export const InterviewDetailPage = () => {
                 }
                 type="button"
               >
-                <Download aria-hidden="true" size={16} /> Markdown
+                <Download aria-hidden="true" size={16} /> {text.detail.downloadMarkdown}
               </button>
             </div>
             <SafeMarkdown markdown={interview.projectDocument} />
           </div>
         ) : (
           <p className="mt-6 rounded-xl border border-dashed border-line p-5 text-muted">
-            The Project Document will appear after the Interview is complete.
+            {text.detail.documentPending}
           </p>
         )}
         {interview.concepts?.length ? (
           <div className="mt-7">
-            <h3 className="font-display text-2xl font-extrabold">Visual Concepts</h3>
+            <h3 className="font-display text-2xl font-extrabold">
+              {text.detail.visualConcepts}
+            </h3>
             <div className="mt-3 grid gap-4 md:grid-cols-3">
               {interview.concepts.map((concept) => (
                 <figure className="overflow-hidden rounded-xl border border-line bg-surface" key={concept.id}>
                   {concept.imageUrl ? (
                     <img
-                      alt={`${concept.name}, rough visual direction`}
+                      alt={`${concept.name}, ${text.detail.roughVisualDirection}`}
                       className="aspect-[3/2] w-full object-cover"
                       src={concept.imageUrl}
                     />
                   ) : (
                     <div className="grid aspect-[3/2] place-items-center bg-soft px-5 text-center text-muted">
-                      {concept.state === "failed" ? "Generation failed" : "Generating…"}
+                      {concept.state === "failed"
+                        ? text.detail.generationFailed
+                        : text.detail.generating}
                     </div>
                   )}
                   <figcaption className="p-4">
@@ -302,7 +318,7 @@ export const InterviewDetailPage = () => {
                         download={`${concept.id}.png`}
                         href={concept.imageUrl}
                       >
-                        <Download aria-hidden="true" size={15} /> Download image
+                        <Download aria-hidden="true" size={15} /> {text.detail.downloadImage}
                       </a>
                     ) : null}
                   </figcaption>
@@ -314,7 +330,9 @@ export const InterviewDetailPage = () => {
         {interview.visualDirection ? (
           <section className="mt-7 rounded-xl border border-line bg-surface p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <h3 className="font-display text-2xl font-extrabold">Visual Direction</h3>
+              <h3 className="font-display text-2xl font-extrabold">
+                {text.detail.visualDirection}
+              </h3>
               <button
                 className={secondaryButton}
                 onClick={() =>
@@ -328,20 +346,20 @@ export const InterviewDetailPage = () => {
                 }
                 type="button"
               >
-                <Download aria-hidden="true" size={16} /> Markdown
+                <Download aria-hidden="true" size={16} /> {text.detail.downloadMarkdown}
               </button>
             </div>
             <VisualDirectionSummary
               concepts={interview.concepts ?? []}
               direction={interview.visualDirection}
-              language="en"
+              language={language}
             />
           </section>
         ) : null}
       </section>
       <details className="mt-10 rounded-xl border border-line bg-surface p-5">
         <summary className="cursor-pointer font-display text-2xl font-extrabold">
-          Interview Transcript
+          {text.detail.transcript}
         </summary>
         <div className="mt-4 flex justify-end">
           <button
@@ -352,14 +370,14 @@ export const InterviewDetailPage = () => {
                 (transcript ?? [])
                   .map(
                     (message) =>
-                      `## ${message.role === "client" ? "Client" : "Interview Model"}\n\n${message.content}`,
+                    `## ${message.role === "client" ? text.detail.client : text.detail.interviewModel}\n\n${message.content}`,
                   )
                   .join("\n\n"),
               )
             }
             type="button"
           >
-            <Download aria-hidden="true" size={16} /> Markdown
+          <Download aria-hidden="true" size={16} /> {text.detail.downloadMarkdown}
           </button>
         </div>
         <ol className="mt-5 space-y-4">
@@ -374,7 +392,8 @@ export const InterviewDetailPage = () => {
         </ol>
       </details>
       <ConfirmDialog
-        confirmLabel="Delete Interview permanently"
+        cancelLabel={text.common.cancel}
+        confirmLabel={text.detail.deletePermanent}
         danger
         onCancel={() => setConfirmDelete(false)}
         onConfirm={() =>
@@ -387,21 +406,20 @@ export const InterviewDetailPage = () => {
           })
         }
         open={confirmDelete}
-        title="Delete this Interview?"
+        title={text.detail.confirmDelete}
       >
         <p>
-          This immediately and irreversibly removes the Interview Link,
-          transcript, Project Document, Visual Concepts, and Project Submission.
+          {text.detail.deleteDescription}
         </p>
       </ConfirmDialog>
     </main>
   );
 };
 
-const DetailLoading = () => (
+const DetailLoading = ({ label }: { label: string }) => (
   <main className="grid min-h-96 place-items-center" id="main-content">
     <p className="font-bold text-muted" role="status">
-      Opening Interview…
+      {label}
     </p>
   </main>
 );

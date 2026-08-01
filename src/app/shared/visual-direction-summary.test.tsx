@@ -36,7 +36,7 @@ describe("VisualDirectionSummary", () => {
     expect(screen.queryByText("concept_3")).not.toBeInTheDocument();
     expect(
       screen.getByRole("img", {
-        name: "Interactive & Tech-forward, rough visual direction",
+        name: "Interactive & Tech-forward, grobe visuelle Richtung",
       }),
     ).toHaveAttribute("src", "https://example.test/concept.png");
     expect(screen.getByText("Keep the navigation restrained.")).toBeInTheDocument();

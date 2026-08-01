@@ -20,8 +20,12 @@ import {
   TextArea,
   TextInput,
 } from "../shared/form-controls";
+import { creatorCopy } from "./creator-copy";
+import { useCreatorLanguage } from "./creator-language";
 
 export const InterviewForm = () => {
+  const creatorLanguage = useCreatorLanguage();
+  const text = creatorCopy[creatorLanguage];
   const { interviewId } = useParams();
   const editing = Boolean(interviewId);
   const navigate = useNavigate();
@@ -93,7 +97,7 @@ export const InterviewForm = () => {
       instructions.trim() &&
       instructions !== templateBaseline &&
       !window.confirm(
-        "Selecting this template replaces the Interview Instructions you edited. Continue?",
+        text.form.confirmReplace,
       )
     ) {
       return;
@@ -102,7 +106,7 @@ export const InterviewForm = () => {
     setInstructions(next);
     setTemplateBaseline(next);
     setTemplateNotice(
-      "Template copied. You can freely customize these Interview Instructions.",
+      text.form.copiedTemplate,
     );
   };
 
@@ -113,7 +117,7 @@ export const InterviewForm = () => {
         setSelectedTemplateId("");
         setTemplateBaseline("");
         setTemplateNotice(
-          "Client Language changed. Your edited Interview Instructions were kept.",
+          text.form.languageChanged,
         );
       } else {
         const translatedTemplate = builtInInterviewTemplateForLanguage(
@@ -125,13 +129,13 @@ export const InterviewForm = () => {
           setInstructions(translatedTemplate.instructions);
           setTemplateBaseline(translatedTemplate.instructions);
           setTemplateNotice(
-            "Built-in template switched to match the Client Language.",
+            text.form.builtInSwitched,
           );
         } else {
           setSelectedTemplateId("");
           setTemplateBaseline("");
           setTemplateNotice(
-            "No matching built-in template is available. Existing Interview Instructions were kept.",
+            text.form.noMatchingBuiltIn,
           );
         }
       }
@@ -144,7 +148,7 @@ export const InterviewForm = () => {
     if (
       editedSinceTemplate &&
       !window.confirm(
-        "The current edited Interview Instructions—not the original template—will be translated. Continue?",
+        text.form.confirmTranslate,
       )
     ) {
       return;
@@ -162,7 +166,7 @@ export const InterviewForm = () => {
       setSelectedTemplateId("");
       setTemplateBaseline("");
       setTemplateNotice(
-        "Translation updated this Interview only. Save it separately if you want a new Private Interview Template.",
+        text.form.translationUpdated,
       );
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
@@ -197,12 +201,14 @@ export const InterviewForm = () => {
   };
 
   if (editing && interview === undefined) {
-    return <FormLoading />;
+    return <FormLoading label={text.form.formLoading} />;
   }
   if (editing && interview === null) {
     return (
       <main className="mx-auto max-w-3xl px-4 py-10" id="main-content">
-        <h1 className="font-display text-3xl font-extrabold">Interview unavailable</h1>
+        <h1 className="font-display text-3xl font-extrabold">
+          {text.form.unavailable}
+        </h1>
       </main>
     );
   }
@@ -210,11 +216,10 @@ export const InterviewForm = () => {
     return (
       <main className="mx-auto max-w-3xl px-4 py-10" id="main-content">
         <h1 className="font-display text-3xl font-extrabold">
-          Interview configuration is frozen
+          {text.form.frozenTitle}
         </h1>
         <p className="mt-3 leading-7 text-muted">
-          The first Client message fixed the project name, Client Language,
-          Interview Model, and Interview Instructions.
+          {text.form.frozenDescription}
         </p>
       </main>
     );
@@ -223,17 +228,16 @@ export const InterviewForm = () => {
   return (
     <main className="mx-auto max-w-4xl px-4 py-8 sm:px-8 lg:py-12" id="main-content">
       <p className="text-xs font-extrabold tracking-[0.14em] text-forest uppercase">
-        {editing ? "Edit preparation" : "New Interview"}
+        {editing ? text.form.editPreparation : text.form.newInterview}
       </p>
       <h1 className="mt-2 font-display text-4xl font-extrabold">
-        {editing ? projectName || "Edit Interview" : "Prepare an Interview"}
+        {editing ? projectName || text.form.editInterview : text.form.prepareInterview}
       </h1>
       <p className="mt-3 max-w-2xl leading-7 text-muted">
-        The Interview Link works as soon as you create it. Configuration remains
-        editable until the Client sends their first message.
+        {text.form.description}
       </p>
       <form className="mt-8 grid gap-6 rounded-xl border border-line bg-surface p-6 sm:p-8" onSubmit={submit}>
-        <Field label="Project name">
+        <Field label={text.form.projectName}>
           <TextInput
             maxLength={160}
             onChange={(event) => setProjectName(event.target.value)}
@@ -242,7 +246,7 @@ export const InterviewForm = () => {
           />
         </Field>
         <div className="grid gap-5 sm:grid-cols-2">
-          <Field label="Client Language">
+          <Field label={text.form.clientLanguage}>
             <Select
               disabled={translating}
               onChange={(event) =>
@@ -252,11 +256,11 @@ export const InterviewForm = () => {
               }
               value={clientLanguage}
             >
-              <option value="en">English</option>
-              <option value="de">German</option>
+              <option value="en">{text.interviews.language.en}</option>
+              <option value="de">{text.interviews.language.de}</option>
             </Select>
           </Field>
-          <Field label="Interview Model">
+          <Field label={text.form.interviewModel}>
             <Select
               disabled={translating}
               onChange={(event) =>
@@ -269,27 +273,27 @@ export const InterviewForm = () => {
             </Select>
           </Field>
         </div>
-        <Field
-          hint="A template prefills this field; it never governs the Interview after copying."
-          label="Optional Interview Template"
+          <Field
+          hint={text.form.templateHint}
+          label={text.form.templateLabel}
         >
           <Select
             disabled={translating}
             onChange={(event) => selectTemplate(event.target.value)}
             value={selectedTemplateId}
           >
-            <option value="">No template</option>
+            <option value="">{text.form.noTemplate}</option>
             {availableTemplates.map((template) => (
               <option key={template._id} value={template._id}>
-                {template.kind === "built_in" ? "Built-in" : "Private"} ·{" "}
+                {template.kind === "built_in" ? text.form.builtIn : text.form.private} ·{" "}
                 {template.name} · {template.sourceLanguage.toUpperCase()}
               </option>
             ))}
           </Select>
         </Field>
         <Field
-          hint={`${instructions.length.toLocaleString()} / 50,000 characters`}
-          label="Interview Instructions"
+          hint={text.form.characters(instructions.length)}
+          label={text.form.instructions}
         >
           <TextArea
             className="min-h-80 font-sans text-base leading-7"
@@ -320,26 +324,28 @@ export const InterviewForm = () => {
             >
               <Languages aria-hidden="true" size={17} />
               {translating
-                ? "Translating with DeepSeek V4 Flash…"
-                : `Translate to ${clientLanguage === "en" ? "English" : "German"}`}
+                ? text.form.translating
+                : text.form.translateTo(
+                    text.interviews.language[clientLanguage],
+                  )}
             </button>
             <button
               className={secondaryButton}
               disabled={!instructions.trim()}
               onClick={async () => {
-                const name = window.prompt("Name this Private Interview Template");
+                const name = window.prompt(text.form.saveTemplatePrompt);
                 if (!name?.trim()) return;
                 await createTemplate({
                   name: name.trim(),
                   sourceLanguage: clientLanguage,
                   instructions: instructions.trim(),
                 });
-                setTemplateNotice("Private Interview Template saved.");
+                setTemplateNotice(text.form.templateSaved);
               }}
               type="button"
             >
               <Save aria-hidden="true" size={17} />
-              Save as template
+              {text.form.saveAsTemplate}
             </button>
           </div>
           <button
@@ -352,7 +358,11 @@ export const InterviewForm = () => {
             }
             type="submit"
           >
-            {busy ? "Saving…" : editing ? "Save configuration" : "Create Interview"}
+            {busy
+              ? text.form.saving
+              : editing
+                ? text.form.saveConfiguration
+                : text.form.createInterview}
           </button>
         </div>
       </form>
@@ -360,10 +370,10 @@ export const InterviewForm = () => {
   );
 };
 
-const FormLoading = () => (
+const FormLoading = ({ label }: { label: string }) => (
   <main className="grid min-h-96 place-items-center" id="main-content">
     <p className="font-bold text-muted" role="status">
-      Opening Interview…
+      {label}
     </p>
   </main>
 );

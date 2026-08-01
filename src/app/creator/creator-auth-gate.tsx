@@ -8,6 +8,11 @@ import type { ProductionAuthClient } from "../../infrastructure/auth-client";
 import { primaryButton, secondaryButton } from "../shared/form-controls";
 import { LegalFooter } from "../shared/legal-footer";
 import { ThemeToggle } from "../shared/theme-toggle";
+import { creatorCopy } from "./creator-copy";
+import {
+  type CreatorLanguage,
+  useCreatorLanguage,
+} from "./creator-language";
 
 type OAuthProviderId = "google" | "github";
 
@@ -18,6 +23,8 @@ export const CreatorAuthGate = ({
   authClient: ProductionAuthClient;
   children: ReactNode;
 }) => {
+  const language = useCreatorLanguage();
+  const text = creatorCopy[language];
   const session = authClient.useSession();
   const providers = useQuery(
     interviewApi.auth.getProviderAvailability,
@@ -64,7 +71,12 @@ export const CreatorAuthGate = ({
   }, [profile, session.data, upsertProfile]);
 
   if (session.isPending || (session.data && profile === undefined)) {
-    return <AuthenticationLoading label="Opening your Creator workspace…" />;
+    return (
+      <AuthenticationLoading
+        label={text.auth.openingWorkspace}
+        language={language}
+      />
+    );
   }
   if (!session.data) {
     return (
@@ -73,20 +85,19 @@ export const CreatorAuthGate = ({
           <section className="w-full max-w-xl rounded-2xl border border-line bg-surface p-6 shadow-xl sm:p-9">
             <div className="flex items-center justify-between gap-4">
               <p className="text-xs font-extrabold tracking-[0.14em] text-forest uppercase">
-                Creator workspace
+                {text.auth.workspaceLabel}
               </p>
               <ThemeToggle />
             </div>
             <h1 className="mt-2 font-display text-4xl font-extrabold tracking-tight">
-              Sign in to Project Interviewer
+              {text.auth.signInTitle}
             </h1>
             <p className="mt-4 leading-7 text-muted">
-              Use the provider that owns your account. Google and GitHub identities
-              are never silently linked, even when they share an email address.
+              {text.auth.signInIntro}
             </p>
             {error ? (
               <p className="mt-5 rounded-lg border border-error-border bg-error-surface p-4 font-bold text-error-text" role="alert">
-                {friendlyAuthError(error, attemptedProvider)}
+                {friendlyAuthError(error, attemptedProvider, language)}
               </p>
             ) : null}
             <div className="mt-7 grid gap-3 sm:grid-cols-2">
@@ -96,7 +107,7 @@ export const CreatorAuthGate = ({
                   onClick={() => void signIn("google")}
                   type="button"
                 >
-                  Continue with Google
+                  {text.auth.continueWith} Google
                 </button>
               ) : null}
               {providers?.github !== false ? (
@@ -105,21 +116,26 @@ export const CreatorAuthGate = ({
                   onClick={() => void signIn("github")}
                   type="button"
                 >
-                  Continue with GitHub
+                  {text.auth.continueWith} GitHub
                 </button>
               ) : null}
             </div>
             <p className="mt-5 text-sm leading-6 text-muted">
-              Registration is restricted to the deployment allowlist.
+              {text.auth.registration}
             </p>
           </section>
         </main>
-        <LegalFooter />
+        <LegalFooter language={language} />
       </div>
     );
   }
   if (profile === null) {
-    return <AuthenticationLoading label="Preparing your Creator profile…" />;
+    return (
+      <AuthenticationLoading
+        label={text.auth.preparingProfile}
+        language={language}
+      />
+    );
   }
   return children;
 };
@@ -134,6 +150,7 @@ const oauthProviderFromSearch = (
 export const friendlyAuthError = (
   value: string,
   attemptedProvider?: OAuthProviderId,
+  language: CreatorLanguage = "en",
 ) => {
   const normalized = value.toLowerCase().replaceAll(/[^a-z]/g, "");
   if (
@@ -143,24 +160,30 @@ export const friendlyAuthError = (
   ) {
     if (attemptedProvider) {
       const provider = attemptedProvider === "google" ? "GitHub" : "Google";
-      return `This email already belongs to an account created with ${provider}. Continue with ${provider}.`;
+      return creatorCopy[language].auth.linkedAccount(provider);
     }
-    return "This email already belongs to an account created with the other sign-in provider. Continue with the provider you used first.";
+    return creatorCopy[language].auth.linkedOtherProvider;
   }
   if (/allow|registration/i.test(value)) {
-    return "This identity is not on the private-launch registration allowlist.";
+    return creatorCopy[language].auth.notAllowlisted;
   }
   return value;
 };
 
-const AuthenticationLoading = ({ label }: { label: string }) => (
+const AuthenticationLoading = ({
+  label,
+  language,
+}: {
+  label: string;
+  language: CreatorLanguage;
+}) => (
   <div className="flex min-h-screen flex-col bg-canvas">
     <main className="grid flex-1 place-items-center" id="main-content">
       <p className="font-bold text-muted" role="status">
         {label}
       </p>
     </main>
-    <LegalFooter />
+    <LegalFooter language={language} />
   </div>
 );
 

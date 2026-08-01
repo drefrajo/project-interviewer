@@ -9,6 +9,7 @@ export const ConfirmDialog = ({
   open,
   title,
   children,
+  cancelLabel = "Cancel",
   confirmLabel,
   danger = false,
   onCancel,
@@ -17,6 +18,7 @@ export const ConfirmDialog = ({
   open: boolean;
   title: string;
   children: ReactNode;
+  cancelLabel?: string;
   confirmLabel: string;
   danger?: boolean;
   onCancel(): void;
@@ -37,7 +39,7 @@ export const ConfirmDialog = ({
         <div className="mt-3 leading-7 text-muted">{children}</div>
         <div className="mt-6 flex flex-wrap justify-end gap-3">
           <button className={secondaryButton} onClick={onCancel} type="button">
-            Cancel
+            {cancelLabel}
           </button>
           <button
             className={danger ? dangerButton : primaryButton}

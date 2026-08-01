@@ -2,8 +2,12 @@ import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState, type FormEvent } from "react";
 import { interviewApi } from "../../infrastructure/interview-api";
 import { Field, primaryButton, TextInput } from "../shared/form-controls";
+import { creatorCopy } from "./creator-copy";
+import { useCreatorLanguage } from "./creator-language";
 
 export const SettingsPage = () => {
+  const language = useCreatorLanguage();
+  const text = creatorCopy[language];
   const profile = useQuery(interviewApi.creator_profiles.getCurrent, {});
   const update = useMutation(
     interviewApi.creator_profiles.updateDisplayName,
@@ -21,7 +25,7 @@ export const SettingsPage = () => {
     setStatus("");
     try {
       await update({ displayName: displayName.trim() });
-      setStatus("Settings saved.");
+      setStatus(text.settings.saved);
     } catch (cause) {
       setStatus(cause instanceof Error ? cause.message : String(cause));
     } finally {
@@ -31,12 +35,14 @@ export const SettingsPage = () => {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8 sm:px-8 lg:py-12" id="main-content">
-      <h1 className="font-display text-4xl font-extrabold">Settings</h1>
+      <h1 className="font-display text-4xl font-extrabold">
+        {text.settings.title}
+      </h1>
       <p className="mt-3 leading-7 text-muted">
-        This identity is shown to Clients so they can verify who invited them.
+        {text.settings.intro}
       </p>
       <form className="mt-8 grid gap-5 rounded-xl border border-line bg-surface p-6" onSubmit={submit}>
-        <Field label="Business or display name">
+        <Field label={text.settings.displayName}>
           <TextInput
             maxLength={120}
             onChange={(event) => setDisplayName(event.target.value)}
@@ -45,8 +51,8 @@ export const SettingsPage = () => {
           />
         </Field>
         <Field
-          hint="Your verified identity cannot be changed here."
-          label="Verified email"
+          hint={text.settings.emailHint}
+          label={text.settings.email}
         >
           <TextInput disabled readOnly value={profile?.email ?? ""} />
         </Field>
@@ -56,7 +62,7 @@ export const SettingsPage = () => {
             disabled={busy || !displayName.trim()}
             type="submit"
           >
-            Save settings
+            {text.settings.save}
           </button>
           {status ? (
             <p className="text-sm font-bold text-muted" role="status">
@@ -68,4 +74,3 @@ export const SettingsPage = () => {
     </main>
   );
 };
-

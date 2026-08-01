@@ -20,8 +20,15 @@ import {
   TextArea,
   TextInput,
 } from "../shared/form-controls";
+import { creatorCopy } from "./creator-copy";
+import {
+  type CreatorLanguage,
+  useCreatorLanguage,
+} from "./creator-language";
 
 export const TemplatesPage = () => {
+  const language = useCreatorLanguage();
+  const text = creatorCopy[language];
   const persistedTemplates = useQuery(interviewApi.templates.list, {});
   const privateTemplates = privateInterviewTemplates(persistedTemplates);
   const create = useMutation(interviewApi.templates.create);
@@ -49,20 +56,22 @@ export const TemplatesPage = () => {
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-8 lg:py-12" id="main-content">
       <header className="flex flex-col items-start justify-between gap-5 sm:flex-row sm:items-end">
         <div>
-          <h1 className="font-display text-4xl font-extrabold">Templates</h1>
+          <h1 className="font-display text-4xl font-extrabold">
+            {text.templates.title}
+          </h1>
           <p className="mt-3 max-w-2xl leading-7 text-muted">
-            Templates prefill Interview Instructions. Editing one never changes
-            an existing Interview.
+            {text.templates.intro}
           </p>
         </div>
         <button className={primaryButton} onClick={() => setEditing("new")} type="button">
           <Plus aria-hidden="true" size={18} />
-          New Private Template
+          {text.templates.newPrivate}
         </button>
       </header>
       {editing ? (
         <TemplateForm
           busy={busy}
+          creatorLanguage={language}
           onCancel={() => setEditing(null)}
           onSave={async (input) => {
             setBusy(true);
@@ -81,28 +90,30 @@ export const TemplatesPage = () => {
         />
       ) : null}
       <TemplateGroup
-        empty="Built-in templates are not available."
+        empty={text.templates.builtInUnavailable}
+        language={language}
         templates={[...BUILT_IN_INTERVIEW_TEMPLATES]}
-        title="Built-in Interview Templates"
+        title={text.templates.builtInTitle}
       />
       <TemplateGroup<PrivateInterviewTemplate>
-        empty="No Private Interview Templates yet."
+        empty={text.templates.noPrivate}
+        language={language}
         onDelete={setDeleting}
         onEdit={setEditing}
         templates={privateTemplates}
-        title="Private Interview Templates"
+        title={text.templates.privateTitle}
       />
       <ConfirmDialog
-        confirmLabel="Delete template"
+        cancelLabel={text.common.cancel}
+        confirmLabel={text.templates.deleteLabel}
         danger
         onCancel={() => setDeleting(null)}
         onConfirm={() => void deleteTemplate()}
         open={Boolean(deleting)}
-        title="Delete Private Interview Template?"
+        title={text.templates.deleteTitle}
       >
         <p>
-          <strong>{deleting?.name}</strong> will be deleted immediately. Existing
-          Interviews keep their instruction snapshot.
+          {text.templates.deleteDescription(deleting?.name ?? "")}
         </p>
       </ConfirmDialog>
     </main>
@@ -112,12 +123,14 @@ export const TemplatesPage = () => {
 const TemplateGroup = <Template extends InterviewTemplate>({
   title,
   empty,
+  language,
   templates,
   onEdit,
   onDelete,
 }: {
   title: string;
   empty: string;
+  language: CreatorLanguage;
   templates: Template[];
   onEdit?(template: Template): void;
   onDelete?(template: Template): void;
@@ -132,14 +145,14 @@ const TemplateGroup = <Template extends InterviewTemplate>({
               <div>
                 <h3 className="font-display text-xl font-extrabold">{template.name}</h3>
                 <p className="mt-1 text-sm text-muted">
-                  Source language:{" "}
-                  {template.sourceLanguage === "de" ? "German" : "English"}
+                  {creatorCopy[language].templates.sourceLanguage}:{" "}
+                  {creatorCopy[language].templates.language[template.sourceLanguage]}
                 </p>
               </div>
               {onEdit && onDelete ? (
                 <div className="flex gap-1">
                   <button
-                    aria-label={`Edit ${template.name}`}
+                    aria-label={creatorCopy[language].templates.edit(template.name)}
                     className="inline-grid size-11 place-items-center rounded-lg transition hover:bg-soft"
                     onClick={() => onEdit(template)}
                     type="button"
@@ -147,7 +160,7 @@ const TemplateGroup = <Template extends InterviewTemplate>({
                     <Pencil aria-hidden="true" size={17} />
                   </button>
                   <button
-                    aria-label={`Delete ${template.name}`}
+                    aria-label={creatorCopy[language].templates.delete(template.name)}
                     className="inline-grid size-11 place-items-center rounded-lg text-error-text transition hover:bg-error-surface"
                     onClick={() => onDelete(template)}
                     type="button"
@@ -174,11 +187,13 @@ const TemplateGroup = <Template extends InterviewTemplate>({
 const TemplateForm = ({
   template,
   busy,
+  creatorLanguage,
   onCancel,
   onSave,
 }: {
   template?: PrivateInterviewTemplate;
   busy: boolean;
+  creatorLanguage: CreatorLanguage;
   onCancel(): void;
   onSave(input: {
     name: string;
@@ -186,29 +201,30 @@ const TemplateForm = ({
     instructions: string;
   }): Promise<void>;
 }) => {
+  const text = creatorCopy[creatorLanguage];
   const [name, setName] = useState("");
-  const [language, setLanguage] = useState<ClientLanguage>("en");
+  const [sourceLanguage, setSourceLanguage] = useState<ClientLanguage>("en");
   const [instructions, setInstructions] = useState("");
   useEffect(() => {
     setName(template?.name ?? "");
-    setLanguage(template?.sourceLanguage ?? "en");
+    setSourceLanguage(template?.sourceLanguage ?? "en");
     setInstructions(template?.instructions ?? "");
   }, [template]);
   const submit = (event: FormEvent) => {
     event.preventDefault();
     void onSave({
       name: name.trim(),
-      sourceLanguage: language,
+      sourceLanguage,
       instructions: instructions.trim(),
     });
   };
   return (
     <form className="mt-8 grid gap-5 rounded-xl border border-line bg-surface p-6" onSubmit={submit}>
       <h2 className="font-display text-2xl font-extrabold">
-        {template ? "Edit Private Interview Template" : "New Private Interview Template"}
+        {template ? text.templates.editPrivate : text.templates.newPrivateForm}
       </h2>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Template name">
+        <Field label={text.templates.templateName}>
           <TextInput
             maxLength={120}
             onChange={(event) => setName(event.target.value)}
@@ -216,17 +232,19 @@ const TemplateForm = ({
             value={name}
           />
         </Field>
-        <Field label="Source language">
+        <Field label={text.templates.sourceLanguage}>
           <Select
-            onChange={(event) => setLanguage(event.target.value as ClientLanguage)}
-            value={language}
+            onChange={(event) =>
+              setSourceLanguage(event.target.value as ClientLanguage)
+            }
+            value={sourceLanguage}
           >
-            <option value="en">English</option>
-            <option value="de">German</option>
+            <option value="en">{text.templates.language.en}</option>
+            <option value="de">{text.templates.language.de}</option>
           </Select>
         </Field>
       </div>
-      <Field label="Interview Instructions">
+      <Field label={text.templates.instructions}>
         <TextArea
           className="min-h-64"
           maxLength={50_000}
@@ -237,14 +255,14 @@ const TemplateForm = ({
       </Field>
       <div className="flex flex-wrap justify-end gap-3">
         <button className={secondaryButton} onClick={onCancel} type="button">
-          Cancel
+          {text.templates.cancel}
         </button>
         <button
           className={primaryButton}
           disabled={busy || !name.trim() || !instructions.trim()}
           type="submit"
         >
-          Save template
+          {text.templates.save}
         </button>
       </div>
     </form>
