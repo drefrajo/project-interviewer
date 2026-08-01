@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   ClientLanguage,
   VisualConcept,
@@ -46,23 +46,23 @@ const ConceptCardSkeleton = () => (
 export const ConceptsStep = ({
   language,
   concepts,
-  additionalConceptsUsed,
   generationPhase,
   pending,
   onMoreOptions,
   onRetryMoreOptions,
   onRetryFirstOptions,
   onSubmit,
+  temporaryConceptBatchRetriesEnabled = false,
 }: {
   language: ClientLanguage;
   concepts: VisualConcept[];
-  additionalConceptsUsed: boolean;
   generationPhase?: "planning" | "creating" | undefined;
   pending: boolean;
   onMoreOptions(): Promise<boolean>;
   onRetryMoreOptions(): Promise<boolean>;
   onRetryFirstOptions(): Promise<boolean>;
   onSubmit(direction: VisualDirection): Promise<void>;
+  temporaryConceptBatchRetriesEnabled?: boolean;
 }) => {
   const text = CLIENT_COPY[language];
   const [mode, setMode] = useState<"concept" | "links">("concept");
@@ -70,7 +70,7 @@ export const ConceptsStep = ({
   const [links, setLinks] = useState([""]);
   const [note, setNote] = useState("");
   const [confirming, setConfirming] = useState(false);
-  const [moreOptionsRequested, setMoreOptionsRequested] = useState(false);
+  const [showLongWaitNotice, setShowLongWaitNotice] = useState(false);
   const creatingConcepts =
     pending &&
     (generationPhase !== undefined ||
@@ -82,6 +82,16 @@ export const ConceptsStep = ({
       : generationPhase === "creating"
         ? text.conceptsCreating
         : text.conceptsPending;
+  useEffect(() => {
+    if (!creatingConcepts) {
+      setShowLongWaitNotice(false);
+      return;
+    }
+    const timeout = window.setTimeout(() => {
+      setShowLongWaitNotice(true);
+    }, 20_000);
+    return () => window.clearTimeout(timeout);
+  }, [creatingConcepts]);
   const normalizedLinks = links.map((link) => link.trim()).filter(Boolean);
   const valid = useMemo(
     () =>
@@ -89,8 +99,9 @@ export const ConceptsStep = ({
         ? Boolean(selected)
         : normalizedLinks.length > 0 &&
           normalizedLinks.length <= 3 &&
-          normalizedLinks.every(isHttpUrl),
-    [mode, normalizedLinks, selected],
+          normalizedLinks.every(isHttpUrl) &&
+          Boolean(note.trim()),
+    [mode, normalizedLinks, note, selected],
   );
   const direction: VisualDirection =
     mode === "concept"
@@ -104,7 +115,6 @@ export const ConceptsStep = ({
     if (await onMoreOptions()) {
       setMode("concept");
       setSelected("");
-      setMoreOptionsRequested(true);
     }
   };
 
@@ -118,7 +128,12 @@ export const ConceptsStep = ({
         className="mt-5 max-w-3xl rounded-lg border border-line bg-soft p-4 font-bold text-forest"
           role="status"
         >
-          {generationMessage}
+          <span className="block">{generationMessage}</span>
+          {showLongWaitNotice ? (
+            <span className="mt-1 block font-normal text-muted">
+              {text.conceptsLongWait}
+            </span>
+          ) : null}
         </p>
       ) : null}
       <div
@@ -190,10 +205,9 @@ export const ConceptsStep = ({
             ))
           : null}
       </div>
-      {!additionalConceptsUsed &&
-      !moreOptionsRequested &&
-      !pending &&
+      {!pending &&
       concepts.length === 3 &&
+      concepts.every((concept) => concept.state === "ready") &&
       mode === "concept" &&
       !selected ? (
         <div className="mt-4 flex justify-center">
@@ -207,7 +221,7 @@ export const ConceptsStep = ({
           </button>
         </div>
       ) : null}
-      {additionalConceptsUsed && concepts.length === 6 && !pending ? (
+      {temporaryConceptBatchRetriesEnabled && concepts.length === 6 && !pending ? (
         <div className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-2">
           <button
             className="text-xs font-bold text-muted underline decoration-line underline-offset-4 hover:text-forest"
@@ -267,9 +281,12 @@ export const ConceptsStep = ({
             ) : null}
           </div>
         ) : null}
-        <label className="mt-5 grid gap-2 font-bold">
-          {text.note}
+      </section>
+      <section className="mt-4 rounded-xl border border-line bg-surface p-5">
+        <label className="grid gap-2 font-bold">
+          {mode === "links" ? text.requiredNote : text.note}
           <TextArea
+            aria-required={mode === "links"}
             maxLength={2_000}
             onChange={(event) => setNote(event.target.value)}
             rows={3}

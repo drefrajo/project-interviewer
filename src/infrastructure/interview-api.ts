@@ -91,7 +91,6 @@ export interface CreatorInterviewView extends InterviewSummary {
   concepts?: VisualConcept[];
   visualDirection?: VisualDirection;
   submittedAt?: number;
-  additionalConceptsUsed?: boolean;
 }
 
 export interface ClientInterviewView {
@@ -100,13 +99,13 @@ export interface ClientInterviewView {
   creator: CreatorProfile;
   clientLanguage: ClientLanguage;
   modelFamily: string;
+  temporaryConceptBatchRetriesEnabled: boolean;
   step: InterviewStep;
   started: boolean;
   projectDocument?: string;
   concepts?: VisualConcept[];
   visualDirection?: VisualDirection;
   submittedAt?: number;
-  additionalConceptsUsed?: boolean;
   operation?: {
     state: "pending" | "failed";
     message?: string;

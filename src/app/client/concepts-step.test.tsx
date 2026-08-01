@@ -1,6 +1,6 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { ConceptsStep } from "./concepts-step";
 
 const readyConcepts = [
@@ -10,10 +10,13 @@ const readyConcepts = [
 ];
 
 describe("ConceptsStep", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("shows three image-card skeletons while concepts are generated", () => {
     render(
       <ConceptsStep
-        additionalConceptsUsed={false}
         concepts={[]}
         generationPhase="planning"
         language="de"
@@ -34,7 +37,6 @@ describe("ConceptsStep", () => {
   it("shows when the image models are creating the concepts", () => {
     render(
       <ConceptsStep
-        additionalConceptsUsed={false}
         concepts={[]}
         generationPhase="creating"
         language="en"
@@ -51,10 +53,35 @@ describe("ConceptsStep", () => {
     );
   });
 
+  it("adds a longer-wait notice after 20 seconds of generation", () => {
+    vi.useFakeTimers();
+    render(
+      <ConceptsStep
+        concepts={[]}
+        generationPhase="planning"
+        language="en"
+        onMoreOptions={async () => true}
+        onRetryMoreOptions={async () => true}
+        onRetryFirstOptions={async () => true}
+        onSubmit={vi.fn()}
+        pending
+      />,
+    );
+
+    expect(screen.getByRole("status")).not.toHaveTextContent(
+      "This may take a while.",
+    );
+    act(() => {
+      vi.advanceTimersByTime(20_000);
+    });
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "This may take a while.",
+    );
+  });
+
   it("shows three more skeletons while additional concepts are generated", () => {
     render(
       <ConceptsStep
-        additionalConceptsUsed
         concepts={readyConcepts}
         generationPhase="creating"
         language="en"
@@ -75,7 +102,6 @@ describe("ConceptsStep", () => {
   it("does not show the generation notice during final submission", () => {
     render(
       <ConceptsStep
-        additionalConceptsUsed={false}
         concepts={readyConcepts}
         language="en"
         onMoreOptions={async () => true}
@@ -89,12 +115,11 @@ describe("ConceptsStep", () => {
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
-  it("offers one low-emphasis request for three more concepts", async () => {
+  it("offers a low-emphasis request for a second batch while one batch is ready", async () => {
     const user = userEvent.setup();
     const onMoreOptions = vi.fn(async () => true);
     render(
       <ConceptsStep
-        additionalConceptsUsed={false}
         concepts={readyConcepts}
         language="en"
         onMoreOptions={onMoreOptions}
@@ -114,7 +139,6 @@ describe("ConceptsStep", () => {
     const user = userEvent.setup();
     render(
       <ConceptsStep
-        additionalConceptsUsed={false}
         concepts={readyConcepts}
         language="en"
         onMoreOptions={async () => true}
@@ -130,11 +154,15 @@ describe("ConceptsStep", () => {
     expect(screen.queryByTestId("request-more-concepts")).not.toBeInTheDocument();
   });
 
-  it("does not show more options after they were already used", () => {
+  it("does not show more options when a second batch already exists", () => {
     render(
       <ConceptsStep
-        additionalConceptsUsed
-        concepts={readyConcepts}
+        concepts={[
+          ...readyConcepts,
+          { id: "concept_4", name: "Four", state: "ready" as const },
+          { id: "concept_5", name: "Five", state: "ready" as const },
+          { id: "concept_6", name: "Six", state: "ready" as const },
+        ]}
         language="en"
         onMoreOptions={async () => true}
         onRetryMoreOptions={async () => true}
@@ -147,12 +175,45 @@ describe("ConceptsStep", () => {
     expect(screen.queryByTestId("request-more-concepts")).not.toBeInTheDocument();
   });
 
-  it("offers a temporary retry for only the second concept batch", async () => {
+  it("separates inspiration choice and requires a note for it", async () => {
+    const user = userEvent.setup();
+    render(
+      <ConceptsStep
+        concepts={readyConcepts}
+        language="en"
+        onMoreOptions={async () => true}
+        onRetryMoreOptions={async () => true}
+        onRetryFirstOptions={async () => true}
+        onSubmit={vi.fn()}
+        pending={false}
+      />,
+    );
+
+    expect(screen.getByText("Optional note")).toBeInTheDocument();
+    await user.click(
+      screen.getByRole("radio", {
+        name: "None of these fit — use inspiration links",
+      }),
+    );
+
+    expect(screen.getByText("Required note")).toBeInTheDocument();
+    const submit = screen.getByRole("button", { name: "Submit project" });
+    expect(submit).toBeDisabled();
+
+    await user.type(
+      screen.getByPlaceholderText("https://example.com"),
+      "https://example.com",
+    );
+    await user.type(screen.getByLabelText("Required note"), "Use this mood.");
+
+    expect(submit).toBeEnabled();
+  });
+
+  it("can expose the temporary second-batch retry when enabled", async () => {
     const user = userEvent.setup();
     const onRetryMoreOptions = vi.fn(async () => true);
     render(
       <ConceptsStep
-        additionalConceptsUsed
         concepts={[
           ...readyConcepts,
           { id: "concept_4", name: "Four", state: "ready" as const },
@@ -165,6 +226,7 @@ describe("ConceptsStep", () => {
         onRetryFirstOptions={async () => true}
         onSubmit={vi.fn()}
         pending={false}
+        temporaryConceptBatchRetriesEnabled
       />,
     );
 
@@ -173,12 +235,11 @@ describe("ConceptsStep", () => {
     expect(onRetryMoreOptions).toHaveBeenCalledOnce();
   });
 
-  it("offers a temporary retry for only the first concept batch", async () => {
+  it("can expose the temporary first-batch retry when enabled", async () => {
     const user = userEvent.setup();
     const onRetryFirstOptions = vi.fn(async () => true);
     render(
       <ConceptsStep
-        additionalConceptsUsed
         concepts={[
           ...readyConcepts,
           { id: "concept_4", name: "Four", state: "ready" as const },
@@ -191,11 +252,34 @@ describe("ConceptsStep", () => {
         onRetryFirstOptions={onRetryFirstOptions}
         onSubmit={vi.fn()}
         pending={false}
+        temporaryConceptBatchRetriesEnabled
       />,
     );
 
     await user.click(screen.getByTestId("retry-first-concept-batch"));
 
     expect(onRetryFirstOptions).toHaveBeenCalledOnce();
+  });
+
+  it("hides temporary batch retries when disabled", () => {
+    render(
+      <ConceptsStep
+        concepts={[
+          ...readyConcepts,
+          { id: "concept_4", name: "Four", state: "ready" as const },
+          { id: "concept_5", name: "Five", state: "ready" as const },
+          { id: "concept_6", name: "Six", state: "ready" as const },
+        ]}
+        language="en"
+        onMoreOptions={async () => true}
+        onRetryMoreOptions={async () => true}
+        onRetryFirstOptions={async () => true}
+        onSubmit={vi.fn()}
+        pending={false}
+      />,
+    );
+
+    expect(screen.queryByTestId("retry-first-concept-batch")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("retry-second-concept-batch")).not.toBeInTheDocument();
   });
 });

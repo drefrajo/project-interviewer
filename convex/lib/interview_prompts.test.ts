@@ -84,6 +84,7 @@ describe("Interview prompt contracts", () => {
 
   it("carries Creator Interview Instructions into Visual Concept prompt generation", () => {
     const context = {
+      clientLanguage: "en" as const,
       instructions: instagramLikeInstructions,
       projectDocument:
         "# Photographer portfolio\n\nShow still life and portrait work.",
@@ -111,6 +112,7 @@ describe("Interview prompt contracts", () => {
 
   it("plans an additional batch outside the territory occupied by prior concepts", () => {
     const messages = buildConceptSeedMessages({
+      clientLanguage: "en",
       instructions: instagramLikeInstructions,
       projectDocument: "# Photographer portfolio",
       existingConcepts: [
@@ -145,6 +147,19 @@ describe("Interview prompt contracts", () => {
     expect(serialized).toContain("navigation and interaction rhythm");
     expect(serialized).toContain("same palette family and composition family");
     expect(serialized).not.toContain("Assign these roles in order");
+  });
+
+  it("separates localized card copy from the English image prompt", () => {
+    const messages = buildConceptSeedMessages({
+      clientLanguage: "de",
+      instructions: instagramLikeInstructions,
+      projectDocument: "# Fotografenportfolio",
+    });
+    const serialized = JSON.stringify(messages);
+
+    expect(serialized).toContain("name and rationale are shown directly to the Client");
+    expect(serialized).toContain("German");
+    expect(serialized).toContain("image-generation prompt and must always be written in English");
   });
 
   it("repeats the defining interaction model at the image-rendering boundary", () => {

@@ -29,6 +29,10 @@ const rateLimiter = new RateLimiter(rateLimiterComponent, {
   },
 });
 
+// Development-only controls. Flip this single flag to re-enable the temporary
+// retry mutations and expose their UI to a Client.
+const TEMPORARY_CONCEPT_BATCH_RETRIES_ENABLED = false;
+
 const findByToken = async (
   ctx: QueryCtx | MutationCtx,
   token: string,
@@ -51,14 +55,14 @@ const directionValue = (
   direction: typeof visualDirection.type,
   concepts: ReadonlyArray<{ id: string; status: string }>,
 ) => {
-  const note = direction.note
-    ? assertLength(
-        "Visual Direction note",
-        direction.note,
-        MAX_VISUAL_NOTE_LENGTH,
-      )
-    : undefined;
   if (direction.kind === "concept") {
+    const note = direction.note
+      ? assertLength(
+          "Visual Direction note",
+          direction.note,
+          MAX_VISUAL_NOTE_LENGTH,
+        )
+      : undefined;
     if (
       !concepts.some(
         (concept) =>
@@ -73,10 +77,15 @@ const directionValue = (
       ...(note ? { note } : {}),
     };
   }
+  const note = assertLength(
+    "Visual Direction note",
+    direction.note ?? "",
+    MAX_VISUAL_NOTE_LENGTH,
+  );
   return {
     kind: "inspiration_links" as const,
     inspirationLinks: assertHttpUrls(direction.inspirationLinks),
-    ...(note ? { note } : {}),
+    note,
   };
 };
 
@@ -107,6 +116,8 @@ export const getByLink = query({
             ? "GPT-5.6 Terra"
             : "DeepSeek V4 Flash",
       },
+      temporaryConceptBatchRetriesEnabled:
+        TEMPORARY_CONCEPT_BATCH_RETRIES_ENABLED,
     };
   },
 });
@@ -272,9 +283,6 @@ export const requestMoreConcepts = mutation({
     ) {
       throw new Error("The Interview is not ready for more Visual Concepts.");
     }
-    if (interview.additionalConceptsUsed) {
-      throw new Error("More Visual Concepts have already been requested.");
-    }
     if (
       interview.operation?.status === "pending" ||
       interview.operation?.status === "running"
@@ -285,14 +293,15 @@ export const requestMoreConcepts = mutation({
       interview.concepts.length !== 3 ||
       interview.concepts.some((concept) => concept.status !== "ready")
     ) {
-      throw new Error("The first three Visual Concepts must be ready first.");
+      throw new Error(
+        "A second Visual Concept batch can be requested only while one ready batch exists.",
+      );
     }
     await rateLimiter.limit(ctx, "billableAi", {
       key: linkHash,
       throws: true,
     });
     await ctx.db.patch("interviews", interview._id, {
-      additionalConceptsUsed: true,
       visualDirection: undefined,
       operation: {
         kind: "concept_generation",
@@ -316,6 +325,9 @@ export const requestMoreConcepts = mutation({
 export const retryAdditionalConcepts = mutation({
   args: { token: v.string() },
   handler: async (ctx, args) => {
+    if (!TEMPORARY_CONCEPT_BATCH_RETRIES_ENABLED) {
+      throw new Error("Temporary Visual Concept batch retries are disabled.");
+    }
     const { interview, linkHash } = await byToken(ctx, args.token);
     if (
       interview.submission ||
@@ -324,7 +336,7 @@ export const retryAdditionalConcepts = mutation({
     ) {
       throw new Error("The Interview is not ready to retry Visual Concepts.");
     }
-    if (!interview.additionalConceptsUsed || interview.concepts.length !== 6) {
+    if (interview.concepts.length !== 6) {
       throw new Error("The second Visual Concept batch is not available.");
     }
     if (
@@ -383,6 +395,9 @@ export const retryAdditionalConcepts = mutation({
 export const retryFirstConcepts = mutation({
   args: { token: v.string() },
   handler: async (ctx, args) => {
+    if (!TEMPORARY_CONCEPT_BATCH_RETRIES_ENABLED) {
+      throw new Error("Temporary Visual Concept batch retries are disabled.");
+    }
     const { interview, linkHash } = await byToken(ctx, args.token);
     if (
       interview.submission ||
@@ -391,7 +406,7 @@ export const retryFirstConcepts = mutation({
     ) {
       throw new Error("The Interview is not ready to retry Visual Concepts.");
     }
-    if (!interview.additionalConceptsUsed || interview.concepts.length !== 6) {
+    if (interview.concepts.length !== 6) {
       throw new Error("The second Visual Concept batch is not available.");
     }
     if (
@@ -615,10 +630,7 @@ export const submit = mutation({
     if (interview.submission) {
       return { created: false, submission: interview.submission };
     }
-    const expectedConceptCount =
-      interview.additionalConceptsUsed && interview.concepts.length === 6
-        ? 6
-        : 3;
+    const expectedConceptCount = interview.concepts.length === 6 ? 6 : 3;
     if (
       interview.step !== "concepts" ||
       !interview.projectDocument ||

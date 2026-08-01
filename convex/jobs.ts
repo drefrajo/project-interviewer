@@ -519,6 +519,7 @@ const conceptSeeds = async (
     model: interview.model,
     operation: "concept_prompt",
     messages: buildConceptSeedMessages({
+      clientLanguage: interview.clientLanguage,
       instructions: interview.instructions,
       projectDocument: interview.projectDocument,
       ...(idOffset > 0 ? { existingConcepts: interview.concepts } : {}),

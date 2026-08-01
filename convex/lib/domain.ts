@@ -118,7 +118,6 @@ export const interviewDto = async (
     })),
   ),
   visualDirection: interview.visualDirection,
-  additionalConceptsUsed: interview.additionalConceptsUsed === true,
   submittedAt: interview.submission?.submittedAt,
   createdAt: interview.createdAt,
   updatedAt: interview.updatedAt,

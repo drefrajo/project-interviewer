@@ -17,8 +17,8 @@ The product uses one small, linear workflow:
 3. The selected Interview Model conducts a concise conversational Interview under a fixed Interview Policy, using no more structure than the Client needs.
 4. When the model has enough information, it produces an implementation-ready Markdown Project Document, including first-draft website copy and explicit placeholders for unknown facts.
 5. The Client either requests a document revision or continues.
-6. The product generates three deliberately distinct Visual Concepts and explains that they are rough directions rather than final designs.
-7. The Client selects one concept or supplies up to three inspiration links, optionally adds a note, and chooses **Submit project**.
+6. The product generates a first batch of three deliberately distinct Visual Concepts and explains that they are rough directions rather than final designs. While only that batch exists, the Client may request one second batch of three.
+7. The Client selects one concept from the available batch or batches, or supplies up to three inspiration links with a required note, and chooses **Submit project**.
 8. The resulting Project Submission becomes immutable and visible to both parties. The Creator receives a minimal email notification and can download the handoff.
 
 The application uses React, Convex, Better Auth, the Convex Agent component, the Convex rate-limiter component, OpenRouter, GPT Image 2, and Cloudflare Email Service. It is multi-tenant from the start but launches with allowlisted Creator registration.
@@ -103,12 +103,12 @@ The application uses React, Convex, Better Auth, the Convex Agent component, the
 76. As a Client, I want to request Project Document changes using one free-text field, so that revisions remain simple.
 77. As a Client, I want each accepted revision to replace the current Project Document, so that there is only one version to understand.
 78. As a Client, I want to continue to concepts when the Project Document is good enough, so that review does not become a formal approval process.
-79. As a Client, I want three visually and structurally distinct concepts generated from the confirmed Project Document, so that I can choose a meaningful rough direction.
+79. As a Client, I want a first batch of three visually and structurally distinct concepts generated from the confirmed Project Document, with the option to request one second batch while only the first exists, so that I can choose a meaningful rough direction without being pushed toward more generation when a concept already fits.
 80. As a Client, I want each concept to have a name and one-sentence rationale, so that their differences are easy to compare.
 81. As a Client, I want each concept to show a polished desktop homepage direction with enough lower-page context, so that I can judge the visual system without mistaking it for a complete site.
 82. As a Client, I want successful concepts preserved when another concept generation fails, so that retrying does not waste completed work.
 83. As a Client, I want to select the concept I prefer and optionally explain my choice, so that the Creator receives both the direction and nuance.
-84. As a Client, I want to reject all concepts and provide up to three inspiration links plus an optional note, so that I can supply a better visual reference without requesting endless generations.
+84. As a Client, I want to reject all concepts and provide up to three inspiration links plus a required note, so that I can supply a better visual reference without requesting endless generations.
 85. As a Client, I want the final action called **Submit project**, so that it communicates a complete handoff rather than a narrow design approval.
 86. As a Client, I want a clear warning that submission is final, so that I can review my Visual Direction before making the handoff immutable.
 87. As a Client, I want the submitted page to show the Project Document, all concepts, my Visual Direction, note, and Creator contact details, so that I can verify what was handed off.
@@ -137,7 +137,7 @@ The application uses React, Convex, Better Auth, the Convex Agent component, the
 - Use three application-owned Convex tables:
   - `creatorProfiles` owns the Creator's auth identity reference and business/display name.
   - `interviewTemplates` owns Built-in and Creator-private template content, source language, ownership, and timestamps.
-  - `interviews` owns the immutable configuration snapshot after start, Interview Link capability state, current product step, current Project Document, three bounded Visual Concept records, Visual Direction, Project Submission state, aggregate usage, and the current asynchronous operation/error state.
+  - `interviews` owns the immutable configuration snapshot after start, Interview Link capability state, current product step, current Project Document, up to six bounded Visual Concept records across at most two batches, Visual Direction, Project Submission state, aggregate usage, and the current asynchronous operation/error state.
 - Store each Interview Transcript in one Convex Agent component thread rather than duplicating messages in application tables.
 - Store generated Visual Concept images in Convex storage and expose them only through authorized application reads.
 - Use Better Auth with Google and GitHub OAuth. Do not support passkeys or account linking. Associate an account with the provider used on first registration; when the other provider presents the same verified email, show which provider owns the account instead of linking or creating a duplicate.
@@ -160,18 +160,18 @@ The application uses React, Convex, Better Auth, the Convex Agent component, the
 - Instruct the Interview Model to begin broadly and then ask at most three tightly related questions per message. Most ordinary website Interviews should finish in roughly five to eight batches, but sufficiency—not a count—determines completion.
 - Treat all Creator and Client text as untrusted content below the fixed Interview Policy. The model must not reveal hidden policy or accept instructions to leave the narrow Interview workflow.
 - Allow existing content to be pasted into Interview Instructions or Client messages. Store public URLs as text but do not crawl them, retrieve them, or claim they were read. Explicitly tell the Client when a supplied link was not inspected.
-- Make the selected Interview Model responsible for the conversation, sufficiency decision, Project Document, revisions, and three separate Visual Concept prompts. Do not introduce separate planner, completion reviewer, evidence, finding, coverage, or document-generator roles.
+- Make the selected Interview Model responsible for the conversation, sufficiency decision, Project Document, revisions, and three separate Visual Concept prompts for each generated batch. Do not introduce separate planner, completion reviewer, evidence, finding, coverage, or document-generator roles.
 - Use GPT-5.6 Terra at medium reasoning or DeepSeek V4 Flash with thinking at high effort for the full Interview. The model selected at creation remains pinned and never falls back to the other model.
 - Route text, translation, and image requests through OpenRouter. Every request must require zero data retention, deny data collection, and disable provider/model fallback. If no compliant route is available, fail the operation.
 - Permit a privacy-compliant DeepSeek route outside Azure or the EU only after the Creator acknowledges the warning. Also show a non-blocking Creator-only warning for German DeepSeek Interviews. Do not expose routing implementation details to Clients.
 - Produce a single current Markdown Project Document. Its outline comes from Interview Instructions rather than a structured schema. For website work, it includes complete first-draft copy derived from supplied facts, identifies recommendations, asks for blocking facts, and leaves conspicuous placeholders for non-blocking unknown facts. It never invents factual or legal claims.
 - Make Document Review a loop with **Request changes** and **Continue to concepts**. A free-text change request invokes the pinned Interview Model and replaces the current Project Document. There is no direct editing, version history, approval semantics, or separate Creator review gate.
-- Generate exactly three named, structurally and stylistically distinct Visual Concepts only after the Client continues from Document Review. Generate one prompt per concept using the pinned Interview Model, then render each independently with GPT Image 2 at medium quality and 1536×1024.
+- Generate a first batch of exactly three named, structurally and stylistically distinct Visual Concepts only after the Client continues from Document Review. While only that first batch exists and is ready, allow the Client to request one second batch of exactly three. Generate one prompt per concept using the pinned Interview Model, then render each independently with GPT Image 2 at 1536×1024.
 - Frame each Visual Concept as a polished desktop homepage direction showing approximately the first viewport plus enough lower-page context to reveal the system. Do not present it as a full responsive design, wireframe, implementation, or final deliverable.
-- Preserve successfully generated concepts when one fails. Retry only missing/failed concepts. Do not offer discretionary concept regeneration after all three exist.
-- Require either one selected Visual Concept or one to three valid HTTP(S) inspiration links. Permit an optional explanatory note in either path.
+- Preserve successfully generated concepts when one fails. Retry only missing/failed concepts. Do not offer a third batch after six concepts exist; a first-batch retry removes the second batch and makes the second-batch option available again once the replacement first batch is ready.
+- Require either one selected Visual Concept with an optional explanatory note or one to three valid HTTP(S) inspiration links with a required explanatory note.
 - Make **Submit project** create the Interview's one immutable Project Submission atomically. First valid submission wins; later concurrent attempts receive current server state. After submission, the Client experience is read-only.
-- Include the current Project Document, all three Visual Concepts, Visual Direction, optional note, and complete Interview Transcript in the Project Submission. Do not create multiple submissions or post-submission revision workflows.
+- Include the current Project Document, all generated Visual Concepts, Visual Direction, note, and complete Interview Transcript in the Project Submission. Do not create multiple submissions or post-submission revision workflows.
 - Let the Creator download a ZIP containing readable Markdown/text metadata and original concept images, as well as individual Project Document, transcript, Visual Direction, and image files.
 - Send one minimal Creator notification through the Cloudflare Email Service REST API after Project Submission commits. Include a stable Project Submission identifier in application delivery state and the email header. Retry definite failures twice; treat an ambiguous timeout as delivery unknown rather than risking a duplicate. Email failure never changes the submitted state.
 - Use one scheduled, idempotent asynchronous operation at a time per Interview. Save the triggering input and pending operation transactionally before scheduling work. Retry temporary AI/image failures twice with the same pinned configuration; then expose **Try again** to the Client and Needs attention/retry to the Creator.
@@ -203,7 +203,7 @@ The application uses React, Convex, Better Auth, the Convex Agent component, the
 - Creator teams, organizations, roles, shared ownership, account linking, passkeys, recovery codes, or support-assisted recovery.
 - Creator intervention in an active Interview, manual message injection, structured findings, coverage dashboards, evidence provenance, or AI planning/reviewer roles.
 - Creator-side Project Document editing, version history, formal approvals, contracts, signatures, or post-submission revisions inside the product.
-- Additional concept generations, final responsive designs, implemented websites, logos, brand identity generation, or arbitrary non-website concept pipelines.
+- A third or later concept batch, final responsive designs, implemented websites, logos, brand identity generation, or arbitrary non-website concept pipelines.
 - Automatic template translation, shared templates, template tags, template versions, a template marketplace, or templates selecting Client Language.
 - More Client Languages than English and German.
 - More Interview Models than GPT-5.6 Terra and DeepSeek V4 Flash, model changes after start, automatic fallback, or Client-selected models.

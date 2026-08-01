@@ -15,6 +15,7 @@ describe("WelcomeStep", () => {
           },
           clientLanguage: "en",
           modelFamily: "DeepSeek V4 Flash",
+          temporaryConceptBatchRetriesEnabled: false,
           step: "interview",
           started: false,
         }}

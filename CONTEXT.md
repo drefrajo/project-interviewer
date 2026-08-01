@@ -77,11 +77,11 @@ The Client step in which the current Project Document may receive free-text chan
 _Avoid_: Approval, version review
 
 **Visual Concept**:
-One of three deliberately distinct, AI-generated website images offered to the Client after the Project Document is confirmed, with one optional additional batch of three that must explore territory not covered by the first batch. It communicates only a rough visual direction and is never a final design or implementation promise.
+One of up to six deliberately distinct, AI-generated website images offered to the Client after the Project Document is confirmed: a first batch of three, plus a second batch of three the Client may request while only the first batch exists. It communicates only a rough visual direction and is never a final design or implementation promise.
 _Avoid_: Mockup, final design, website design
 
 **Visual Direction**:
-The Client's selected Visual Concept or, when none fits, up to three inspiration links, together with an optional explanatory note.
+The Client's selected Visual Concept with an optional explanatory note, or, when none fits, up to three inspiration links with a required explanatory note.
 _Avoid_: Approval, final design
 
 **Project Submission**:

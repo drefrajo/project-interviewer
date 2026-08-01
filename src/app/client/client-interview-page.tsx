@@ -212,7 +212,6 @@ export const ClientInterviewPage = () => {
           />
         ) : interview.step === "concepts" ? (
           <ConceptsStep
-            additionalConceptsUsed={interview.additionalConceptsUsed ?? false}
             concepts={interview.concepts ?? []}
             generationPhase={
               interview.operation?.phase === "concept_creating"
@@ -237,6 +236,9 @@ export const ClientInterviewPage = () => {
               }).then(() => undefined)
             }
             pending={pending}
+            temporaryConceptBatchRetriesEnabled={
+              interview.temporaryConceptBatchRetriesEnabled
+            }
           />
         ) : (
           <SubmittedStep interview={interview} />

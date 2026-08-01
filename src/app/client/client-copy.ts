@@ -20,9 +20,11 @@ export const CLIENT_COPY = {
       "We’re creating three Visual Concepts. Please wait—this may take a moment.",
     conceptsPlanning: "Planning three concept images…",
     conceptsCreating: "Creating three concept images…",
+    conceptsLongWait: "This may take a while.",
     moreOptions: "I don't like any of these — show three more options",
     retryMoreOptions: "Retry second image batch (temporary)",
     retryFirstOptions: "Retry first image batch (temporary)",
+    requiredNote: "Required note",
     selectConcept: "Select this concept",
     inspiration: "None of these fit — use inspiration links",
     note: "Optional note",
@@ -32,7 +34,7 @@ export const CLIENT_COPY = {
       "Submission is final. The Project Submission becomes read-only for you and the Creator.",
     submittedTitle: "Project submitted",
     submittedIntro:
-      "The Creator has received this immutable Project Submission.",
+      "The Creator has received this project description. They will get in touch about the next steps.",
   },
   de: {
     steps: ["Interview", "Prüfung", "Konzepte", "Übermittelt"],
@@ -53,9 +55,11 @@ export const CLIENT_COPY = {
       "Wir erstellen drei visuelle Konzepte. Bitte warten Sie – dies kann einen Moment dauern.",
     conceptsPlanning: "Drei Konzeptbilder werden geplant…",
     conceptsCreating: "Drei Konzeptbilder werden erstellt…",
+    conceptsLongWait: "Das kann etwas dauern.",
     moreOptions: "Keines passt – drei weitere Optionen zeigen",
     retryMoreOptions: "Zweiten Bild-Batch erneut starten (temporär)",
     retryFirstOptions: "Ersten Bild-Batch erneut starten (temporär)",
+    requiredNote: "Erforderliche Notiz",
     selectConcept: "Dieses Konzept wählen",
     inspiration: "Keines passt – Inspirationslinks verwenden",
     note: "Optionale Notiz",
@@ -65,6 +69,6 @@ export const CLIENT_COPY = {
       "Die Übermittlung ist endgültig. Danach ist die Projektübergabe für Sie und den Creator schreibgeschützt.",
     submittedTitle: "Projekt übermittelt",
     submittedIntro:
-      "Der Creator hat diese unveränderliche Projektübergabe erhalten.",
+      "Der Creator hat diese Projektbeschreibung erhalten. Er wird sich für die nächsten Schritte melden.",
   },
 } as const satisfies Record<ClientLanguage, object>;
