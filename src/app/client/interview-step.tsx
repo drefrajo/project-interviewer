@@ -17,6 +17,19 @@ const composerActivity = {
   en: {
     label: "Working on the next question",
     first: "Preparing the first question…",
+    longWait: {
+      label: "This is taking a little longer",
+      detail: "This response needs a little more careful thought.",
+    },
+    planning: {
+      label: "Planning the interview direction",
+      detail: "This first step takes a little longer.",
+      phrases: [
+        "Building a short plan from your first answer…",
+        "Choosing the most useful decisions to clarify…",
+        "Preparing a focused next question…",
+      ],
+    },
     phrases: [
       "Reviewing the conversation so far…",
       "Identifying the most useful next detail…",
@@ -29,6 +42,19 @@ const composerActivity = {
   de: {
     label: "Die nächste Frage wird vorbereitet",
     first: "Die erste Frage wird vorbereitet…",
+    longWait: {
+      label: "Das dauert etwas länger",
+      detail: "Diese Antwort braucht etwas mehr sorgfältige Überlegung.",
+    },
+    planning: {
+      label: "Die Interviewrichtung wird geplant",
+      detail: "Dieser erste Schritt dauert etwas länger.",
+      phrases: [
+        "Aus Ihrer ersten Antwort entsteht ein kurzer Plan…",
+        "Die wichtigsten offenen Entscheidungen werden geordnet…",
+        "Eine gezielte nächste Frage wird vorbereitet…",
+      ],
+    },
     phrases: [
       "Der bisherige Gesprächsverlauf wird geprüft…",
       "Das hilfreichste nächste Detail wird ermittelt…",
@@ -42,17 +68,35 @@ const composerActivity = {
 
 const ComposerWorking = ({
   firstQuestion,
+  planning,
   language,
 }: {
   firstQuestion: boolean;
+  planning: boolean;
   language: ClientLanguage;
 }) => {
   const text = composerActivity[language];
-  const phrases = firstQuestion ? [text.first] : text.phrases;
+  const phrases = firstQuestion
+    ? [text.first]
+    : planning
+      ? text.planning.phrases
+      : text.phrases;
   const [phraseIndex, setPhraseIndex] = useState(0);
   const [characterCount, setCharacterCount] = useState(1);
+  const [longWait, setLongWait] = useState(false);
   const phrase = phrases[phraseIndex % phrases.length] ?? "";
-  const activeLabel = firstQuestion ? text.first : text.label;
+  const activeLabel = longWait
+    ? text.longWait.label
+    : firstQuestion
+      ? text.first
+      : planning
+        ? text.planning.label
+        : text.label;
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setLongWait(true), 60_000);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -89,9 +133,16 @@ const ComposerWorking = ({
             aria-hidden="true"
             className="size-4 shrink-0 animate-spin rounded-full border-2 border-line border-t-forest"
           />
-          <strong aria-hidden="true" className="text-sm">
-            {activeLabel}
-          </strong>
+          <span className="flex flex-col">
+            <strong aria-hidden="true" className="text-sm">
+              {activeLabel}
+            </strong>
+            {longWait ? (
+              <small className="text-xs text-muted">{text.longWait.detail}</small>
+            ) : planning ? (
+              <small className="text-xs text-muted">{text.planning.detail}</small>
+            ) : null}
+          </span>
         </span>
       </div>
     </div>
@@ -102,11 +153,15 @@ export const InterviewStepView = ({
   language,
   messages,
   pending,
+  planning = false,
+  onRetry,
   onSend,
 }: {
   language: ClientLanguage;
   messages: TranscriptMessage[];
   pending: boolean;
+  planning?: boolean;
+  onRetry(): Promise<boolean>;
   onSend(content: string): Promise<boolean>;
 }) => {
   const text = CLIENT_COPY[language];
@@ -144,39 +199,55 @@ export const InterviewStepView = ({
     messages.at(-1)?.role === "assistant"
       ? messages.at(-1)?.suggestedReplies?.slice(0, 4) ?? []
       : [];
-
   return (
     <section
-      className="mx-auto grid min-h-0 w-full max-w-3xl flex-1 grid-rows-[minmax(0,1fr)_auto] gap-0 overflow-hidden"
+      className="mx-auto grid min-h-0 w-full flex-1 grid-rows-[minmax(0,1fr)_auto] gap-0 overflow-visible"
       data-testid="interview-shell"
     >
       <div
         aria-label={language === "de" ? "Interviewverlauf" : "Interview transcript"}
-        className="min-h-0 space-y-4 overflow-y-auto overscroll-contain py-4 pr-1 sm:py-5"
+        className="min-h-0 min-w-0 overflow-y-auto overscroll-contain -mx-4 w-[calc(100%+2rem)] px-4 py-4 sm:-mx-8 sm:w-[calc(100%+4rem)] sm:px-8 sm:py-5 sm:[scrollbar-gutter:stable_both-edges]"
         data-testid="interview-history"
         ref={transcript}
         role="log"
       >
-        {messages.map((message) => (
-          <article
-            className={
-              message.role === "client"
-                ? "ml-auto max-w-[90%] rounded-2xl rounded-br-sm bg-forest px-4 py-3 text-white dark:bg-forest-strong sm:max-w-[80%]"
-                : "mr-auto max-w-[95%] rounded-2xl rounded-bl-sm border border-line bg-surface px-4 py-3 sm:max-w-[85%]"
-            }
-            key={message.id}
-          >
-            {message.role === "assistant" ? (
-              <SafeMarkdown markdown={message.content} variant="plain" />
-            ) : (
-              <p className="whitespace-pre-wrap leading-7">{message.content}</p>
-            )}
-          </article>
-        ))}
+        <div
+          className="mx-auto w-full max-w-3xl space-y-4"
+          data-testid="interview-history-content"
+        >
+          {messages.map((message) => (
+            <article
+              className={
+                message.role === "client"
+                  ? "ml-auto max-w-[90%] rounded-2xl rounded-br-sm bg-forest px-4 py-3 text-white dark:bg-forest-strong sm:max-w-[80%]"
+                  : "mr-auto max-w-[95%] rounded-2xl rounded-bl-sm border border-line bg-surface px-4 py-3 sm:max-w-[85%]"
+              }
+              key={message.id}
+            >
+              {message.role === "assistant" ? (
+                <>
+                  <SafeMarkdown markdown={message.content} variant="plain" />
+                  {message.retryable ? (
+                    <button
+                      className="mt-3 inline-flex min-h-10 items-center justify-center rounded-lg bg-forest px-4 py-2 text-sm font-extrabold text-white transition hover:bg-forest-strong disabled:cursor-not-allowed disabled:opacity-55 dark:bg-forest-strong"
+                      disabled={pending}
+                      onClick={() => void onRetry()}
+                      type="button"
+                    >
+                      {text.retryResponse}
+                    </button>
+                  ) : null}
+                </>
+              ) : (
+                <p className="whitespace-pre-wrap leading-7">{message.content}</p>
+              )}
+            </article>
+          ))}
+        </div>
       </div>
       <form
         aria-busy={pending}
-        className="shrink-0 rounded-xl border border-line bg-surface p-4"
+        className="mx-auto w-full max-w-3xl shrink-0 rounded-xl border border-line bg-surface p-4"
         data-testid="interview-composer"
         onSubmit={submit}
       >
@@ -214,6 +285,7 @@ export const InterviewStepView = ({
               <ComposerWorking
                 firstQuestion={messages.length === 0}
                 language={language}
+                planning={planning}
               />
             ) : null}
           </div>

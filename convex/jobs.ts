@@ -14,14 +14,18 @@ import { buildInterviewMessages } from "./lib/interview_messages";
 import { parseInterviewOutput } from "./lib/interview_output";
 import {
   buildConceptSeedMessages,
+  buildInterviewPlanMessages,
   buildInterviewPolicy,
+  buildProjectDocumentMessages,
   buildProjectDocumentRevisionMessages,
   buildVisualConceptImagePrompt,
 } from "./lib/interview_prompts";
+import { resolveInterviewTurn } from "./lib/interview_turn";
 import {
   buildCloudflareEmailRequest,
   buildOpenRouterImageRequest,
   buildOpenRouterTextRequest,
+  type ConceptImageModel,
   type ProviderMessage,
 } from "./lib/provider_requests";
 import { visualConcept } from "./schema";
@@ -99,6 +103,17 @@ export const begin = internalMutation({
       status: "running" as const,
       attempt: interview.operation.attempt + 1,
       startedAt: Date.now(),
+      ...(interview.operation.kind === "concept_generation"
+        ? {
+            phase:
+              (interview.operation.regeneratePrompts === true ||
+                (interview.operation.additionalConcepts === true
+                  ? interview.concepts.length !== 6
+                  : interview.concepts.length !== 3))
+                ? ("concept_planning" as const)
+                : ("concept_creating" as const),
+          }
+        : {}),
     };
     await ctx.db.patch("interviews", interview._id, { operation });
     const creator = await ctx.db.get("creatorProfiles", interview.creatorId);
@@ -112,6 +127,14 @@ export const completeText = internalMutation({
     kind: v.union(
       v.literal("interview_response"),
       v.literal("document_revision"),
+    ),
+    interviewTurnKind: v.optional(
+      v.union(
+        v.literal("question"),
+        v.literal("alignment"),
+        v.literal("ready"),
+        v.literal("document"),
+      ),
     ),
     assistantContent: v.optional(v.string()),
     projectDocument: v.optional(v.string()),
@@ -142,9 +165,16 @@ export const completeText = internalMutation({
             projectDocument: args.projectDocument,
             step: "review" as const,
             suggestedReplies: [],
+            alignmentAskedAtClientMessageCount: undefined,
           }
         : args.kind === "interview_response"
-          ? { suggestedReplies: args.suggestedReplies ?? [] }
+          ? {
+              suggestedReplies: args.suggestedReplies ?? [],
+              alignmentAskedAtClientMessageCount:
+                args.interviewTurnKind === "alignment"
+                  ? interview.clientMessageCount
+                  : undefined,
+            }
           : {}),
       operation: undefined,
       usage: usagePatch(interview.usage, {
@@ -152,6 +182,61 @@ export const completeText = internalMutation({
         completion_tokens: args.outputTokens,
         cost: args.estimatedCostUsd,
       }),
+      updatedAt: Date.now(),
+    });
+    return null;
+  },
+});
+
+export const saveInterviewPlan = internalMutation({
+  args: {
+    interviewId: v.id("interviews"),
+    interviewPlan: v.string(),
+    inputTokens: v.number(),
+    outputTokens: v.number(),
+    estimatedCostUsd: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const interview = await ctx.db.get("interviews", args.interviewId);
+    if (
+      interview?.operation?.kind !== "interview_response" ||
+      interview.operation.status !== "running" ||
+      interview.clientMessageCount !== 1 ||
+      interview.interviewPlan
+    ) {
+      return null;
+    }
+    await ctx.db.patch("interviews", interview._id, {
+      interviewPlan: args.interviewPlan,
+      usage: usagePatch(interview.usage, {
+        prompt_tokens: args.inputTokens,
+        completion_tokens: args.outputTokens,
+        cost: args.estimatedCostUsd,
+      }),
+      updatedAt: Date.now(),
+    });
+    return null;
+  },
+});
+
+export const setConceptGenerationPhase = internalMutation({
+  args: {
+    interviewId: v.id("interviews"),
+    phase: v.union(
+      v.literal("concept_planning"),
+      v.literal("concept_creating"),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const interview = await ctx.db.get("interviews", args.interviewId);
+    if (
+      interview?.operation?.kind !== "concept_generation" ||
+      interview.operation.status !== "running"
+    ) {
+      return null;
+    }
+    await ctx.db.patch("interviews", interview._id, {
+      operation: { ...interview.operation, phase: args.phase },
       updatedAt: Date.now(),
     });
     return null;
@@ -288,32 +373,109 @@ const runInterview = async (
     excludeToolMessages: true,
     statuses: ["success"],
   });
+  const transcriptMessages = [...transcript.page]
+    .reverse()
+    .flatMap((message) => {
+      const text = textContent(message);
+      return text ? [text] : [];
+    });
+  const createPlan =
+    interview.clientMessageCount === 1 && !interview.interviewPlan;
+  let interviewPlan = interview.interviewPlan;
+  if (createPlan) {
+    const planRequest = buildOpenRouterTextRequest({
+      apiKey: env.OPENROUTER_API_KEY,
+      model: interview.model,
+      operation: "interview_plan",
+      messages: buildInterviewPlanMessages({
+        instructions: interview.instructions,
+        transcript: transcriptMessages,
+      }),
+    });
+    const generatedPlan = await (async () => {
+      try {
+        return await responseText(
+          await fetch(planRequest.url, planRequest.init),
+        );
+      } catch {
+        return null;
+      }
+    })();
+    if (generatedPlan) {
+      interviewPlan = generatedPlan.content.trim().slice(0, 6000) || undefined;
+      if (interviewPlan) {
+        await ctx.runMutation(internalRefs.jobs.saveInterviewPlan, {
+          interviewId: interview._id,
+          interviewPlan,
+          inputTokens: generatedPlan.usage?.prompt_tokens ?? 0,
+          outputTokens: generatedPlan.usage?.completion_tokens ?? 0,
+          estimatedCostUsd: generatedPlan.usage?.cost ?? 0,
+        });
+      }
+    }
+  }
   const request = buildOpenRouterTextRequest({
     apiKey: env.OPENROUTER_API_KEY,
     model: interview.model,
     operation: "interview",
     messages: buildInterviewMessages(
-      buildInterviewPolicy(interview),
-      interview.clientLanguage,
-      [...transcript.page].reverse().flatMap((message) => {
-        const text = textContent(message);
-        return text ? [text] : [];
+      buildInterviewPolicy({
+        clientLanguage: interview.clientLanguage,
+        instructions: interview.instructions,
+        alignmentAsked:
+          interview.alignmentAskedAtClientMessageCount !== undefined,
+        ...(interviewPlan ? { interviewPlan } : {}),
       }),
+      interview.clientLanguage,
+      transcriptMessages,
     ),
   });
   const generated = await responseText(await fetch(request.url, request.init));
   const parsed = parseInterviewOutput(generated.content);
+  const turn = resolveInterviewTurn(
+    parsed.kind,
+    interview.alignmentAskedAtClientMessageCount !== undefined,
+  );
+  if (turn === "reply") {
+    await ctx.runMutation(internalRefs.jobs.completeText, {
+      interviewId: interview._id,
+      kind: "interview_response",
+      interviewTurnKind: parsed.kind,
+      assistantContent: parsed.content,
+      suggestedReplies: parsed.suggestedReplies,
+      inputTokens: generated.usage?.prompt_tokens ?? 0,
+      outputTokens: generated.usage?.completion_tokens ?? 0,
+      estimatedCostUsd: generated.usage?.cost ?? 0,
+    });
+    return;
+  }
+  const documentRequest = buildOpenRouterTextRequest({
+    apiKey: env.OPENROUTER_API_KEY,
+    model: interview.model,
+    operation: "document",
+    messages: buildProjectDocumentMessages({
+      instructions: interview.instructions,
+      transcript: transcriptMessages,
+    }),
+  });
+  const document = await responseText(
+    await fetch(documentRequest.url, documentRequest.init),
+  );
   await ctx.runMutation(internalRefs.jobs.completeText, {
     interviewId: interview._id,
     kind: "interview_response",
+    interviewTurnKind: parsed.kind,
     assistantContent: parsed.content,
-    suggestedReplies: parsed.suggestedReplies,
-    ...(parsed.projectDocument
-      ? { projectDocument: parsed.projectDocument }
-      : {}),
-    inputTokens: generated.usage?.prompt_tokens ?? 0,
-    outputTokens: generated.usage?.completion_tokens ?? 0,
-    estimatedCostUsd: generated.usage?.cost ?? 0,
+    suggestedReplies: [],
+    projectDocument: document.content,
+    inputTokens:
+      (generated.usage?.prompt_tokens ?? 0) +
+      (document.usage?.prompt_tokens ?? 0),
+    outputTokens:
+      (generated.usage?.completion_tokens ?? 0) +
+      (document.usage?.completion_tokens ?? 0),
+    estimatedCostUsd:
+      (generated.usage?.cost ?? 0) + (document.usage?.cost ?? 0),
   });
 };
 
@@ -345,7 +507,10 @@ const runDocumentRevision = async (
   });
 };
 
-const conceptSeeds = async (interview: Doc<"interviews">) => {
+const conceptSeeds = async (
+  interview: Doc<"interviews">,
+  idOffset = 0,
+) => {
   if (!interview.projectDocument) {
     throw new Error("Project Document is missing.");
   }
@@ -356,15 +521,20 @@ const conceptSeeds = async (interview: Doc<"interviews">) => {
     messages: buildConceptSeedMessages({
       instructions: interview.instructions,
       projectDocument: interview.projectDocument,
+      ...(idOffset > 0 ? { existingConcepts: interview.concepts } : {}),
     }),
   });
   const generated = await responseText(await fetch(request.url, request.init));
-  return parseConceptSeeds(generated.content);
+  return parseConceptSeeds(generated.content, idOffset);
 };
 
-const imageBlob = async (prompt: string) => {
+const imageBlob = async (
+  prompt: string,
+  imageModel: ConceptImageModel,
+) => {
   const request = buildOpenRouterImageRequest({
     apiKey: env.OPENROUTER_API_KEY,
+    imageModel,
     prompt,
   });
   let response: Response;
@@ -378,7 +548,16 @@ const imageBlob = async (prompt: string) => {
     error.name = "IMAGE_GENERATION_REQUEST_FAILED";
     throw error;
   }
-  if (!response.ok) throw new Error(`Image generation failed (${response.status}).`);
+  if (!response.ok) {
+    const error = new Error(`Image generation failed (${response.status}).`);
+    error.name =
+      response.status === 408 ||
+      response.status === 429 ||
+      response.status >= 500
+        ? `TEMPORARY_IMAGE_PROVIDER_ERROR_${response.status}`
+        : `IMAGE_PROVIDER_ERROR_${response.status}`;
+    throw error;
+  }
   const body = (await response.json()) as {
     data?: Array<{ b64_json?: unknown; url?: unknown }>;
   };
@@ -391,10 +570,16 @@ const imageBlob = async (prompt: string) => {
   }
   if (typeof image?.url === "string") {
     const fetched = await fetch(image.url);
-    if (!fetched.ok) throw new Error("Generated image could not be stored.");
+    if (!fetched.ok) {
+      const error = new Error("Generated image could not be stored.");
+      error.name = "IMAGE_RESULT_FETCH_FAILED";
+      throw error;
+    }
     return await fetched.blob();
   }
-  throw new Error("Image provider returned no image.");
+  const error = new Error("Image provider returned no image.");
+  error.name = "IMAGE_PROVIDER_EMPTY_RESPONSE";
+  throw error;
 };
 
 const runConceptGeneration = async (
@@ -405,8 +590,20 @@ const runConceptGeneration = async (
   if (!projectDocument) {
     throw new Error("Project Document is missing.");
   }
-  const seeds =
-    interview.concepts.length === 3
+  const additionalConcepts = interview.operation?.additionalConcepts === true;
+  const regeneratePrompts = interview.operation?.regeneratePrompts === true;
+  const seeds = additionalConcepts
+    ? interview.concepts.length === 6 && !regeneratePrompts
+      ? interview.concepts
+          .filter((concept) => Number.parseInt(concept.id.replace("concept_", ""), 10) > 3)
+          .map(({ id, name, rationale, prompt }) => ({
+            id,
+            name,
+            rationale,
+            prompt,
+          }))
+      : await conceptSeeds(interview, 3)
+    : interview.concepts.length === 3 && !regeneratePrompts
       ? interview.concepts.map(({ id, name, rationale, prompt }) => ({
           id,
           name,
@@ -414,8 +611,17 @@ const runConceptGeneration = async (
           prompt,
         }))
       : await conceptSeeds(interview);
+  const imageModel: ConceptImageModel =
+    interview.operation?.imageModel ??
+    (interview.model === "deepseek-v4-flash"
+      ? "gpt-image-2-low"
+      : "gpt-image-2");
+  await ctx.runMutation(internalRefs.jobs.setConceptGenerationPhase, {
+    interviewId: interview._id,
+    phase: "concept_creating",
+  });
   const existing = new Map(interview.concepts.map((item) => [item.id, item]));
-  const { concepts, hasFailure } = await generateConceptsInParallel(
+  const generated = await generateConceptsInParallel(
     seeds,
     existing,
     async (seed) =>
@@ -425,14 +631,32 @@ const runConceptGeneration = async (
             instructions: interview.instructions,
             projectDocument,
             conceptPrompt: seed.prompt,
+            conceptIndex: Number.parseInt(seed.id.replace("concept_", ""), 10),
+            ...(additionalConcepts
+              ? {
+                  existingConcepts: [
+                    ...interview.concepts.slice(0, 3),
+                    ...seeds.filter((concept) => concept.id !== seed.id),
+                  ],
+                }
+              : {}),
           }),
+          imageModel,
         ),
       ),
   );
+  const concepts = additionalConcepts
+    ? [
+        ...interview.concepts.filter(
+          (concept) => !generated.concepts.some((item) => item.id === concept.id),
+        ),
+        ...generated.concepts,
+      ]
+    : generated.concepts;
   await ctx.runMutation(internalRefs.jobs.completeConcepts, {
     interviewId: interview._id,
     concepts,
-    hasFailure,
+    hasFailure: generated.hasFailure,
   });
 };
 

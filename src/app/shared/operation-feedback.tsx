@@ -41,17 +41,24 @@ export const OperationFeedback = ({
       </div>
     );
   }
+  const fallback =
+    language === "de"
+      ? "Dieser Schritt konnte nicht abgeschlossen werden."
+      : "This step could not be completed.";
+  const message =
+    operation.message &&
+    operation.message !== "Error" &&
+    !/^[A-Z0-9_]+$/.test(operation.message)
+      ? operation.message
+      : fallback;
   return (
     <div
-      className="flex flex-col items-start gap-3 rounded-lg border border-error-border bg-error-surface p-4 text-error-text"
+      className="mx-auto mt-4 flex w-full max-w-3xl flex-col items-start gap-3 rounded-lg border border-error-border bg-error-surface p-4 text-error-text"
       role="alert"
     >
       <p className="flex gap-2 font-bold">
         <AlertTriangle aria-hidden="true" className="mt-0.5 shrink-0" size={18} />
-        {operation.message ??
-          (language === "de"
-            ? "Dieser Schritt konnte nicht abgeschlossen werden."
-            : "This step could not be completed.")}
+        {message}
       </p>
       {onRetry ? (
         <button className={secondaryButton} onClick={onRetry} type="button">

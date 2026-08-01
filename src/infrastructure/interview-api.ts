@@ -11,6 +11,11 @@ export type {
   PrivateInterviewTemplate,
 } from "../domain/interview-templates";
 export type InterviewModel = "gpt-5.6-terra" | "deepseek-v4-flash";
+export type ConceptImageModel =
+  | "gpt-image-2"
+  | "gpt-image-2-low"
+  | "nano-banana-2"
+  | "nano-banana-2-lite";
 export type InterviewStep = "interview" | "review" | "concepts" | "submitted";
 export type InterviewStatus =
   | "not_started"
@@ -50,6 +55,7 @@ export interface TranscriptMessage {
   content: string;
   createdAt?: number;
   suggestedReplies?: string[];
+  retryable?: boolean;
 }
 
 export interface DownloadManifest {
@@ -65,7 +71,15 @@ export interface InterviewSummary {
   status: InterviewStatus;
   step: InterviewStep;
   updatedAt?: number;
-  operation?: { state: "pending" | "failed"; message?: string } | null;
+  operation?: {
+    state: "pending" | "failed";
+    message?: string;
+    phase?:
+      | "planning"
+      | "responding"
+      | "concept_planning"
+      | "concept_creating";
+  } | null;
 }
 
 export interface CreatorInterviewView extends InterviewSummary {
@@ -77,6 +91,7 @@ export interface CreatorInterviewView extends InterviewSummary {
   concepts?: VisualConcept[];
   visualDirection?: VisualDirection;
   submittedAt?: number;
+  additionalConceptsUsed?: boolean;
 }
 
 export interface ClientInterviewView {
@@ -91,7 +106,16 @@ export interface ClientInterviewView {
   concepts?: VisualConcept[];
   visualDirection?: VisualDirection;
   submittedAt?: number;
-  operation?: { state: "pending" | "failed"; message?: string } | null;
+  additionalConceptsUsed?: boolean;
+  operation?: {
+    state: "pending" | "failed";
+    message?: string;
+    phase?:
+      | "planning"
+      | "responding"
+      | "concept_planning"
+      | "concept_creating";
+  } | null;
 }
 
 type Query<Args extends Record<string, unknown>, Result> = FunctionReference<
@@ -187,7 +211,16 @@ interface InterviewApi {
     sendMessage: Mutation<{ token: string; content: string }>;
     requestDocumentChanges: Mutation<{ token: string; changes: string }>;
     continueToConcepts: Mutation<{ token: string }>;
+    requestMoreConcepts: Mutation<{ token: string }>;
+    retryAdditionalConcepts: Mutation<{ token: string }>;
+    retryFirstConcepts: Mutation<{ token: string }>;
+    restartConceptGeneration: Mutation<{
+      token: string;
+      imageModel: ConceptImageModel;
+      regeneratePrompts: boolean;
+    }>;
     retry: Mutation<{ token: string }>;
+    retryMalformedResponse: Mutation<{ token: string }>;
     setVisualDirection: Mutation<{
       token: string;
       direction: VisualDirection;

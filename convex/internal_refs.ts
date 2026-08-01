@@ -33,11 +33,35 @@ export const internalRefs = {
         creator: Doc<"creatorProfiles">;
       } | null
     >("jobs:begin"),
+    saveInterviewPlan: makeFunctionReference<
+      "mutation",
+      {
+        interviewId: Id<"interviews">;
+        interviewPlan: string;
+        inputTokens: number;
+        outputTokens: number;
+        estimatedCostUsd: number;
+      },
+      null
+    >("jobs:saveInterviewPlan"),
+    setConceptGenerationPhase: makeFunctionReference<
+      "mutation",
+      {
+        interviewId: Id<"interviews">;
+        phase: "concept_planning" | "concept_creating";
+      },
+      null
+    >("jobs:setConceptGenerationPhase"),
     completeText: makeFunctionReference<
       "mutation",
       {
         interviewId: Id<"interviews">;
         kind: "interview_response" | "document_revision";
+        interviewTurnKind?:
+          | "question"
+          | "alignment"
+          | "ready"
+          | "document";
         assistantContent?: string;
         projectDocument?: string;
         suggestedReplies?: string[];

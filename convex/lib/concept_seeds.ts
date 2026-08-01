@@ -13,7 +13,7 @@ const invalidConceptSeeds = (name: string) => {
   return error;
 };
 
-export const parseConceptSeeds = (content: string): ConceptSeed[] => {
+export const parseConceptSeeds = (content: string, idOffset = 0): ConceptSeed[] => {
   let parsed: unknown;
   try {
     parsed = parseProviderJson(content);
@@ -61,7 +61,7 @@ export const parseConceptSeeds = (content: string): ConceptSeed[] => {
       throw invalidConceptSeeds("CONCEPT_SEEDS_INVALID_SHAPE");
     }
     return {
-      id: `concept_${index + 1}`,
+      id: `concept_${index + 1 + idOffset}`,
       name,
       rationale,
       prompt,

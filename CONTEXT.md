@@ -52,6 +52,14 @@ _Avoid_: Login link, public project
 The chronological Client and AI messages exchanged during an Interview. Corrections are new messages, with the latest clear Client statement taking precedence.
 _Avoid_: Structured discovery state, answer record
 
+**Interview Plan**:
+A private, tentative discovery map created after the first Client reply. It guides later questions but is never shown to the Client, and the latest Client statements always override it.
+_Avoid_: Project plan, fixed questionnaire
+
+**Alignment Checkpoint**:
+The distinct Interview turn in which the AI recommends and summarizes the current direction for the Client to confirm or adjust before a Project Document can be generated. It is a low-burden safeguard against premature completion, not formal approval.
+_Avoid_: Final answer, document preview, approval gate
+
 **Suggested Reply**:
 An optional, AI-proposed shortcut that inserts editable text into the Client's ordinary response composer without submitting it.
 _Avoid_: Form field, structured answer, required choice
@@ -69,7 +77,7 @@ The Client step in which the current Project Document may receive free-text chan
 _Avoid_: Approval, version review
 
 **Visual Concept**:
-One of three deliberately distinct, AI-generated website images offered to the Client after the Project Document is confirmed. It communicates only a rough visual direction and is never a final design or implementation promise.
+One of three deliberately distinct, AI-generated website images offered to the Client after the Project Document is confirmed, with one optional additional batch of three that must explore territory not covered by the first batch. It communicates only a rough visual direction and is never a final design or implementation promise.
 _Avoid_: Mockup, final design, website design
 
 **Visual Direction**:
@@ -77,5 +85,5 @@ The Client's selected Visual Concept or, when none fits, up to three inspiration
 _Avoid_: Approval, final design
 
 **Project Submission**:
-The single immutable completed handoff produced by an Interview, containing the Project Document, all three Visual Concepts, the Client's Visual Direction, and the Interview Transcript. After submission the Client may only view it.
+The single immutable completed handoff produced by an Interview, containing the Project Document, all generated Visual Concepts, the Client's Visual Direction, and the Interview Transcript. After submission the Client may only view it.
 _Avoid_: Project approval, final requirements

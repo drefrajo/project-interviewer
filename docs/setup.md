@@ -78,9 +78,11 @@ Configure only these Interview Models:
 - DeepSeek V4 Flash with thinking at high effort; and
 - DeepSeek V4 Flash without thinking for Creator-triggered Template Translation.
 
-GPT Image 2 renders every Visual Concept at medium quality and 1536×1024.
+GPT Interviews use GPT Image 2 for Visual Concepts. DeepSeek Interviews use
+Nano Banana 2 (`google/gemini-3.1-flash-image`). Both render the three Visual
+Concepts at the configured 3:2 aspect ratio.
 
-Every request must require zero data retention, deny data collection, and disable model/provider fallback. A request fails when no compliant route is available. OpenRouter's account-level spend limit is authoritative; the application does not maintain a second spend counter. Per-Interview-Link rate limits remain active to prevent abuse.
+Every request denies data collection, disables zero-data-retention routing, and disables model/provider fallback. The OpenRouter account and guardrails must not enforce ZDR, since request-level `zdr: false` cannot override those higher-level restrictions. A request fails when no route matching the remaining policy is available. OpenRouter's account-level spend limit is authoritative; the application does not maintain a second spend counter. Per-Interview-Link rate limits remain active to prevent abuse.
 
 These guarantees are request-owned application behavior, not optional
 deployment preferences. The deterministic provider contract tests must verify

@@ -89,6 +89,21 @@ export const interviewDto = async (
             ? ("failed" as const)
             : ("pending" as const),
         message: interview.operation.errorCode,
+        ...(interview.operation.kind === "interview_response"
+          ? {
+              phase:
+                interview.clientMessageCount === 1 && !interview.interviewPlan
+                  ? ("planning" as const)
+                  : ("responding" as const),
+            }
+          : interview.operation.kind === "concept_generation"
+            ? {
+                phase:
+                  interview.operation.phase === "concept_creating"
+                    ? ("concept_creating" as const)
+                    : ("concept_planning" as const),
+              }
+          : {}),
       }
     : null,
   projectDocument: interview.projectDocument,
@@ -103,6 +118,7 @@ export const interviewDto = async (
     })),
   ),
   visualDirection: interview.visualDirection,
+  additionalConceptsUsed: interview.additionalConceptsUsed === true,
   submittedAt: interview.submission?.submittedAt,
   createdAt: interview.createdAt,
   updatedAt: interview.updatedAt,

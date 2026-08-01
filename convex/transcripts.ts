@@ -4,27 +4,16 @@ import { v } from "convex/values";
 import { requireCreatorProfile } from "./lib/auth";
 import { agentComponent } from "./lib/components";
 import { hashCapability } from "./lib/capability_crypto";
-
-const contentText = (content: unknown) => {
-  if (typeof content === "string") return content;
-  if (!Array.isArray(content)) return "";
-  return content
-    .flatMap((part) =>
-      typeof part === "object" &&
-      part !== null &&
-      "type" in part &&
-      part.type === "text" &&
-      "text" in part &&
-      typeof part.text === "string"
-        ? [part.text]
-        : [],
-    )
-    .join("\n");
-};
+import { agentMessageContentText } from "./lib/agent_message";
+import {
+  clientFacingInterviewContent,
+  isMalformedStructuredInterviewOutput,
+} from "./lib/interview_output";
 
 const transcript = async (
   ctx: Parameters<typeof listMessages>[0],
   threadId: string,
+  clientLanguage: "en" | "de",
   suggestedReplies: string[] = [],
 ) => {
   const page = await listMessages(ctx, agentComponent, {
@@ -33,20 +22,37 @@ const transcript = async (
     excludeToolMessages: true,
     statuses: ["success"],
   });
-  const messages = [...page.page].reverse().flatMap((item) => {
-    const message = item.message;
-    if (!message || (message.role !== "user" && message.role !== "assistant")) {
-      return [];
-    }
-    return [
-      {
-        id: item._id,
-        role: message.role === "user" ? ("client" as const) : ("assistant" as const),
-        content: contentText(message.content),
-        createdAt: item._creationTime,
-      },
-    ];
+  const conversationalMessages = [...page.page].reverse().flatMap((item) => {
+    const { message } = item;
+    return message &&
+      (message.role === "user" || message.role === "assistant")
+      ? [{ item, message }]
+      : [];
   });
+  const messages = conversationalMessages.flatMap(
+    ({ item, message }, index) => {
+      const content = agentMessageContentText(message.content);
+      const malformed =
+        message.role === "assistant" &&
+        isMalformedStructuredInterviewOutput(content);
+      if (malformed && index < conversationalMessages.length - 1) return [];
+      return [
+        {
+          id: item._id,
+          role:
+            message.role === "user"
+              ? ("client" as const)
+              : ("assistant" as const),
+          content:
+            message.role === "assistant"
+              ? clientFacingInterviewContent(content, clientLanguage)
+              : content,
+          createdAt: item._creationTime,
+          ...(malformed ? { retryable: true as const } : {}),
+        },
+      ];
+    },
+  );
   const latest = messages.at(-1);
   if (latest?.role !== "assistant" || suggestedReplies.length === 0) {
     return messages;
@@ -65,7 +71,11 @@ export const listForCreator = query({
     if (!interview || interview.creatorId !== creator._id) {
       throw new Error("Interview not found.");
     }
-    return await transcript(ctx, interview.agentThreadId);
+    return await transcript(
+      ctx,
+      interview.agentThreadId,
+      interview.clientLanguage,
+    );
   },
 });
 
@@ -81,6 +91,7 @@ export const listForClient = query({
     return await transcript(
       ctx,
       interview.agentThreadId,
+      interview.clientLanguage,
       interview.step === "interview" ? interview.suggestedReplies ?? [] : [],
     );
   },

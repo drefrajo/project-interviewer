@@ -19,35 +19,103 @@ describe("provider request privacy contract", () => {
       operation: "translation",
       messages: [{ role: "user", content: "private" }],
     });
-    const image = buildOpenRouterImageRequest({
+    const gptImage = buildOpenRouterImageRequest({
       apiKey: "secret",
+      imageModel: "gpt-image-2",
+      prompt: "rough visual direction",
+    });
+    const gptLowImage = buildOpenRouterImageRequest({
+      apiKey: "secret",
+      imageModel: "gpt-image-2-low",
+      prompt: "rough visual direction",
+    });
+    const deepseekImage = buildOpenRouterImageRequest({
+      apiKey: "secret",
+      imageModel: "nano-banana-2",
+      prompt: "rough visual direction",
+    });
+    const nanoLiteImage = buildOpenRouterImageRequest({
+      apiKey: "secret",
+      imageModel: "nano-banana-2-lite",
       prompt: "rough visual direction",
     });
 
     expect(JSON.parse(String(text.init.body))).toMatchObject({
       model: "openai/gpt-5.6-terra",
-      reasoning: { effort: "medium" },
+      reasoning: { effort: "low" },
       provider: {
         data_collection: "deny",
-        zdr: true,
+        zdr: false,
         allow_fallbacks: false,
         require_parameters: true,
       },
     });
     expect(JSON.parse(String(translation.init.body))).toMatchObject({
-      model: "deepseek/deepseek-v4-flash",
+      model: "deepseek/deepseek-v4-flash-0731",
       reasoning: { enabled: false },
+      provider: {
+        data_collection: "deny",
+        zdr: false,
+        allow_fallbacks: false,
+        require_parameters: true,
+      },
     });
-    expect(JSON.parse(String(image.init.body))).toMatchObject({
+    expect(JSON.parse(String(gptImage.init.body))).toMatchObject({
       model: "openai/gpt-image-2",
       quality: "medium",
       aspect_ratio: "3:2",
+      provider: {
+        data_collection: "deny",
+        zdr: false,
+        allow_fallbacks: false,
+        require_parameters: true,
+      },
     });
-    expect(image.url).toBe("https://openrouter.ai/api/v1/images");
-    expect(JSON.parse(String(image.init.body))).not.toHaveProperty("size");
+    expect(JSON.parse(String(gptLowImage.init.body))).toMatchObject({
+      model: "openai/gpt-image-2",
+      quality: "low",
+      aspect_ratio: "3:2",
+      provider: {
+        data_collection: "deny",
+        zdr: false,
+        allow_fallbacks: false,
+        require_parameters: true,
+      },
+    });
+    expect(JSON.parse(String(deepseekImage.init.body))).toMatchObject({
+      model: "google/gemini-3.1-flash-image",
+      aspect_ratio: "3:2",
+      n: 1,
+      provider: {
+        data_collection: "deny",
+        zdr: false,
+        allow_fallbacks: false,
+        require_parameters: true,
+      },
+    });
+    expect(JSON.parse(String(nanoLiteImage.init.body))).toMatchObject({
+      model: "google/gemini-3.1-flash-lite-image",
+      aspect_ratio: "3:2",
+      n: 1,
+      provider: {
+        data_collection: "deny",
+        zdr: false,
+        allow_fallbacks: false,
+        require_parameters: true,
+      },
+    });
+    expect(JSON.parse(String(deepseekImage.init.body))).not.toHaveProperty(
+      "quality",
+    );
+    expect(JSON.parse(String(nanoLiteImage.init.body))).not.toHaveProperty(
+      "quality",
+    );
+    expect(gptImage.url).toBe("https://openrouter.ai/api/v1/images");
+    expect(deepseekImage.url).toBe("https://openrouter.ai/api/v1/images");
+    expect(JSON.parse(String(gptImage.init.body))).not.toHaveProperty("size");
   });
 
-  it("enables provider-compatible JSON mode for concept seeds", () => {
+  it("leaves reasoning and JSON output headroom for concept seeds", () => {
     const request = buildOpenRouterTextRequest({
       apiKey: "secret",
       model: "deepseek-v4-flash",
@@ -56,8 +124,9 @@ describe("provider request privacy contract", () => {
     });
 
     expect(JSON.parse(String(request.init.body))).toMatchObject({
-      max_tokens: 4096,
+      max_tokens: 8192,
       response_format: { type: "json_object" },
+      reasoning: { enabled: true, effort: "medium" },
     });
   });
 
@@ -70,8 +139,42 @@ describe("provider request privacy contract", () => {
     });
 
     expect(JSON.parse(String(request.init.body))).toMatchObject({
+      max_tokens: 1200,
       response_format: { type: "json_object" },
+      reasoning: { enabled: false },
     });
+  });
+
+  it("reserves high-effort DeepSeek reasoning for document generation", () => {
+    const request = buildOpenRouterTextRequest({
+      apiKey: "secret",
+      model: "deepseek-v4-flash",
+      operation: "document",
+      messages: [{ role: "user", content: "project context" }],
+    });
+    const body = JSON.parse(String(request.init.body));
+
+    expect(body).toMatchObject({
+      reasoning: { enabled: true, effort: "high" },
+    });
+    expect(body).not.toHaveProperty("max_tokens");
+    expect(body).not.toHaveProperty("response_format");
+  });
+
+  it("uses one bounded high-effort request for initial Interview planning", () => {
+    const request = buildOpenRouterTextRequest({
+      apiKey: "secret",
+      model: "deepseek-v4-flash",
+      operation: "interview_plan",
+      messages: [{ role: "user", content: "first Client reply" }],
+    });
+
+    const body = JSON.parse(String(request.init.body));
+    expect(body).toMatchObject({
+      max_tokens: 1200,
+      reasoning: { enabled: true, effort: "high" },
+    });
+    expect(body).not.toHaveProperty("response_format");
   });
 
   it("builds a minimal idempotent submission email", () => {

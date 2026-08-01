@@ -5,6 +5,7 @@ export const CLIENT_COPY = {
     steps: ["Interview", "Review", "Concepts", "Submitted"],
     start: "Start interview",
     send: "Send",
+    retryResponse: "Retry response",
     reply: "Your reply",
     reviewTitle: "Review your Project Document",
     reviewIntro:
@@ -17,6 +18,11 @@ export const CLIENT_COPY = {
       "These are rough directions, not final designs. Choose one, or provide up to three public inspiration links.",
     conceptsPending:
       "We’re creating three Visual Concepts. Please wait—this may take a moment.",
+    conceptsPlanning: "Planning three concept images…",
+    conceptsCreating: "Creating three concept images…",
+    moreOptions: "I don't like any of these — show three more options",
+    retryMoreOptions: "Retry second image batch (temporary)",
+    retryFirstOptions: "Retry first image batch (temporary)",
     selectConcept: "Select this concept",
     inspiration: "None of these fit — use inspiration links",
     note: "Optional note",
@@ -32,6 +38,7 @@ export const CLIENT_COPY = {
     steps: ["Interview", "Prüfung", "Konzepte", "Übermittelt"],
     start: "Interview starten",
     send: "Senden",
+    retryResponse: "Antwort erneut erzeugen",
     reply: "Ihre Antwort",
     reviewTitle: "Projektdokument prüfen",
     reviewIntro:
@@ -44,6 +51,11 @@ export const CLIENT_COPY = {
       "Dies sind grobe Richtungen, keine finalen Designs. Wählen Sie eine aus oder geben Sie bis zu drei öffentliche Inspirationslinks an.",
     conceptsPending:
       "Wir erstellen drei visuelle Konzepte. Bitte warten Sie – dies kann einen Moment dauern.",
+    conceptsPlanning: "Drei Konzeptbilder werden geplant…",
+    conceptsCreating: "Drei Konzeptbilder werden erstellt…",
+    moreOptions: "Keines passt – drei weitere Optionen zeigen",
+    retryMoreOptions: "Zweiten Bild-Batch erneut starten (temporär)",
+    retryFirstOptions: "Ersten Bild-Batch erneut starten (temporär)",
     selectConcept: "Dieses Konzept wählen",
     inspiration: "Keines passt – Inspirationslinks verwenden",
     note: "Optionale Notiz",

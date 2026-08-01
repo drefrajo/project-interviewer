@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   buildConceptSeedMessages,
+  buildInterviewPlanMessages,
   buildInterviewPolicy,
+  buildProjectDocumentMessages,
   buildProjectDocumentRevisionMessages,
   buildVisualConceptImagePrompt,
 } from "./interview_prompts";
@@ -16,6 +18,7 @@ describe("Interview prompt contracts", () => {
     const policy = buildInterviewPolicy({
       clientLanguage: "en",
       instructions: instagramLikeInstructions,
+      alignmentAsked: false,
     });
     const normalized = policy.replace(/\s+/g, " ");
 
@@ -23,6 +26,60 @@ describe("Interview prompt contracts", () => {
     expect(normalized).toContain("Do not replace it with a conventional website");
     expect(normalized).toContain("Do not add low-level technical specifications");
     expect(normalized).toContain("numerical asset budgets");
+  });
+
+  it("makes the Interview consultative and requires alignment before completion", () => {
+    const discoveryPolicy = buildInterviewPolicy({
+      clientLanguage: "en",
+      instructions: instagramLikeInstructions,
+      alignmentAsked: false,
+    }).replace(/\s+/g, " ");
+    const confirmationPolicy = buildInterviewPolicy({
+      clientLanguage: "en",
+      instructions: instagramLikeInstructions,
+      alignmentAsked: true,
+    }).replace(/\s+/g, " ");
+
+    expect(discoveryPolicy).toContain("one primary decision at a time");
+    expect(discoveryPolicy).toContain("recommend a sensible default");
+    expect(discoveryPolicy).toContain(
+      "Never treat uncertainty or a request for your recommendation as permission to finish",
+    );
+    expect(discoveryPolicy).toContain(
+      "include two to four concise Suggested Replies",
+    );
+    expect(discoveryPolicy).toContain('"kind":"alignment"');
+    expect(discoveryPolicy).not.toContain('"kind":"ready"');
+    expect(confirmationPolicy).toContain('"kind":"ready"');
+    expect(confirmationPolicy).toContain(
+      "only after the Client explicitly confirms",
+    );
+  });
+
+  it("creates one tentative private plan after the first Client reply", () => {
+    const planningMessages = buildInterviewPlanMessages({
+      instructions: instagramLikeInstructions,
+      transcript: [
+        { role: "assistant", content: "What should the site achieve?" },
+        { role: "user", content: "Present my photography." },
+      ],
+    });
+    const plannedPolicy = buildInterviewPolicy({
+      clientLanguage: "en",
+      instructions: instagramLikeInstructions,
+      alignmentAsked: false,
+      interviewPlan:
+        "Known: photographer portfolio. Next: decide how contact should work.",
+    }).replace(/\s+/g, " ");
+    const planningPrompt = JSON.stringify(planningMessages);
+
+    expect(planningPrompt).toContain("private adaptive Interview Plan");
+    expect(planningPrompt).toContain("Return only the plan");
+    expect(planningPrompt).toContain("Present my photography");
+    expect(planningPrompt).not.toContain("suggestedReplies");
+    expect(plannedPolicy).toContain("Known: photographer portfolio");
+    expect(plannedPolicy).toContain("tentative navigation aid");
+    expect(plannedPolicy).toContain("latest Client statements always override it");
   });
 
   it("carries Creator Interview Instructions into Visual Concept prompt generation", () => {
@@ -40,6 +97,54 @@ describe("Interview prompt contracts", () => {
     );
     expect(serialized).toContain("non-negotiable");
     expect(serialized).toContain("generic marketing homepage");
+    expect(serialized).toContain("under 800 characters");
+    expect(serialized).toContain("pairwise contrast");
+    expect(serialized).toContain("at least three");
+    expect(serialized).toContain("faithful refinement");
+    expect(serialized).toContain("atmospheric counterpoint");
+    expect(serialized).toContain("structural counterpoint");
+    expect(serialized).toContain("not automatically binding");
+    expect(serialized).toContain("decision-relevant");
+    expect(serialized).toContain("content fidelity");
+    expect(serialized).toContain("Do not invent brand or content traits");
+  });
+
+  it("plans an additional batch outside the territory occupied by prior concepts", () => {
+    const messages = buildConceptSeedMessages({
+      instructions: instagramLikeInstructions,
+      projectDocument: "# Photographer portfolio",
+      existingConcepts: [
+        {
+          name: "Faithful Refinement",
+          rationale: "Quiet white three-column feed with sans-serif type.",
+          prompt: "A bright, evenly spaced feed.",
+        },
+        {
+          name: "Atmospheric Counterpoint",
+          rationale: "Warm cream editorial feed with serif typography.",
+          prompt: "A warm, tactile editorial feed.",
+        },
+        {
+          name: "Structural Counterpoint",
+          rationale: "Dark dense masonry feed with graphic typography.",
+          prompt: "A dark asymmetric masonry feed.",
+        },
+      ],
+    });
+    const serialized = JSON.stringify(messages);
+
+    expect(serialized).toContain("exactly three additional");
+    expect(serialized).toContain("EXISTING VISUAL CONCEPTS");
+    expect(serialized).toContain("Quiet white three-column feed");
+    expect(serialized).toContain("unoccupied");
+    expect(serialized).toContain("coverage expansion after the Client rejected");
+    expect(serialized).toContain("different shared visual assumption");
+    expect(serialized).toContain("different dominant design bet");
+    expect(serialized).toContain("art direction and typography");
+    expect(serialized).toContain("spatial composition and media scale");
+    expect(serialized).toContain("navigation and interaction rhythm");
+    expect(serialized).toContain("same palette family and composition family");
+    expect(serialized).not.toContain("Assign these roles in order");
   });
 
   it("repeats the defining interaction model at the image-rendering boundary", () => {
@@ -48,6 +153,7 @@ describe("Interview prompt contracts", () => {
       projectDocument:
         "# Experience\n\nThe work is browsed as a continuously scrolling feed.",
       conceptPrompt: "A high-contrast editorial direction.",
+      conceptIndex: 2,
     });
     const normalized = prompt.replace(/\s+/g, " ");
 
@@ -57,6 +163,42 @@ describe("Interview prompt contracts", () => {
     expect(normalized).toContain(
       "do not substitute a generic hero-led marketing page",
     );
+    expect(normalized).toContain("DIVERSITY ROLE 2");
+    expect(normalized).toContain("atmospheric counterpoint");
+    expect(normalized).toContain(
+      "overrides visual-style recommendations in the Project Document",
+    );
+    expect(normalized).toContain("CONTENT FIDELITY");
+    expect(normalized).toContain(
+      "Apply visual variation to the interface around the content",
+    );
+    expect(normalized).toContain(
+      "Do not alter the depicted media's color, tone, texture, subject matter, or style",
+    );
+  });
+
+  it("does not cycle concept four back to concept one's rendering role", () => {
+    const prompt = buildVisualConceptImagePrompt({
+      instructions: instagramLikeInstructions,
+      projectDocument: "# Photographer portfolio",
+      conceptPrompt: "An immersive edge-to-edge sequence with compact controls.",
+      conceptIndex: 4,
+      existingConcepts: [
+        {
+          name: "Faithful Refinement",
+          rationale: "Quiet white three-column feed.",
+          prompt:
+            "Bright white surfaces, circular stories, an even three-column grid, and restrained sans-serif typography.",
+        },
+      ],
+    });
+
+    expect(prompt).toContain("OTHER CONCEPT DIRECTIONS — DO NOT REPEAT");
+    expect(prompt).toContain("Quiet white three-column feed");
+    expect(prompt).toContain("circular stories");
+    expect(prompt).toContain("three-column grid");
+    expect(prompt).toContain("unexplored direction");
+    expect(prompt).not.toContain("faithful refinement: stay nearest");
   });
 
   it("keeps the prompt contract when revising a Project Document", () => {
@@ -74,5 +216,29 @@ describe("Interview prompt contracts", () => {
     expect(normalized).toContain("remain authoritative");
     expect(normalized).toContain("defining interaction model");
     expect(normalized).toContain("unsolicited low-level technical specifications");
+  });
+
+  it("generates the initial Project Document separately from the fast Interview turn", () => {
+    const messages = buildProjectDocumentMessages({
+      instructions: instagramLikeInstructions,
+      transcript: [
+        { role: "user", content: "I want a portfolio that feels like a feed." },
+        {
+          role: "assistant",
+          content: "I recommend client projects as stories. Does that feel right?",
+        },
+        { role: "user", content: "Yes, that feels right." },
+      ],
+    });
+    const normalized = messages
+      .map(({ content }) => content)
+      .join(" ")
+      .replace(/\s+/g, " ");
+
+    expect(normalized).toContain("Instagram-like interface");
+    expect(normalized).toContain("complete first-draft copy");
+    expect(normalized).toContain("UNKNOWN");
+    expect(normalized).toContain("I want a portfolio that feels like a feed.");
+    expect(normalized).toContain("Return only the complete Markdown");
   });
 });

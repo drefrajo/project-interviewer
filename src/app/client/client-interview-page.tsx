@@ -37,7 +37,19 @@ export const ClientInterviewPage = () => {
   const continueToConcepts = useMutation(
     interviewApi.client.continueToConcepts,
   );
+  const requestMoreConcepts = useMutation(
+    interviewApi.client.requestMoreConcepts,
+  );
+  const retryAdditionalConcepts = useMutation(
+    interviewApi.client.retryAdditionalConcepts,
+  );
+  const retryFirstConcepts = useMutation(
+    interviewApi.client.retryFirstConcepts,
+  );
   const retry = useMutation(interviewApi.client.retry);
+  const retryMalformedResponse = useMutation(
+    interviewApi.client.retryMalformedResponse,
+  );
   const submit = useMutation(interviewApi.client.submit);
   const [busy, setBusy] = useState(false);
   const [entered, setEntered] = useState(false);
@@ -144,7 +156,7 @@ export const ClientInterviewPage = () => {
         id="main-content"
       >
         {error ? (
-          <p className="mx-auto mb-5 max-w-3xl rounded-lg border border-error-border bg-error-surface p-4 font-bold text-error-text" role="alert">
+          <p className="mx-auto mt-4 mb-5 w-full max-w-3xl rounded-lg border border-error-border bg-error-surface p-4 font-bold text-error-text" role="alert">
             {error}
           </p>
         ) : null}
@@ -173,10 +185,16 @@ export const ClientInterviewPage = () => {
           <InterviewStepView
             language={interview.clientLanguage}
             messages={transcript ?? []}
+            onRetry={() =>
+              perform(() =>
+                retryMalformedResponse({ token: interviewToken }),
+              )
+            }
             onSend={(content) =>
               perform(() => sendMessage({ token: interviewToken, content }))
             }
             pending={pending}
+            planning={interview.operation?.phase === "planning"}
           />
         ) : interview.step === "review" ? (
           <DocumentReviewStep
@@ -194,8 +212,25 @@ export const ClientInterviewPage = () => {
           />
         ) : interview.step === "concepts" ? (
           <ConceptsStep
+            additionalConceptsUsed={interview.additionalConceptsUsed ?? false}
             concepts={interview.concepts ?? []}
+            generationPhase={
+              interview.operation?.phase === "concept_creating"
+                ? "creating"
+                : interview.operation?.phase === "concept_planning"
+                  ? "planning"
+                  : undefined
+            }
             language={interview.clientLanguage}
+            onMoreOptions={() =>
+              perform(() => requestMoreConcepts({ token: interviewToken }))
+            }
+            onRetryMoreOptions={() =>
+              perform(() => retryAdditionalConcepts({ token: interviewToken }))
+            }
+            onRetryFirstOptions={() =>
+              perform(() => retryFirstConcepts({ token: interviewToken }))
+            }
             onSubmit={(direction: VisualDirection) =>
               perform(async () => {
                 await submit({ token: interviewToken, direction });

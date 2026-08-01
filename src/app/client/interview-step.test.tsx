@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { InterviewStepView } from "./interview-step";
@@ -19,6 +19,7 @@ describe("InterviewStepView", () => {
             content: "What should the site do?",
           },
         ]}
+        onRetry={async () => true}
         onSend={async () => true}
         pending={false}
       />,
@@ -29,6 +30,20 @@ describe("InterviewStepView", () => {
       "overscroll-contain",
       "py-4",
       "sm:py-5",
+      "-mx-4",
+      "sm:-mx-8",
+      "sm:[scrollbar-gutter:stable_both-edges]",
+    );
+    expect(screen.getByTestId("interview-shell")).not.toHaveClass(
+      "max-w-3xl",
+      "overflow-hidden",
+    );
+    expect(screen.getByTestId("interview-history-content")).toHaveClass(
+      "mx-auto",
+      "max-w-3xl",
+    );
+    expect(screen.getByTestId("interview-composer")).toHaveClass(
+      "max-w-3xl",
     );
     expect(screen.getByTestId("interview-shell")).toHaveClass("gap-0");
     expect(screen.getByTestId("interview-composer")).not.toHaveClass(
@@ -52,6 +67,7 @@ describe("InterviewStepView", () => {
             suggestedReplies: ["Request a consultation"],
           },
         ]}
+        onRetry={async () => true}
         onSend={onSend}
         pending={false}
       />,
@@ -75,6 +91,7 @@ describe("InterviewStepView", () => {
       <InterviewStepView
         language="en"
         messages={[]}
+        onRetry={async () => true}
         onSend={async () => true}
         pending={false}
       />,
@@ -111,6 +128,7 @@ describe("InterviewStepView", () => {
           },
           { id: "client-1", role: "client", content: "Sell products" },
         ]}
+        onRetry={async () => true}
         onSend={async () => true}
         pending={false}
       />,
@@ -126,6 +144,7 @@ describe("InterviewStepView", () => {
       <InterviewStepView
         language="en"
         messages={[]}
+        onRetry={async () => true}
         onSend={async () => true}
         pending
       />,
@@ -143,6 +162,36 @@ describe("InterviewStepView", () => {
     expect(screen.getByRole("button", { name: "Send" })).toBeDisabled();
   });
 
+  it("explains when a response has been processing for more than a minute", async () => {
+    vi.useFakeTimers();
+    const { unmount } = render(
+      <InterviewStepView
+        language="en"
+        messages={[]}
+        onRetry={async () => true}
+        onSend={async () => true}
+        pending
+      />,
+    );
+
+    try {
+      expect(
+        screen.getByRole("status", { name: "Preparing the first question…" }),
+      ).toBeInTheDocument();
+
+      await act(async () => {
+        vi.advanceTimersByTime(60_000);
+      });
+
+      expect(
+        screen.getByRole("status", { name: "This is taking a little longer" }),
+      ).toHaveTextContent("This response needs a little more careful thought.");
+    } finally {
+      unmount();
+      vi.useRealTimers();
+    }
+  });
+
   it("hides stale reply suggestions while preparing the next question", () => {
     render(
       <InterviewStepView
@@ -155,6 +204,7 @@ describe("InterviewStepView", () => {
             suggestedReplies: ["Request a consultation"],
           },
         ]}
+        onRetry={async () => true}
         onSend={async () => true}
         pending
       />,
@@ -168,6 +218,54 @@ describe("InterviewStepView", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("explains the longer planning step after the first Client reply", () => {
+    const { rerender } = render(
+      <InterviewStepView
+        language="en"
+        messages={[
+          {
+            id: "assistant-1",
+            role: "assistant",
+            content: "What should the site do?",
+          },
+          { id: "client-1", role: "client", content: "Present my work." },
+        ]}
+        onRetry={async () => true}
+        onSend={async () => true}
+        pending
+        planning
+      />,
+    );
+
+    expect(
+      screen.getByRole("status", {
+        name: "Planning the interview direction",
+      }),
+    ).toHaveTextContent("This first step takes a little longer");
+
+    rerender(
+      <InterviewStepView
+        language="en"
+        messages={[
+          {
+            id: "assistant-1",
+            role: "assistant",
+            content: "What should the site do?",
+          },
+          { id: "client-1", role: "client", content: "Present my work." },
+        ]}
+        onRetry={async () => true}
+        onSend={async () => true}
+        pending
+        planning={false}
+      />,
+    );
+
+    expect(
+      screen.getByRole("status", { name: "Working on the next question" }),
+    ).toBeInTheDocument();
+  });
+
   it("renders an assistant reply as one flat message container", () => {
     render(
       <InterviewStepView
@@ -179,6 +277,7 @@ describe("InterviewStepView", () => {
             content: "What should the site help visitors do?",
           },
         ]}
+        onRetry={async () => true}
         onSend={async () => true}
         pending={false}
       />,
@@ -189,5 +288,33 @@ describe("InterviewStepView", () => {
         .getByText("What should the site help visitors do?")
         .closest("[data-markdown-variant]"),
     ).toHaveAttribute("data-markdown-variant", "plain");
+  });
+
+  it("offers to retry a malformed assistant response without sending a message", async () => {
+    const user = userEvent.setup();
+    const onRetry = vi.fn(async () => true);
+    const onSend = vi.fn(async () => true);
+    render(
+      <InterviewStepView
+        language="en"
+        messages={[
+          {
+            id: "assistant-malformed",
+            role: "assistant",
+            content:
+              "This response could not be displayed because of a formatting error.",
+            retryable: true,
+          },
+        ]}
+        onRetry={onRetry}
+        onSend={onSend}
+        pending={false}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Retry response" }));
+
+    expect(onRetry).toHaveBeenCalledOnce();
+    expect(onSend).not.toHaveBeenCalled();
   });
 });

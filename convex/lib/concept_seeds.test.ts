@@ -38,6 +38,14 @@ ${JSON.stringify({ concepts }, null, 2)}
     ]);
   });
 
+  it("can offset concept ids for an additional batch", () => {
+    expect(parseConceptSeeds(JSON.stringify({ concepts }), 3)).toEqual([
+      { id: "concept_4", ...concepts[0] },
+      { id: "concept_5", ...concepts[1] },
+      { id: "concept_6", ...concepts[2] },
+    ]);
+  });
+
   it("normalizes common provider field aliases", () => {
     expect(
       parseConceptSeeds(

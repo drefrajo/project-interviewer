@@ -44,7 +44,7 @@ Confirm in the configured production environment that:
 - Creator registration is allowlisted;
 - Google and GitHub sign-in work independently and matching emails cannot link or duplicate accounts;
 - Interview Links are unguessable, regeneration invalidates the prior link, and Client pages are not indexed;
-- every OpenRouter request requires zero data retention, denies data collection, and disables fallback;
+- every OpenRouter request denies data collection, disables ZDR routing, and disables fallback;
 - no raw prompt, provider response, sensitive content, or Interview Link appears in diagnostic logs;
 - the OpenRouter account-level spend limit and application per-Interview-Link rate limits are active;
 - Markdown disables raw HTML and accepts only safe HTTP(S) links;

@@ -5,7 +5,11 @@ import type {
   VisualDirection,
 } from "../../infrastructure/interview-api";
 import { ConfirmDialog } from "../shared/confirm-dialog";
-import { primaryButton, TextArea, TextInput } from "../shared/form-controls";
+import {
+  primaryButton,
+  TextArea,
+  TextInput,
+} from "../shared/form-controls";
 import { CLIENT_COPY } from "./client-copy";
 
 const isHttpUrl = (value: string) => {
@@ -42,12 +46,22 @@ const ConceptCardSkeleton = () => (
 export const ConceptsStep = ({
   language,
   concepts,
+  additionalConceptsUsed,
+  generationPhase,
   pending,
+  onMoreOptions,
+  onRetryMoreOptions,
+  onRetryFirstOptions,
   onSubmit,
 }: {
   language: ClientLanguage;
   concepts: VisualConcept[];
+  additionalConceptsUsed: boolean;
+  generationPhase?: "planning" | "creating" | undefined;
   pending: boolean;
+  onMoreOptions(): Promise<boolean>;
+  onRetryMoreOptions(): Promise<boolean>;
+  onRetryFirstOptions(): Promise<boolean>;
   onSubmit(direction: VisualDirection): Promise<void>;
 }) => {
   const text = CLIENT_COPY[language];
@@ -56,10 +70,18 @@ export const ConceptsStep = ({
   const [links, setLinks] = useState([""]);
   const [note, setNote] = useState("");
   const [confirming, setConfirming] = useState(false);
+  const [moreOptionsRequested, setMoreOptionsRequested] = useState(false);
   const creatingConcepts =
     pending &&
-    (concepts.length < 3 ||
+    (generationPhase !== undefined ||
+      concepts.length < 3 ||
       concepts.some((concept) => concept.state !== "ready"));
+  const generationMessage =
+    generationPhase === "planning"
+      ? text.conceptsPlanning
+      : generationPhase === "creating"
+        ? text.conceptsCreating
+        : text.conceptsPending;
   const normalizedLinks = links.map((link) => link.trim()).filter(Boolean);
   const valid = useMemo(
     () =>
@@ -78,6 +100,13 @@ export const ConceptsStep = ({
           inspirationLinks: normalizedLinks,
           ...(note.trim() ? { note: note.trim() } : {}),
         };
+  const requestMoreOptions = async () => {
+    if (await onMoreOptions()) {
+      setMode("concept");
+      setSelected("");
+      setMoreOptionsRequested(true);
+    }
+  };
 
   return (
     <section className="mx-auto w-full max-w-6xl">
@@ -89,7 +118,7 @@ export const ConceptsStep = ({
         className="mt-5 max-w-3xl rounded-lg border border-line bg-soft p-4 font-bold text-forest"
           role="status"
         >
-          {text.conceptsPending}
+          {generationMessage}
         </p>
       ) : null}
       <div
@@ -155,7 +184,49 @@ export const ConceptsStep = ({
                 </span>
               </label>
             ))}
+        {pending && concepts.length === 3
+          ? Array.from({ length: 3 }, (_, index) => (
+              <ConceptCardSkeleton key={`additional-concept-${index}`} />
+            ))
+          : null}
       </div>
+      {!additionalConceptsUsed &&
+      !moreOptionsRequested &&
+      !pending &&
+      concepts.length === 3 &&
+      mode === "concept" &&
+      !selected ? (
+        <div className="mt-4 flex justify-center">
+          <button
+            className="text-sm font-bold text-muted underline decoration-line underline-offset-4 hover:text-forest"
+            data-testid="request-more-concepts"
+            onClick={() => void requestMoreOptions()}
+            type="button"
+          >
+            {text.moreOptions}
+          </button>
+        </div>
+      ) : null}
+      {additionalConceptsUsed && concepts.length === 6 && !pending ? (
+        <div className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-2">
+          <button
+            className="text-xs font-bold text-muted underline decoration-line underline-offset-4 hover:text-forest"
+            data-testid="retry-first-concept-batch"
+            onClick={() => void onRetryFirstOptions()}
+            type="button"
+          >
+            {text.retryFirstOptions}
+          </button>
+          <button
+            className="text-xs font-bold text-muted underline decoration-line underline-offset-4 hover:text-forest"
+            data-testid="retry-second-concept-batch"
+            onClick={() => void onRetryMoreOptions()}
+            type="button"
+          >
+            {text.retryMoreOptions}
+          </button>
+        </div>
+      ) : null}
       <section className="mt-7 rounded-xl border border-line bg-surface p-5">
         <label className="flex items-center gap-3 font-bold">
           <input

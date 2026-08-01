@@ -6,6 +6,7 @@ import { v } from "convex/values";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { agentComponent, rateLimiterComponent } from "./lib/components";
 import { hashCapability } from "./lib/capability_crypto";
+import { agentMessageContentText } from "./lib/agent_message";
 import {
   assertHttpUrls,
   assertLength,
@@ -15,6 +16,7 @@ import {
   MAX_DOCUMENT_REVISIONS,
   MAX_VISUAL_NOTE_LENGTH,
 } from "./lib/domain";
+import { isMalformedStructuredInterviewOutput } from "./lib/interview_output";
 import { visualDirection } from "./schema";
 import { internalRefs } from "./internal_refs";
 
@@ -259,6 +261,240 @@ export const continueToConcepts = mutation({
   },
 });
 
+export const requestMoreConcepts = mutation({
+  args: { token: v.string() },
+  handler: async (ctx, args) => {
+    const { interview, linkHash } = await byToken(ctx, args.token);
+    if (
+      interview.submission ||
+      interview.step !== "concepts" ||
+      !interview.projectDocument
+    ) {
+      throw new Error("The Interview is not ready for more Visual Concepts.");
+    }
+    if (interview.additionalConceptsUsed) {
+      throw new Error("More Visual Concepts have already been requested.");
+    }
+    if (
+      interview.operation?.status === "pending" ||
+      interview.operation?.status === "running"
+    ) {
+      throw new Error("Visual Concept generation is already in progress.");
+    }
+    if (
+      interview.concepts.length !== 3 ||
+      interview.concepts.some((concept) => concept.status !== "ready")
+    ) {
+      throw new Error("The first three Visual Concepts must be ready first.");
+    }
+    await rateLimiter.limit(ctx, "billableAi", {
+      key: linkHash,
+      throws: true,
+    });
+    await ctx.db.patch("interviews", interview._id, {
+      additionalConceptsUsed: true,
+      visualDirection: undefined,
+      operation: {
+        kind: "concept_generation",
+        status: "pending",
+        attempt: 0,
+        imageModel:
+          interview.model === "deepseek-v4-flash"
+            ? "gpt-image-2-low"
+            : "gpt-image-2",
+        additionalConcepts: true,
+      },
+      updatedAt: Date.now(),
+    });
+    await ctx.scheduler.runAfter(0, internalRefs.jobs.runPending, {
+      interviewId: interview._id,
+    });
+    return null;
+  },
+});
+
+export const retryAdditionalConcepts = mutation({
+  args: { token: v.string() },
+  handler: async (ctx, args) => {
+    const { interview, linkHash } = await byToken(ctx, args.token);
+    if (
+      interview.submission ||
+      interview.step !== "concepts" ||
+      !interview.projectDocument
+    ) {
+      throw new Error("The Interview is not ready to retry Visual Concepts.");
+    }
+    if (!interview.additionalConceptsUsed || interview.concepts.length !== 6) {
+      throw new Error("The second Visual Concept batch is not available.");
+    }
+    if (
+      interview.operation?.status === "pending" ||
+      interview.operation?.status === "running"
+    ) {
+      throw new Error("Visual Concept generation is already in progress.");
+    }
+    await rateLimiter.limit(ctx, "billableAi", {
+      key: linkHash,
+      throws: true,
+    });
+    await Promise.all(
+      interview.concepts.flatMap((concept) =>
+        Number.parseInt(concept.id.replace("concept_", ""), 10) > 3 &&
+        concept.imageId
+          ? [ctx.storage.delete(concept.imageId)]
+          : [],
+      ),
+    );
+    const concepts = interview.concepts.map((concept) => {
+      if (Number.parseInt(concept.id.replace("concept_", ""), 10) <= 3) {
+        return concept;
+      }
+      return {
+        id: concept.id,
+        name: concept.name,
+        rationale: concept.rationale,
+        prompt: concept.prompt,
+        status: "pending" as const,
+      };
+    });
+    await ctx.db.patch("interviews", interview._id, {
+      concepts,
+      visualDirection: undefined,
+      operation: {
+        kind: "concept_generation",
+        status: "pending",
+        attempt: 0,
+        imageModel:
+          interview.model === "deepseek-v4-flash"
+            ? "gpt-image-2-low"
+            : "gpt-image-2",
+        additionalConcepts: true,
+        regeneratePrompts: true,
+      },
+      updatedAt: Date.now(),
+    });
+    await ctx.scheduler.runAfter(0, internalRefs.jobs.runPending, {
+      interviewId: interview._id,
+    });
+    return null;
+  },
+});
+
+export const retryFirstConcepts = mutation({
+  args: { token: v.string() },
+  handler: async (ctx, args) => {
+    const { interview, linkHash } = await byToken(ctx, args.token);
+    if (
+      interview.submission ||
+      interview.step !== "concepts" ||
+      !interview.projectDocument
+    ) {
+      throw new Error("The Interview is not ready to retry Visual Concepts.");
+    }
+    if (!interview.additionalConceptsUsed || interview.concepts.length !== 6) {
+      throw new Error("The second Visual Concept batch is not available.");
+    }
+    if (
+      interview.operation?.status === "pending" ||
+      interview.operation?.status === "running"
+    ) {
+      throw new Error("Visual Concept generation is already in progress.");
+    }
+    await rateLimiter.limit(ctx, "billableAi", {
+      key: linkHash,
+      throws: true,
+    });
+    await Promise.all(
+      interview.concepts.flatMap((concept) =>
+        concept.imageId ? [ctx.storage.delete(concept.imageId)] : [],
+      ),
+    );
+    await ctx.db.patch("interviews", interview._id, {
+      concepts: [],
+      visualDirection: undefined,
+      operation: {
+        kind: "concept_generation",
+        status: "pending",
+        attempt: 0,
+        imageModel:
+          interview.model === "deepseek-v4-flash"
+            ? "gpt-image-2-low"
+            : "gpt-image-2",
+        regeneratePrompts: true,
+      },
+      updatedAt: Date.now(),
+    });
+    await ctx.scheduler.runAfter(0, internalRefs.jobs.runPending, {
+      interviewId: interview._id,
+    });
+    return null;
+  },
+});
+
+export const restartConceptGeneration = mutation({
+  args: {
+    token: v.string(),
+    imageModel: v.union(
+      v.literal("gpt-image-2"),
+      v.literal("gpt-image-2-low"),
+      v.literal("nano-banana-2"),
+      v.literal("nano-banana-2-lite"),
+    ),
+    regeneratePrompts: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const { interview, linkHash } = await byToken(ctx, args.token);
+    if (
+      interview.submission ||
+      interview.step !== "concepts" ||
+      !interview.projectDocument
+    ) {
+      throw new Error("The Interview is not ready to restart Visual Concepts.");
+    }
+    if (
+      interview.operation?.status === "pending" ||
+      interview.operation?.status === "running"
+    ) {
+      throw new Error("Visual Concept generation is already in progress.");
+    }
+    await rateLimiter.limit(ctx, "billableAi", {
+      key: linkHash,
+      throws: true,
+    });
+    await Promise.all(
+      interview.concepts.flatMap((concept) =>
+        concept.imageId ? [ctx.storage.delete(concept.imageId)] : [],
+      ),
+    );
+    const concepts =
+      !args.regeneratePrompts && interview.concepts.length === 3
+        ? interview.concepts.map(({ id, name, rationale, prompt }) => ({
+            id,
+            name,
+            rationale,
+            prompt,
+            status: "pending" as const,
+          }))
+        : [];
+    await ctx.db.patch("interviews", interview._id, {
+      concepts,
+      visualDirection: undefined,
+      operation: {
+        kind: "concept_generation",
+        status: "pending",
+        attempt: 0,
+        imageModel: args.imageModel,
+        regeneratePrompts: args.regeneratePrompts,
+      },
+      updatedAt: Date.now(),
+    });
+    await ctx.scheduler.runAfter(0, internalRefs.jobs.runPending, {
+      interviewId: interview._id,
+    });
+    return null;
+  },
+});
+
 export const retry = mutation({
   args: { token: v.string() },
   handler: async (ctx, args) => {
@@ -277,6 +513,15 @@ export const retry = mutation({
     const operation = {
       kind: interview.operation.kind,
       attempt: 0,
+      ...(interview.operation.imageModel
+        ? { imageModel: interview.operation.imageModel }
+        : {}),
+      ...(interview.operation.regeneratePrompts !== undefined
+        ? { regeneratePrompts: interview.operation.regeneratePrompts }
+        : {}),
+      ...(interview.operation.additionalConcepts !== undefined
+        ? { additionalConcepts: interview.operation.additionalConcepts }
+        : {}),
       ...(interview.operation.input ? { input: interview.operation.input } : {}),
       ...(interview.operation.startedAt
         ? { startedAt: interview.operation.startedAt }
@@ -284,6 +529,57 @@ export const retry = mutation({
     };
     await ctx.db.patch("interviews", interview._id, {
       operation: { ...operation, status: "pending" },
+      updatedAt: Date.now(),
+    });
+    await ctx.scheduler.runAfter(0, internalRefs.jobs.runPending, {
+      interviewId: interview._id,
+    });
+    return null;
+  },
+});
+
+export const retryMalformedResponse = mutation({
+  args: { token: v.string() },
+  handler: async (ctx, args) => {
+    const { interview, linkHash } = await byToken(ctx, args.token);
+    if (
+      interview.submission ||
+      interview.step !== "interview" ||
+      interview.operation
+    ) {
+      throw new Error("The Interview response cannot be retried.");
+    }
+    const page = await listMessages(ctx, agentComponent, {
+      threadId: interview.agentThreadId,
+      paginationOpts: { numItems: 1, cursor: null },
+      excludeToolMessages: true,
+      statuses: ["success"],
+    });
+    const latest = page.page[0];
+    const latestContent = latest?.message
+      ? agentMessageContentText(latest.message.content)
+      : "";
+    if (
+      !latest?.message ||
+      latest.message.role !== "assistant" ||
+      !isMalformedStructuredInterviewOutput(latestContent)
+    ) {
+      throw new Error("The latest Interview response is not retryable.");
+    }
+    await rateLimiter.limit(ctx, "billableAi", {
+      key: linkHash,
+      throws: true,
+    });
+    await ctx.runMutation(agentComponent.messages.deleteByIds, {
+      messageIds: [latest._id],
+    });
+    await ctx.db.patch("interviews", interview._id, {
+      suggestedReplies: [],
+      operation: {
+        kind: "interview_response",
+        status: "pending",
+        attempt: 0,
+      },
       updatedAt: Date.now(),
     });
     await ctx.scheduler.runAfter(0, internalRefs.jobs.runPending, {
@@ -319,10 +615,15 @@ export const submit = mutation({
     if (interview.submission) {
       return { created: false, submission: interview.submission };
     }
+    const expectedConceptCount =
+      interview.additionalConceptsUsed && interview.concepts.length === 6
+        ? 6
+        : 3;
     if (
       interview.step !== "concepts" ||
       !interview.projectDocument ||
-      interview.concepts.length !== 3 ||
+      interview.operation ||
+      interview.concepts.length !== expectedConceptCount ||
       interview.concepts.some((concept) => concept.status !== "ready")
     ) {
       throw new Error("The Interview is not ready to submit.");

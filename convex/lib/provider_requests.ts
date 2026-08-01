@@ -3,6 +3,12 @@ export type ProviderMessage = Readonly<{
   content: string;
 }>;
 
+export type ConceptImageModel =
+  | "gpt-image-2"
+  | "gpt-image-2-low"
+  | "nano-banana-2"
+  | "nano-banana-2-lite";
+
 const requireSecret = (
   value: string | undefined,
   name: string,
@@ -19,13 +25,18 @@ const requireSecret = (
 const textModelId = (model: "gpt-5.6-terra" | "deepseek-v4-flash") =>
   model === "gpt-5.6-terra"
     ? "openai/gpt-5.6-terra"
-    : "deepseek/deepseek-v4-flash";
+    : "deepseek/deepseek-v4-flash-0731";
 
 export const buildOpenRouterTextRequest = (args: {
   apiKey: string | undefined;
   model: "gpt-5.6-terra" | "deepseek-v4-flash";
   messages: ProviderMessage[];
-  operation: "interview" | "document" | "concept_prompt" | "translation";
+  operation:
+    | "interview"
+    | "interview_plan"
+    | "document"
+    | "concept_prompt"
+    | "translation";
 }) => ({
   url: "https://openrouter.ai/api/v1/chat/completions",
   init: {
@@ -39,25 +50,41 @@ export const buildOpenRouterTextRequest = (args: {
       messages: args.messages,
       provider: {
         data_collection: "deny",
-        zdr: true,
+        zdr: false,
         allow_fallbacks: false,
         require_parameters: true,
       },
-      ...(args.operation === "concept_prompt" ? { max_tokens: 4096 } : {}),
-      ...(args.operation === "concept_prompt" || args.operation === "interview"
+      ...(args.operation === "concept_prompt"
+        ? { max_tokens: 8192 }
+        : args.operation === "interview_plan"
+          ? { max_tokens: 1200 }
+        : args.operation === "interview"
+          ? { max_tokens: 1200 }
+          : {}),
+      ...(args.operation === "concept_prompt" ||
+      args.operation === "interview"
         ? { response_format: { type: "json_object" as const } }
         : {}),
       ...(args.model === "gpt-5.6-terra"
-        ? { reasoning: { effort: "medium" } }
-        : args.operation === "translation"
+        ? {
+            reasoning: {
+              effort: args.operation === "interview" ? "low" : "medium",
+            },
+          }
+        : args.operation === "translation" || args.operation === "interview"
           ? { reasoning: { enabled: false } }
-          : { reasoning: { enabled: true, effort: "high" } }),
+          : args.operation === "concept_prompt"
+            ? { reasoning: { enabled: true, effort: "medium" } }
+          : args.operation === "interview_plan"
+            ? { reasoning: { enabled: true, effort: "high" } }
+            : { reasoning: { enabled: true, effort: "high" } }),
     }),
   } satisfies RequestInit,
 });
 
 export const buildOpenRouterImageRequest = (args: {
   apiKey: string | undefined;
+  imageModel: ConceptImageModel;
   prompt: string;
 }) => ({
   url: "https://openrouter.ai/api/v1/images",
@@ -68,14 +95,24 @@ export const buildOpenRouterImageRequest = (args: {
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      model: "openai/gpt-image-2",
+      model:
+        args.imageModel === "nano-banana-2"
+          ? "google/gemini-3.1-flash-image"
+          : args.imageModel === "nano-banana-2-lite"
+            ? "google/gemini-3.1-flash-lite-image"
+            : "openai/gpt-image-2",
       prompt: args.prompt,
-      quality: "medium",
       aspect_ratio: "3:2",
       n: 1,
+      ...(args.imageModel === "nano-banana-2" ||
+      args.imageModel === "nano-banana-2-lite"
+        ? {}
+        : {
+            quality: args.imageModel === "gpt-image-2-low" ? "low" : "medium",
+          }),
       provider: {
         data_collection: "deny",
-        zdr: true,
+        zdr: false,
         allow_fallbacks: false,
         require_parameters: true,
       },
