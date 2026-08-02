@@ -71,13 +71,11 @@ try {
       "Production headers must set X-Content-Type-Options: nosniff.",
     );
   }
-  const robotsExcluded =
-    /X-Robots-Tag:\s*[^\n]*noindex/iu.test(headers) ||
-    /<meta\s+name=["']robots["']\s+content=["'][^"']*noindex/iu.test(html);
-  if (!robotsExcluded) {
-    throw new Error(
-      "Production output must exclude Client routes from indexing.",
-    );
+  const robotsIndexable = /<meta\s+name=["']robots["']\s+content=["'][^"']*\bindex\b[^"']*\bfollow\b/iu.test(
+    html,
+  );
+  if (!robotsIndexable) {
+    throw new Error("Production output must allow the app entry point to be indexed.");
   }
   if (/<style(?:\s|>)/iu.test(html)) {
     throw new Error("Production HTML must not contain inline style blocks.");

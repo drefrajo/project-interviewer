@@ -157,7 +157,7 @@ export const completeText = internalMutation({
       await saveMessage(ctx, agentComponent, {
         threadId: interview.agentThreadId,
         message: { role: "assistant", content: args.assistantContent },
-        agentName: "Project Interviewer",
+        agentName: "Interview",
       });
     }
     await ctx.db.patch("interviews", interview._id, {

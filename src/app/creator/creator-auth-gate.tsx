@@ -6,6 +6,7 @@ import {
 } from "../../infrastructure/interview-api";
 import type { ProductionAuthClient } from "../../infrastructure/auth-client";
 import { primaryButton, secondaryButton } from "../shared/form-controls";
+import { BrandMark } from "../shared/brand-mark";
 import { LegalFooter } from "../shared/legal-footer";
 import { ThemeToggle } from "../shared/theme-toggle";
 import { creatorCopy } from "./creator-copy";
@@ -82,11 +83,14 @@ export const CreatorAuthGate = ({
     return (
       <div className="flex min-h-screen flex-col bg-canvas">
         <main className="grid flex-1 place-items-center px-4" id="main-content">
-          <section className="w-full max-w-xl rounded-2xl border border-line bg-surface p-6 shadow-xl sm:p-9">
+          <section className="w-full max-w-xl rounded-box border border-line bg-panel p-6 shadow-xl sm:p-9">
             <div className="flex items-center justify-between gap-4">
-              <p className="text-xs font-extrabold tracking-[0.14em] text-forest uppercase">
-                {text.auth.workspaceLabel}
-              </p>
+              <div className="flex items-center gap-3">
+                <BrandMark />
+                <p className="text-xs font-extrabold tracking-[0.14em] text-forest uppercase">
+                  {text.auth.workspaceLabel}
+                </p>
+              </div>
               <ThemeToggle />
             </div>
             <h1 className="mt-2 font-display text-4xl font-extrabold tracking-tight">

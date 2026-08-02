@@ -13,7 +13,7 @@ export const creatorCopy = {
     },
     auth: {
       workspaceLabel: "Creator workspace",
-      signInTitle: "Sign in to Project Interviewer",
+      signInTitle: "Sign in to Interview",
       signInIntro:
         "Use the provider that owns your account. Google and GitHub identities are never silently linked, even when they share an email address.",
       continueWith: "Continue with",
@@ -249,7 +249,7 @@ export const creatorCopy = {
     },
     auth: {
       workspaceLabel: "Creator-Arbeitsbereich",
-      signInTitle: "Bei Project Interviewer anmelden",
+      signInTitle: "Bei Interview anmelden",
       signInIntro:
         "Verwenden Sie den Anbieter, mit dem Ihr Konto erstellt wurde. Google- und GitHub-Identitäten werden niemals stillschweigend verknüpft, auch nicht bei gleicher E-Mail-Adresse.",
       continueWith: "Weiter mit",

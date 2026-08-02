@@ -7,7 +7,7 @@ import type {
 import { forwardRef } from "react";
 
 const control =
-  "min-h-11 w-full rounded-lg border border-line bg-surface px-3 py-2 text-ink shadow-sm outline-none transition focus:border-forest";
+  "min-h-11 w-full rounded-field border border-line bg-surface px-3 py-2 text-ink shadow-sm outline-none transition focus:border-primary";
 
 export const Field = ({
   label,
@@ -46,10 +46,16 @@ export const Select = (
 ) => <select {...props} className={`${control} ${props.className ?? ""}`} />;
 
 export const primaryButton =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-forest px-4 py-2 text-sm font-extrabold text-white transition hover:bg-forest-strong dark:bg-forest-strong disabled:cursor-not-allowed disabled:opacity-55";
+  "inline-flex min-h-12 items-center justify-center gap-2 rounded-field bg-action px-4 py-2 text-sm font-semibold text-white transition hover:bg-action-strong disabled:cursor-not-allowed disabled:opacity-55";
 
 export const secondaryButton =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-line bg-surface px-4 py-2 text-sm font-extrabold text-ink transition hover:bg-soft-hover disabled:cursor-not-allowed disabled:opacity-55";
+  "inline-flex min-h-12 items-center justify-center gap-2 rounded-field border border-transparent bg-soft px-4 py-2 text-sm font-semibold text-primary transition hover:bg-soft-hover disabled:cursor-not-allowed disabled:opacity-55";
 
 export const dangerButton =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-error-border bg-surface px-4 py-2 text-sm font-extrabold text-error-text transition hover:bg-error-surface disabled:cursor-not-allowed disabled:opacity-55";
+  "inline-flex min-h-12 items-center justify-center gap-2 rounded-field border border-error-border bg-surface px-4 py-2 text-sm font-semibold text-error-text transition hover:bg-error-surface disabled:cursor-not-allowed disabled:opacity-55";
+
+export const softButton =
+  "inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-field border border-transparent bg-soft px-3 py-2 text-sm font-semibold text-primary no-underline transition hover:bg-soft-hover";
+
+export const textLink =
+  "cursor-pointer font-medium text-primary no-underline transition hover:underline";

@@ -7,6 +7,7 @@ import {
   type VisualDirection,
 } from "../../infrastructure/interview-api";
 import { OperationFeedback } from "../shared/operation-feedback";
+import { BrandMark } from "../shared/brand-mark";
 import { LegalFooter } from "../shared/legal-footer";
 import { ThemeToggle } from "../shared/theme-toggle";
 import { ConceptsStep } from "./concepts-step";
@@ -82,7 +83,7 @@ export const ClientInterviewPage = () => {
     return (
       <div className="flex min-h-screen flex-col bg-canvas">
         <main className="grid flex-1 place-items-center px-4" id="main-content">
-          <section className="max-w-xl rounded-xl border border-line bg-surface p-6">
+          <section className="max-w-xl rounded-box border border-line bg-panel p-6">
             <h1 className="font-display text-3xl font-extrabold">
               Interview unavailable
             </h1>
@@ -108,9 +109,12 @@ export const ClientInterviewPage = () => {
         </a>
         <header className="border-b border-line bg-surface px-4 py-4 sm:px-8">
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-5">
-            <span className="font-display font-extrabold">
-              {interview.projectName}
-            </span>
+            <div className="flex min-w-0 items-center gap-3">
+              <BrandMark />
+              <span className="truncate font-display font-extrabold">
+                {interview.projectName}
+              </span>
+            </div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted">
                 {interview.creator.displayName}
@@ -120,7 +124,7 @@ export const ClientInterviewPage = () => {
           </div>
         </header>
         <main className="grid flex-1 place-items-center px-4 py-10" id="main-content">
-          <section className="w-full max-w-xl rounded-xl border border-line bg-surface p-6">
+          <section className="w-full max-w-xl rounded-box border border-line bg-panel p-6">
             <h1 className="font-display text-3xl font-extrabold">
               {text.reservationRequiredTitle}
             </h1>
@@ -153,7 +157,12 @@ export const ClientInterviewPage = () => {
       </a>
       <header className="border-b border-line bg-surface px-4 py-4 sm:px-8">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-5">
-          <span className="font-display font-extrabold">{interview.projectName}</span>
+          <div className="flex min-w-0 items-center gap-3">
+            <BrandMark />
+            <span className="truncate font-display font-extrabold">
+              {interview.projectName}
+            </span>
+          </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted">{interview.creator.displayName}</span>
             <ThemeToggle />
@@ -169,9 +178,9 @@ export const ClientInterviewPage = () => {
             {text.steps.map((label, index) => (
               <li
                 aria-current={index === stepIndex(interview.step) ? "step" : undefined}
-                className={`border-t-4 pt-2 text-center text-xs font-bold sm:text-sm ${
+                className={`border-t-2 pt-2 text-center text-xs font-semibold sm:text-sm ${
                   index <= stepIndex(interview.step)
-                    ? "border-forest text-forest"
+                    ? "border-primary text-primary"
                     : "border-line text-muted"
                 }`}
                 key={label}

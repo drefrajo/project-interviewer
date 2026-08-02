@@ -17,7 +17,7 @@ export const OperationFeedback = ({
   if (operation.state === "pending") {
     if (hidePending) return null;
     return (
-      <div className="rounded-lg border border-line bg-surface p-4">
+      <div className="rounded-box border border-line bg-panel p-4">
         <WorkingIndicator
           label={language === "de" ? "Wird verarbeitet" : "Working"}
           phrases={

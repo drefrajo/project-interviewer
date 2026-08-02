@@ -3,7 +3,9 @@ import { FileText, LogOut, Settings, Shapes } from "lucide-react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import type { ProductionAuthClient } from "../../infrastructure/auth-client";
 import { interviewApi } from "../../infrastructure/interview-api";
+import { BrandMark } from "../shared/brand-mark";
 import { LegalFooter } from "../shared/legal-footer";
+import { softButton } from "../shared/form-controls";
 import { ThemeToggle } from "../shared/theme-toggle";
 import { creatorCopy } from "./creator-copy";
 import { useCreatorLanguage } from "./creator-language";
@@ -33,18 +35,13 @@ export const CreatorShell = ({
             className="flex items-center gap-3 font-display font-extrabold text-ink no-underline"
             to="/interviews"
           >
-            <span
-              aria-hidden="true"
-              className="inline-grid size-9 place-items-center rounded-full bg-forest text-sm text-lime dark:bg-forest-strong"
-            >
-              PI
-            </span>
-            <span className="hidden sm:inline">Project Interviewer</span>
+            <BrandMark />
+            <span className="hidden sm:inline">Interview</span>
           </NavLink>
           <div className="flex items-center gap-3 text-sm text-muted">
             <span className="hidden sm:inline">{profile?.displayName}</span>
             <Link
-              className="rounded-full border border-line bg-soft px-3 py-2 font-bold text-forest no-underline transition hover:border-forest"
+              className={softButton}
               to="/settings#passes"
             >
               {balance
@@ -54,7 +51,7 @@ export const CreatorShell = ({
             <ThemeToggle />
             <button
               aria-label={text.shell.signOut}
-              className="inline-grid size-11 place-items-center rounded-lg transition hover:bg-soft"
+              className="inline-grid size-12 place-items-center rounded-field transition hover:bg-soft"
               onClick={() => void authClient.signOut()}
               type="button"
             >
@@ -68,9 +65,9 @@ export const CreatorShell = ({
           {tabs.map(({ to, label, icon: Icon }) => (
             <NavLink
               className={({ isActive }) =>
-                `inline-flex min-h-12 items-center gap-2 border-b-4 px-4 text-sm font-extrabold no-underline ${
+                `inline-flex min-h-12 items-center gap-2 border-b-2 px-3 text-sm font-semibold no-underline ${
                   isActive
-                    ? "border-forest text-forest"
+                    ? "border-primary text-primary"
                     : "border-transparent text-muted hover:text-ink"
                 }`
               }

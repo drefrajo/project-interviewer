@@ -140,7 +140,7 @@ const TemplateGroup = <Template extends InterviewTemplate>({
     {templates.length ? (
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         {templates.map((template) => (
-          <article className="rounded-xl border border-line bg-surface p-5" key={template._id}>
+          <article className="rounded-box border border-line bg-panel p-5" key={template._id}>
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h3 className="font-display text-xl font-extrabold">{template.name}</h3>
@@ -153,7 +153,7 @@ const TemplateGroup = <Template extends InterviewTemplate>({
                 <div className="flex gap-1">
                   <button
                     aria-label={creatorCopy[language].templates.edit(template.name)}
-                    className="inline-grid size-11 place-items-center rounded-lg transition hover:bg-soft"
+                    className="inline-grid size-12 place-items-center rounded-field transition hover:bg-soft"
                     onClick={() => onEdit(template)}
                     type="button"
                   >
@@ -161,7 +161,7 @@ const TemplateGroup = <Template extends InterviewTemplate>({
                   </button>
                   <button
                     aria-label={creatorCopy[language].templates.delete(template.name)}
-                    className="inline-grid size-11 place-items-center rounded-lg text-error-text transition hover:bg-error-surface"
+                    className="inline-grid size-12 place-items-center rounded-field text-error-text transition hover:bg-error-surface"
                     onClick={() => onDelete(template)}
                     type="button"
                   >
@@ -177,7 +177,7 @@ const TemplateGroup = <Template extends InterviewTemplate>({
         ))}
       </div>
     ) : (
-      <p className="mt-4 rounded-xl border border-dashed border-line p-5 text-muted">
+      <p className="mt-4 rounded-box border border-dashed border-line p-5 text-muted">
         {empty}
       </p>
     )}
@@ -219,7 +219,7 @@ const TemplateForm = ({
     });
   };
   return (
-    <form className="mt-8 grid gap-5 rounded-xl border border-line bg-surface p-6" onSubmit={submit}>
+      <form className="mt-8 grid gap-5 rounded-box border border-line bg-panel p-6" onSubmit={submit}>
       <h2 className="font-display text-2xl font-extrabold">
         {template ? text.templates.editPrivate : text.templates.newPrivateForm}
       </h2>

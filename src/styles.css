@@ -1,5 +1,5 @@
 @import "@fontsource-variable/manrope/wght.css";
-@import "@fontsource-variable/space-grotesk/wght.css";
+@import "@fontsource-variable/jetbrains-mono/wght.css";
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
@@ -7,11 +7,28 @@
 
 @theme inline {
   --font-sans: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Space Grotesk Variable", "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-weight-extrabold: 700;
+  --radius-field: 0.25rem;
+  --radius-box: 0.5rem;
+  --text-xl: 1.125rem;
+  --text-xl--line-height: 1.35;
+  --text-2xl: 1.375rem;
+  --text-2xl--line-height: 1.25;
+  --text-3xl: 1.75rem;
+  --text-3xl--line-height: 1.2;
+  --text-4xl: 2rem;
+  --text-4xl--line-height: 1.15;
+  --text-5xl: 2.25rem;
+  --text-5xl--line-height: 1.12;
+  --leading-7: 1.6;
+  --leading-8: 1.65;
   --color-ink: var(--app-ink);
   --color-muted: var(--app-muted);
   --color-line: var(--app-line);
   --color-surface: var(--app-surface);
+  --color-panel: var(--app-panel);
   --color-forest: var(--app-forest);
   --color-forest-strong: var(--app-forest-strong);
   --color-lime: var(--app-lime);
@@ -24,75 +41,112 @@
   --color-error-surface: var(--app-error-surface);
   --color-error-text: var(--app-error-text);
   --color-overlay: var(--app-overlay);
+  --color-primary: var(--app-forest);
+  --color-primary-strong: var(--app-forest-strong);
+  --color-action: var(--app-action);
+  --color-action-strong: var(--app-action-strong);
+  --color-accent: var(--app-coral);
 }
 
 :root {
   color-scheme: light;
-  --app-ink: #13221d;
-  --app-muted: #64716c;
-  --app-line: #d9ddd5;
-  --app-surface: #fffefa;
-  --app-forest: #174f3d;
-  --app-forest-strong: #0f3d2f;
-  --app-lime: #c9f06b;
-  --app-coral: #ed744d;
-  --app-canvas: #f4f3ed;
-  --app-soft: #eef2eb;
-  --app-soft-strong: #e6ebe3;
-  --app-soft-hover: #f1f3ed;
-  --app-error-border: #e9b29e;
-  --app-error-surface: #fff1e7;
-  --app-error-text: #852f21;
-  --app-overlay: rgb(19 34 29 / 55%);
+  --app-ink: #111827;
+  --app-muted: #4b5563;
+  --app-line: rgb(17 24 39 / 10%);
+  --app-surface: #ffffff;
+  --app-panel: rgb(241 245 249 / 72%);
+  --app-forest: #0369a1;
+  --app-forest-strong: #075985;
+  --app-action: #0369a1;
+  --app-action-strong: #075985;
+  --app-lime: #bae6fd;
+  --app-coral: #be123c;
+  --app-canvas: #f8fafc;
+  --app-soft: #f1f5f9;
+  --app-soft-strong: #e2e8f0;
+  --app-soft-hover: #e0f2fe;
+  --app-error-border: #fda4af;
+  --app-error-surface: #fff1f2;
+  --app-error-text: #9f1239;
+  --app-overlay: rgb(15 23 42 / 55%);
+  --app-dot-color: rgb(148 163 184 / 42%);
   font-family: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   --line: var(--app-line);
   --green: var(--app-forest);
-  --focus: #255dff;
+  --focus: #2563eb;
 }
 
 :root.dark {
   color-scheme: dark;
-  --app-ink: #edf0ef;
-  --app-muted: #aeb4b2;
-  --app-line: #3b3f41;
-  --app-surface: #1b1d1f;
-  --app-forest: #659f83;
-  --app-forest-strong: #2d654e;
-  --app-lime: #cce786;
-  --app-coral: #f38a62;
-  --app-canvas: #111315;
-  --app-soft: #272a2c;
-  --app-soft-strong: #34383a;
-  --app-soft-hover: #303437;
-  --app-error-border: #c8755d;
-  --app-error-surface: #422b27;
-  --app-error-text: #ffb09a;
-  --app-overlay: rgb(0 0 0 / 68%);
-  --line: #3b3f41;
-  --green: #659f83;
-  --focus: #8aaaff;
+  --app-ink: #f8fafc;
+  --app-muted: #a7adb5;
+  --app-line: rgb(248 250 252 / 10%);
+  --app-surface: #181a1d;
+  --app-panel: rgb(34 37 41 / 72%);
+  --app-forest: #0ea5e9;
+  --app-forest-strong: #0284c7;
+  --app-action: #075985;
+  --app-action-strong: #0369a1;
+  --app-lime: #bae6fd;
+  --app-coral: #fb7185;
+  --app-canvas: #111214;
+  --app-soft: #222529;
+  --app-soft-strong: #2d3136;
+  --app-soft-hover: #30343a;
+  --app-error-border: #fb7185;
+  --app-error-surface: #35151e;
+  --app-error-text: #fecdd3;
+  --app-overlay: rgb(0 0 0 / 72%);
+  --app-dot-color: rgb(148 163 184 / 12%);
+  --line: var(--app-line);
+  --green: var(--app-forest);
+  --focus: #60a5fa;
 }
 
 html {
   scroll-behavior: smooth;
   background: var(--app-canvas);
+  background-image: radial-gradient(
+    circle,
+    var(--app-dot-color) 1.5px,
+    transparent 0
+  );
+  background-position: 0 0;
+  background-size: 22px 22px;
 }
 
 body {
   color: var(--app-ink);
-  background: var(--app-canvas);
+  background: transparent;
+  font-size: 1rem;
+  line-height: 1.55;
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
   transition: background-color 180ms ease, color 180ms ease;
 }
 
+.bg-canvas {
+  background-color: var(--app-canvas);
+  background-image: radial-gradient(
+    circle,
+    var(--app-dot-color) 1.5px,
+    transparent 0
+  );
+  background-position: 0 0;
+  background-size: 22px 22px;
+}
+
 h1,
 h2,
-h3 {
-  letter-spacing: -0.035em;
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
 }
 
 :focus-visible {

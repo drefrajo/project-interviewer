@@ -2,7 +2,7 @@ import { useQuery } from "convex/react";
 import { ArrowRight, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import { interviewApi } from "../../infrastructure/interview-api";
-import { primaryButton } from "../shared/form-controls";
+import { primaryButton, textLink } from "../shared/form-controls";
 import { creatorCopy } from "./creator-copy";
 import { useCreatorLanguage } from "./creator-language";
 
@@ -49,7 +49,7 @@ export const InterviewsPage = () => {
                 : text.interviews.status[interview.status];
             return (
               <Link
-                className="group flex min-h-56 flex-col rounded-xl border border-line bg-surface p-5 text-ink no-underline transition hover:-translate-y-0.5 hover:shadow-lg"
+                className="group flex min-h-56 flex-col rounded-box border border-line bg-panel p-5 text-ink no-underline transition hover:-translate-y-0.5 hover:shadow-lg"
                 key={interview._id}
                 to={`/interviews/${interview._id}`}
               >
@@ -87,7 +87,7 @@ export const InterviewsPage = () => {
                       ? text.interviews.currentStep(text.interviews.step[interview.step])
                       : text.interviews.language[interview.clientLanguage]}
                 </p>
-                <span className="mt-auto inline-flex items-center gap-1 pt-6 font-bold text-forest">
+                <span className={`${textLink} group-hover:underline group-focus-visible:underline mt-auto inline-flex items-center gap-1 pt-6`}>
                   {text.interviews.open} <ArrowRight aria-hidden="true" size={16} />
                 </span>
               </Link>
@@ -95,7 +95,7 @@ export const InterviewsPage = () => {
           })}
         </section>
       ) : (
-        <section className="mt-10 rounded-xl border border-dashed border-line bg-surface p-8 text-center">
+        <section className="mt-10 rounded-box border border-dashed border-line bg-panel p-8 text-center">
           <h2 className="font-display text-2xl font-extrabold">
             {text.interviews.emptyTitle}
           </h2>

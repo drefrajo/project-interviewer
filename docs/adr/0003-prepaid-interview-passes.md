@@ -4,7 +4,7 @@ status: accepted
 
 # Use prepaid Interview Passes with Stripe Managed Payments
 
-Project Interviewer sells a complete started Interview through two tax-exclusive,
+Interview sells a complete started Interview through two tax-exclusive,
 one-time EUR packs: one Interview Pass for €29 and five for €99, plus applicable
 taxes. Every Creator receives one non-expiring Introductory Pass, including
 Creators who existed before monetization.

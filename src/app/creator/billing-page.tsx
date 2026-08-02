@@ -17,7 +17,7 @@ export const BillingSuccessPage = () => {
   );
   return (
     <main className="mx-auto max-w-3xl px-4 py-8 sm:px-8 lg:py-12" id="main-content">
-      <section className="rounded-2xl border border-line bg-surface p-6 sm:p-9">
+      <section className="rounded-box border border-line bg-panel p-6 sm:p-9">
         <p className="text-xs font-extrabold tracking-[0.14em] text-forest uppercase">
           {text.interviews.workspace}
         </p>
@@ -37,7 +37,7 @@ export const BillingCancelPage = () => {
   const text = creatorCopy[language];
   return (
     <main className="mx-auto max-w-3xl px-4 py-8 sm:px-8 lg:py-12" id="main-content">
-      <section className="rounded-2xl border border-line bg-surface p-6 sm:p-9">
+      <section className="rounded-box border border-line bg-panel p-6 sm:p-9">
         <h1 className="font-display text-3xl font-extrabold">{text.billing.cancelledTitle}</h1>
         <p className="mt-4 leading-7 text-muted">{text.billing.cancelledDescription}</p>
         <Link className={`${primaryButton} mt-7`} to="/settings#passes">{text.billing.backToPasses}</Link>

@@ -45,7 +45,7 @@ export const WelcomeStep = ({
 }) => {
   const text = copy[interview.clientLanguage];
   return (
-    <section className="mx-auto w-full max-w-3xl rounded-2xl border border-line bg-surface p-6 shadow-[0_1.5rem_4rem_rgb(19_34_29_/_7%)] sm:p-10">
+    <section className="mx-auto w-full max-w-3xl rounded-box border border-line bg-panel p-6 shadow-[0_1.5rem_4rem_rgb(15_23_42_/_8%)] dark:shadow-[0_1.5rem_4rem_rgb(2_6_23_/_50%)] sm:p-10">
       <p className="text-xs font-extrabold tracking-[0.14em] text-forest uppercase">
         {text.invitedBy} {interview.creator.displayName}
       </p>
@@ -82,7 +82,7 @@ export const WelcomeStep = ({
 };
 
 const Disclosure = ({ icon, text }: { icon: ReactNode; text: string }) => (
-  <div className="flex gap-3 rounded-lg border border-line bg-surface p-4">
+  <div className="flex gap-3 rounded-box border border-line bg-panel p-4">
     <span aria-hidden="true" className="mt-0.5 text-forest">
       {icon}
     </span>

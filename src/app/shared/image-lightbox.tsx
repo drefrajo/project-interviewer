@@ -32,7 +32,7 @@ export const ImageLightbox = ({
         type="button"
       >
         <img alt={alt} className="aspect-[3/2] w-full object-cover" src={src} />
-        <span className="absolute right-3 bottom-3 inline-flex items-center gap-1 rounded-full bg-black/70 px-3 py-2 text-xs font-extrabold text-white opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100">
+        <span className="absolute right-3 bottom-3 inline-flex items-center gap-1 rounded-field bg-black/70 px-3 py-2 text-xs font-semibold text-white opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100">
           <Maximize2 aria-hidden="true" size={14} />
           {openLabel}
         </span>
@@ -49,7 +49,7 @@ export const ImageLightbox = ({
         >
           <button
             aria-label={closeLabel}
-            className="absolute top-4 right-4 inline-flex size-11 items-center justify-center rounded-full bg-white/95 text-black shadow-lg transition hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+            className="absolute top-4 right-4 inline-flex size-12 items-center justify-center rounded-field bg-white/95 text-black shadow-lg transition hover:bg-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
             onClick={() => setOpen(false)}
             type="button"
           >

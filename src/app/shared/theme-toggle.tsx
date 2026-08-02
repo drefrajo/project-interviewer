@@ -9,7 +9,7 @@ export const ThemeToggle = () => {
     <button
       aria-label={`Switch to ${nextTheme} mode`}
       aria-pressed={theme === "dark"}
-      className="inline-grid size-11 place-items-center rounded-lg text-ink transition hover:bg-soft focus-visible:outline-offset-0"
+      className="inline-grid size-12 place-items-center rounded-field text-ink transition hover:bg-soft focus-visible:outline-offset-0"
       onClick={toggleTheme}
       title={`Switch to ${nextTheme} mode`}
       type="button"

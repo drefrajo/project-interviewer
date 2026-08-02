@@ -9,6 +9,7 @@ import {
   primaryButton,
   TextArea,
   TextInput,
+  textLink,
 } from "../shared/form-controls";
 import { ImageLightbox } from "../shared/image-lightbox";
 import { CLIENT_COPY } from "./client-copy";
@@ -32,7 +33,7 @@ const ConceptImageSkeleton = () => (
 const ConceptCardSkeleton = () => (
   <article
     aria-hidden="true"
-    className="overflow-hidden rounded-xl border-2 border-line bg-surface"
+    className="overflow-hidden rounded-box border-2 border-line bg-panel"
     data-testid="concept-skeleton"
   >
     <ConceptImageSkeleton />
@@ -147,9 +148,9 @@ export const ConceptsStep = ({
             ))
           : concepts.map((concept) => (
               <article
-                className={`overflow-hidden rounded-xl border-2 bg-surface ${
+                className={`overflow-hidden rounded-box border-2 bg-panel ${
                   selected === concept.id && mode === "concept"
-                    ? "border-forest"
+                    ? "border-primary"
                     : "border-line"
                 }`}
                 key={concept.id}
@@ -214,7 +215,7 @@ export const ConceptsStep = ({
       !selected ? (
         <div className="mt-4 flex justify-center">
           <button
-            className="text-sm font-bold text-muted underline decoration-line underline-offset-4 hover:text-forest"
+            className={`${textLink} text-sm`}
             data-testid="request-more-concepts"
             onClick={() => void requestMoreOptions()}
             type="button"
@@ -226,7 +227,7 @@ export const ConceptsStep = ({
       {temporaryConceptBatchRetriesEnabled && concepts.length === 6 && !pending ? (
         <div className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-2">
           <button
-            className="text-xs font-bold text-muted underline decoration-line underline-offset-4 hover:text-forest"
+            className={`${textLink} text-xs`}
             data-testid="retry-first-concept-batch"
             onClick={() => void onRetryFirstOptions()}
             type="button"
@@ -234,7 +235,7 @@ export const ConceptsStep = ({
             {text.retryFirstOptions}
           </button>
           <button
-            className="text-xs font-bold text-muted underline decoration-line underline-offset-4 hover:text-forest"
+            className={`${textLink} text-xs`}
             data-testid="retry-second-concept-batch"
             onClick={() => void onRetryMoreOptions()}
             type="button"
@@ -243,7 +244,7 @@ export const ConceptsStep = ({
           </button>
         </div>
       ) : null}
-      <section className="mt-7 rounded-xl border border-line bg-surface p-5">
+      <section className="mt-7 rounded-box border border-line bg-panel p-5">
         <label className="flex items-center gap-3 font-bold">
           <input
             checked={mode === "links"}
@@ -274,7 +275,7 @@ export const ConceptsStep = ({
             ))}
             {links.length < 3 ? (
               <button
-                className="w-fit font-bold text-forest"
+                className={`${textLink} w-fit`}
                 onClick={() => setLinks((current) => [...current, ""])}
                 type="button"
               >
@@ -284,7 +285,7 @@ export const ConceptsStep = ({
           </div>
         ) : null}
       </section>
-      <section className="mt-4 rounded-xl border border-line bg-surface p-5">
+      <section className="mt-4 rounded-box border border-line bg-panel p-5">
         <label className="grid gap-2 font-bold">
           {mode === "links" ? text.requiredNote : text.note}
           <TextArea

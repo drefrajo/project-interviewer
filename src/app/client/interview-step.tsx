@@ -9,7 +9,7 @@ import type {
   ClientLanguage,
   TranscriptMessage,
 } from "../../infrastructure/interview-api";
-import { primaryButton, TextArea } from "../shared/form-controls";
+import { primaryButton, softButton, TextArea } from "../shared/form-controls";
 import { SafeMarkdown } from "../shared/safe-markdown";
 import { CLIENT_COPY } from "./client-copy";
 
@@ -167,26 +167,11 @@ export const InterviewStepView = ({
   const text = CLIENT_COPY[language];
   const [draft, setDraft] = useState("");
   const transcript = useRef<HTMLDivElement>(null);
-  const composer = useRef<HTMLTextAreaElement>(null);
   useLayoutEffect(() => {
     const history = transcript.current;
     if (!history) return;
     history.scrollTop = history.scrollHeight;
   }, [messages]);
-  useLayoutEffect(() => {
-    const textarea = composer.current;
-    if (!textarea) return;
-    const minimumHeight = 112;
-    const maximumHeight = 354;
-    textarea.style.height = "auto";
-    const contentHeight = textarea.scrollHeight;
-    textarea.style.height = `${Math.min(
-      Math.max(contentHeight, minimumHeight),
-      maximumHeight,
-    )}px`;
-    textarea.style.overflowY =
-      contentHeight > maximumHeight ? "auto" : "hidden";
-  }, [draft]);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -229,7 +214,7 @@ export const InterviewStepView = ({
                   <SafeMarkdown markdown={message.content} variant="plain" />
                   {message.retryable ? (
                     <button
-                      className="mt-3 inline-flex min-h-10 items-center justify-center rounded-lg bg-forest px-4 py-2 text-sm font-extrabold text-white transition hover:bg-forest-strong disabled:cursor-not-allowed disabled:opacity-55 dark:bg-forest-strong"
+                      className={`${primaryButton} mt-3 min-h-10`}
                       disabled={pending}
                       onClick={() => void onRetry()}
                       type="button"
@@ -247,7 +232,7 @@ export const InterviewStepView = ({
       </div>
       <form
         aria-busy={pending}
-        className="mx-auto w-full max-w-3xl shrink-0 rounded-xl border border-line bg-surface p-4"
+        className="mx-auto w-full max-w-3xl shrink-0 rounded-box border border-line bg-panel p-4"
         data-testid="interview-composer"
         onSubmit={submit}
       >
@@ -255,7 +240,7 @@ export const InterviewStepView = ({
           <div className="mb-3 flex flex-wrap gap-2">
             {suggestedReplies.map((reply) => (
               <button
-                className="rounded-full border border-line bg-surface px-3 py-2 text-left text-sm font-bold text-forest"
+                className={`${softButton} min-h-10 text-left`}
                 key={reply}
                 onClick={() => setDraft(reply)}
                 type="button"
@@ -271,14 +256,13 @@ export const InterviewStepView = ({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="relative min-h-28 flex-1">
             <TextArea
-              className="min-h-28 w-full resize-none leading-6"
+              className="min-h-28 max-h-[22.125rem] w-full resize-none overflow-y-auto leading-6 [field-sizing:content]"
               data-max-lines="14"
               disabled={pending}
               id="client-reply"
               maxLength={10_000}
               onChange={(event) => setDraft(event.target.value)}
               placeholder={text.reply}
-              ref={composer}
               value={draft}
             />
             {pending ? (

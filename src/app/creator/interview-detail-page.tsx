@@ -16,6 +16,7 @@ import {
   dangerButton,
   primaryButton,
   secondaryButton,
+  textLink,
 } from "../shared/form-controls";
 import { OperationFeedback } from "../shared/operation-feedback";
 import { ImageLightbox } from "../shared/image-lightbox";
@@ -150,7 +151,7 @@ export const InterviewDetailPage = () => {
           {error}
         </p>
       ) : null}
-      <section className="mt-7 rounded-xl border border-forest/30 bg-soft p-5">
+      <section className="mt-7 rounded-box border border-forest/30 bg-soft p-5">
         <h2 className="font-display text-2xl font-extrabold">
           {passState === "unreserved"
             ? text.detail.reservationTitle
@@ -198,7 +199,7 @@ export const InterviewDetailPage = () => {
           </button>
         ) : null}
       </section>
-      <section className="mt-7 rounded-xl border border-line bg-surface p-5">
+      <section className="mt-7 rounded-box border border-line bg-panel p-5">
         <h2 className="font-display text-2xl font-extrabold">
           {text.detail.interviewLink}
         </h2>
@@ -249,7 +250,7 @@ export const InterviewDetailPage = () => {
           </button>
         </div>
       </section>
-      <section className="mt-7 rounded-xl border border-line bg-surface p-5">
+      <section className="mt-7 rounded-box border border-line bg-panel p-5">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h2 className="font-display text-2xl font-extrabold">
@@ -281,7 +282,7 @@ export const InterviewDetailPage = () => {
       </section>
       <div className="mt-7">
         {interview.status === "submitted" && interview.operation ? (
-          <section className="rounded-xl border border-line bg-surface p-5">
+          <section className="rounded-box border border-line bg-panel p-5">
             <p className="font-display text-lg font-extrabold">
               {text.detail.emailNotification}
             </p>
@@ -365,7 +366,7 @@ export const InterviewDetailPage = () => {
             <SafeMarkdown markdown={interview.projectDocument} />
           </div>
         ) : (
-          <p className="mt-6 rounded-xl border border-dashed border-line p-5 text-muted">
+          <p className="mt-6 rounded-box border border-dashed border-line p-5 text-muted">
             {text.detail.documentPending}
           </p>
         )}
@@ -376,7 +377,7 @@ export const InterviewDetailPage = () => {
             </h3>
             <div className="mt-3 grid gap-4 md:grid-cols-3">
               {interview.concepts.map((concept) => (
-                <figure className="overflow-hidden rounded-xl border border-line bg-surface" key={concept.id}>
+                <figure className="overflow-hidden rounded-box border border-line bg-panel" key={concept.id}>
                   {concept.imageUrl ? (
                     <ImageLightbox
                       alt={`${concept.name}, ${text.detail.roughVisualDirection}`}
@@ -398,7 +399,7 @@ export const InterviewDetailPage = () => {
                     ) : null}
                     {concept.imageUrl ? (
                       <a
-                        className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-forest"
+                        className={`${textLink} mt-3 inline-flex items-center gap-1 text-sm`}
                         download={`${concept.id}.png`}
                         href={concept.imageUrl}
                       >
@@ -412,7 +413,7 @@ export const InterviewDetailPage = () => {
           </div>
         ) : null}
         {interview.visualDirection ? (
-          <section className="mt-7 rounded-xl border border-line bg-surface p-5">
+          <section className="mt-7 rounded-box border border-line bg-panel p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h3 className="font-display text-2xl font-extrabold">
                 {text.detail.visualDirection}
@@ -441,7 +442,7 @@ export const InterviewDetailPage = () => {
           </section>
         ) : null}
       </section>
-      <details className="mt-10 rounded-xl border border-line bg-surface p-5">
+      <details className="mt-10 rounded-box border border-line bg-panel p-5">
         <summary className="cursor-pointer font-display text-2xl font-extrabold">
           {text.detail.transcript}
         </summary>

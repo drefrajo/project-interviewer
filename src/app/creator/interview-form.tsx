@@ -231,7 +231,7 @@ export const InterviewForm = () => {
       <p className="mt-3 max-w-2xl leading-7 text-muted">
         {text.form.description}
       </p>
-      <form className="mt-8 grid gap-6 rounded-xl border border-line bg-surface p-6 sm:p-8" onSubmit={submit}>
+      <form className="mt-8 grid gap-6 rounded-box border border-line bg-panel p-6 sm:p-8" onSubmit={submit}>
         <Field label={text.form.projectName}>
           <TextInput
             maxLength={160}

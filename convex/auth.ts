@@ -53,7 +53,7 @@ export const createAuthOptions = (
   const oauth = readOAuthConfiguration(source);
   const allowlist = parseCreatorAllowlist(source.CREATOR_ALLOWLIST);
   return {
-    appName: "Project Interviewer",
+    appName: "Interview",
     secret: required(source, "BETTER_AUTH_SECRET"),
     baseURL: required(source, "CONVEX_SITE_URL"),
     trustedOrigins: [siteUrl],

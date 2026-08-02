@@ -64,7 +64,7 @@ export const DocumentReviewStep = ({
       </div>
       <form
         aria-busy={pending}
-        className="sticky bottom-4 z-10 mt-8 rounded-xl border border-line bg-surface/95 p-5 shadow-xl backdrop-blur-md"
+        className="sticky bottom-4 z-10 mt-8 rounded-box border border-line bg-surface/95 p-5 shadow-xl backdrop-blur-md"
         data-testid="document-review-composer"
         onSubmit={submit}
       >

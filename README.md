@@ -1,6 +1,6 @@
-# Project Interviewer
+# Interview
 
-Project Interviewer turns a short AI conversation with a Client into an implementation-ready website Project Submission.
+Interview turns a short AI conversation with a Client into an implementation-ready website Project Submission.
 
 A Creator configures an Interview, sends its account-free Interview Link, and receives:
 

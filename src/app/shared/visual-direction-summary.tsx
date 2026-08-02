@@ -3,6 +3,7 @@ import type {
   VisualConcept,
   VisualDirection,
 } from "../../infrastructure/interview-api";
+import { textLink } from "./form-controls";
 import { ImageLightbox } from "./image-lightbox";
 
 const copy = {
@@ -70,7 +71,7 @@ export const VisualDirectionSummary = ({
       );
     }
     return (
-      <article className="mt-4 grid overflow-hidden rounded-xl border border-line bg-surface sm:grid-cols-[minmax(14rem,20rem)_1fr]">
+      <article className="mt-4 grid overflow-hidden rounded-box border border-line bg-panel sm:grid-cols-[minmax(14rem,20rem)_1fr]">
         {concept.imageUrl ? (
           <ImageLightbox
             alt={`${concept.name}, ${text.rough}`}
@@ -108,7 +109,7 @@ export const VisualDirectionSummary = ({
   }
 
   return (
-    <div className="mt-4 rounded-xl border border-line bg-surface p-5 sm:p-6">
+    <div className="mt-4 rounded-box border border-line bg-panel p-5 sm:p-6">
       <p className="text-xs font-extrabold tracking-[0.14em] text-forest uppercase">
         {text.inspiration}
       </p>
@@ -116,7 +117,7 @@ export const VisualDirectionSummary = ({
         {direction.inspirationLinks.map((link) => (
           <li key={link}>
             <a
-              className="font-bold text-forest underline decoration-line underline-offset-4"
+              className={textLink}
               href={link}
               rel="noreferrer"
               target="_blank"

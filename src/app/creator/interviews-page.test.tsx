@@ -41,6 +41,12 @@ describe("InterviewsPage status badges", () => {
     expect(screen.getAllByText("Needs pass reservation")).toHaveLength(2);
     expect(screen.getByText("Ready")).toHaveClass("bg-forest");
     expect(screen.getByText("Ready")).not.toHaveClass("bg-lime");
+    for (const openLink of screen.getAllByText("Open")) {
+      expect(openLink).toHaveClass(
+        "group-hover:underline",
+        "group-focus-visible:underline",
+      );
+    }
     expect(screen.queryByText("Not started")).not.toBeInTheDocument();
   });
 });

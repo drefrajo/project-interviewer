@@ -2,7 +2,7 @@
 
 ## Services
 
-Project Interviewer uses:
+Interview uses:
 
 - Convex for application data, generated-image storage, scheduled operations, Agent transcripts, rate limiting, and Better Auth integration;
 - Google and GitHub OAuth for Creator authentication;

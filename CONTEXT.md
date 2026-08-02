@@ -1,6 +1,6 @@
-# Project Interviewer
+# Interview
 
-Project Interviewer helps a service provider turn a focused AI interview with a Client into implementation-ready project direction.
+Interview helps a service provider turn a focused AI conversation with a Client into implementation-ready project direction.
 
 ## Language
 

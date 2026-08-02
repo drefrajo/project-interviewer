@@ -85,8 +85,7 @@ describe("InterviewStepView", () => {
     expect(onSend).not.toHaveBeenCalled();
   });
 
-  it("auto-grows the composer and caps it at fourteen lines", async () => {
-    const user = userEvent.setup();
+  it("uses CSS field sizing with a fourteen-line cap", () => {
     render(
       <InterviewStepView
         language="en"
@@ -98,21 +97,13 @@ describe("InterviewStepView", () => {
     );
     const composer = screen.getByRole("textbox", { name: "Your reply" });
     expect(composer).toHaveAttribute("data-max-lines", "14");
-    expect(composer).toHaveStyle({ height: "112px", overflowY: "hidden" });
-
-    Object.defineProperty(composer, "scrollHeight", {
-      configurable: true,
-      value: 220,
-    });
-    await user.type(composer, "Several lines of project context");
-    expect(composer).toHaveStyle({ height: "220px", overflowY: "hidden" });
-
-    Object.defineProperty(composer, "scrollHeight", {
-      configurable: true,
-      value: 500,
-    });
-    await user.type(composer, " and more");
-    expect(composer).toHaveStyle({ height: "354px", overflowY: "auto" });
+    expect(composer).toHaveClass(
+      "min-h-28",
+      "max-h-[22.125rem]",
+      "overflow-y-auto",
+      "[field-sizing:content]",
+    );
+    expect(composer).not.toHaveAttribute("style");
   });
 
   it("does not project stale replies from an earlier assistant message", () => {

@@ -44,7 +44,7 @@ export const SettingsPage = () => {
         <p className="mt-3 leading-7 text-muted">
           {text.settings.intro}
         </p>
-        <form className="mt-8 grid max-w-3xl gap-5 rounded-xl border border-line bg-surface p-6" onSubmit={submit}>
+        <form className="mt-8 grid max-w-3xl gap-5 rounded-box border border-line bg-panel p-6" onSubmit={submit}>
           <Field label={text.settings.displayName}>
             <TextInput
               maxLength={120}

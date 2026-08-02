@@ -74,7 +74,7 @@ export const PassesSection = () => {
 };
 
 const BalanceCard = ({ label, value }: { label: string; value: number }) => (
-  <div className="rounded-xl border border-line bg-surface p-5">
+  <div className="rounded-box border border-line bg-panel p-5">
     <p className="text-sm font-bold text-muted">{label}</p>
     <p className="mt-2 font-display text-4xl font-extrabold text-forest">{value}</p>
   </div>
@@ -101,7 +101,7 @@ const PackCard = ({
   disabled: boolean;
   onBuy(): void;
 }) => (
-  <article className="flex flex-col rounded-2xl border border-line bg-surface p-6 shadow-sm">
+  <article className="flex flex-col rounded-box border border-line bg-panel p-6 shadow-sm">
     <div className="flex items-start justify-between gap-4">
       <div>
         <h3 className="font-display text-2xl font-extrabold">{title}</h3>

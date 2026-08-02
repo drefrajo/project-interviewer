@@ -14,7 +14,6 @@ export const getInitialTheme = (): Theme => {
 
 export const applyTheme = (theme: Theme) => {
   document.documentElement.classList.toggle("dark", theme === "dark");
-  document.documentElement.style.colorScheme = theme;
 };
 
 export const initializeTheme = () => {

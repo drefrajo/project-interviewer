@@ -1,3 +1,5 @@
+import { textLink } from "./form-controls";
+
 type LegalFooterLanguage = "de" | "en";
 
 const copy = {
@@ -35,14 +37,14 @@ export const LegalFooter = ({
   return (
     <footer
       aria-label={text.label}
-      className="border-t border-line bg-surface px-4 py-5 text-sm text-muted sm:px-8"
+      className="border-t border-line bg-panel px-4 py-5 text-sm text-muted sm:px-8"
     >
       <nav
         aria-label={text.label}
         className="mx-auto flex max-w-7xl flex-wrap justify-center gap-x-5 gap-y-2 sm:justify-end"
       >
         <a
-          className="underline decoration-line underline-offset-4 hover:text-ink"
+          className={`${textLink} text-sm text-muted hover:text-primary`}
           href={text.privacyHref}
           rel="noopener noreferrer"
           target="_blank"
@@ -50,7 +52,7 @@ export const LegalFooter = ({
           {text.privacy}
         </a>
         <a
-          className="underline decoration-line underline-offset-4 hover:text-ink"
+          className={`${textLink} text-sm text-muted hover:text-primary`}
           href={text.imprintHref}
           rel="noopener noreferrer"
           target="_blank"
