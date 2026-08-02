@@ -90,7 +90,7 @@ describe("Interview prompt contracts", () => {
         "# Photographer portfolio\n\nShow still life and portrait work.",
     };
     const messages = buildConceptSeedMessages(context);
-    const serialized = JSON.stringify(messages);
+    const serialized = JSON.stringify(messages).replace(/\\n/g, " ");
 
     expect(serialized).toContain("Instagram-like interface");
     expect(serialized).toContain(
@@ -101,13 +101,30 @@ describe("Interview prompt contracts", () => {
     expect(serialized).toContain("under 800 characters");
     expect(serialized).toContain("pairwise contrast");
     expect(serialized).toContain("at least three");
-    expect(serialized).toContain("faithful refinement");
-    expect(serialized).toContain("atmospheric counterpoint");
-    expect(serialized).toContain("structural counterpoint");
+    expect(serialized).toContain("faithful baseline");
+    expect(serialized).toContain("spatial counterpoint");
+    expect(serialized).toContain("navigational counterpoint");
     expect(serialized).toContain("not automatically binding");
     expect(serialized).toContain("decision-relevant");
     expect(serialized).toContain("content fidelity");
     expect(serialized).toContain("Do not invent brand or content traits");
+  });
+
+  it("requires three different page skeletons rather than styled versions of one layout", () => {
+    const messages = buildConceptSeedMessages({
+      clientLanguage: "en",
+      instructions: instagramLikeInstructions,
+      projectDocument: "# Photographer portfolio",
+    });
+    const serialized = JSON.stringify(messages).replace(/\\n/g, " ");
+
+    expect(serialized).toContain("different page skeleton");
+    expect(serialized).toContain("above-the-fold information flow");
+    expect(serialized).toContain("client-gallery entry placement");
+    expect(serialized).toContain("contact or conversion integration");
+    expect(serialized).toContain(
+      "Palette, typography, spacing, and decoration do not count as macro-layout differences",
+    );
   });
 
   it("plans an additional batch outside the territory occupied by prior concepts", () => {
@@ -133,7 +150,7 @@ describe("Interview prompt contracts", () => {
         },
       ],
     });
-    const serialized = JSON.stringify(messages);
+    const serialized = JSON.stringify(messages).replace(/\\n/g, " ");
 
     expect(serialized).toContain("exactly three additional");
     expect(serialized).toContain("EXISTING VISUAL CONCEPTS");
@@ -146,6 +163,9 @@ describe("Interview prompt contracts", () => {
     expect(serialized).toContain("spatial composition and media scale");
     expect(serialized).toContain("navigation and interaction rhythm");
     expect(serialized).toContain("same palette family and composition family");
+    expect(serialized).toContain(
+      "Each new page skeleton must also differ from every existing page skeleton on at least two macro-layout dimensions",
+    );
     expect(serialized).not.toContain("Assign these roles in order");
   });
 
@@ -179,7 +199,7 @@ describe("Interview prompt contracts", () => {
       "do not substitute a generic hero-led marketing page",
     );
     expect(normalized).toContain("DIVERSITY ROLE 2");
-    expect(normalized).toContain("atmospheric counterpoint");
+    expect(normalized).toContain("spatial counterpoint");
     expect(normalized).toContain(
       "overrides visual-style recommendations in the Project Document",
     );
@@ -189,6 +209,12 @@ describe("Interview prompt contracts", () => {
     );
     expect(normalized).toContain(
       "Do not alter the depicted media's color, tone, texture, subject matter, or style",
+    );
+    expect(normalized).toContain(
+      "A recognizable interaction model is not a fixed page skeleton",
+    );
+    expect(normalized).toContain(
+      "Do not default to the same header, horizontal item strip, feed grid, and lower contact block",
     );
   });
 

@@ -10,7 +10,7 @@ export type {
   InterviewTemplate,
   PrivateInterviewTemplate,
 } from "../domain/interview-templates";
-export type InterviewModel = "gpt-5.6-terra" | "deepseek-v4-flash";
+export type InterviewModel = "gpt-5.6-terra";
 export type ConceptImageModel =
   | "gpt-image-2"
   | "gpt-image-2-low"
@@ -185,7 +185,6 @@ interface InterviewApi {
       {
         projectName: string;
         clientLanguage: ClientLanguage;
-        interviewModel: InterviewModel;
         instructions: string;
       },
       { interviewId: string; interviewUrl?: string; linkToken?: string } | string
@@ -194,7 +193,6 @@ interface InterviewApi {
       interviewId: string;
       projectName: string;
       clientLanguage: ClientLanguage;
-      interviewModel: InterviewModel;
       instructions: string;
     }>;
     rotateLink: Mutation<

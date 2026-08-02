@@ -31,9 +31,7 @@ Content Security Policy. This gate must not use a production deployment.
 Before launch, run one representative website Interview in each supported pairing:
 
 - English with GPT-5.6 Terra;
-- German with GPT-5.6 Terra;
-- English with DeepSeek V4 Flash; and
-- German with DeepSeek V4 Flash.
+- German with GPT-5.6 Terra.
 
 Review whether each Interview reaches a useful Project Document efficiently, preserves supplied facts, marks unknown facts, writes credible first-draft copy, and generates three meaningfully different Visual Concepts. This is an opt-in launch evaluation rather than a broad deterministic test matrix.
 

@@ -33,11 +33,11 @@ The language selected for one Interview's Client UI, conversation, Project Docum
 _Avoid_: UI language, interview language, document language
 
 **Interview Model**:
-The language model selected when creating an Interview and used for its conversation, reasoning, Project Document, and image prompts. The selection is fixed for that Interview and never silently falls back to the other model.
+The GPT-5.6 Terra language model used for an Interview's conversation, reasoning, Project Document, and image prompts.
 _Avoid_: AI role, provider
 
 **Template Translation**:
-A Creator-triggered translation of the current Interview Instructions into a different Client Language using DeepSeek V4 Flash. It translates the current input text, is private preparation for an Interview, and is never shown to the Client.
+A Creator-triggered translation of the current Interview Instructions into a different Client Language using GPT-5.6 Terra. It translates the current input text, is private preparation for an Interview, and is never shown to the Client.
 _Avoid_: Automatic localization, Client translation
 
 **Interview**:

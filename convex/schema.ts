@@ -2,7 +2,10 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export const clientLanguage = v.union(v.literal("en"), v.literal("de"));
-export const interviewModel = v.union(
+export const interviewModel = v.literal("gpt-5.6-terra");
+// Existing documents may still contain the retired model. New writes and all
+// active provider calls use `interviewModel` above.
+const storedInterviewModel = v.union(
   v.literal("gpt-5.6-terra"),
   v.literal("deepseek-v4-flash"),
 );
@@ -126,7 +129,7 @@ export default defineSchema({
     linkVersion: v.number(),
     projectName: v.string(),
     clientLanguage,
-    model: interviewModel,
+    model: storedInterviewModel,
     instructions: v.string(),
     deepseekPrivacyAcknowledged: v.optional(v.boolean()),
     additionalConceptsUsed: v.optional(v.boolean()),

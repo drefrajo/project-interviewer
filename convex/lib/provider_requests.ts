@@ -22,14 +22,9 @@ const requireSecret = (
   return value;
 };
 
-const textModelId = (model: "gpt-5.6-terra" | "deepseek-v4-flash") =>
-  model === "gpt-5.6-terra"
-    ? "openai/gpt-5.6-terra"
-    : "deepseek/deepseek-v4-flash-0731";
-
 export const buildOpenRouterTextRequest = (args: {
   apiKey: string | undefined;
-  model: "gpt-5.6-terra" | "deepseek-v4-flash";
+  model: "gpt-5.6-terra";
   messages: ProviderMessage[];
   operation:
     | "interview"
@@ -46,7 +41,7 @@ export const buildOpenRouterTextRequest = (args: {
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      model: textModelId(args.model),
+      model: "openai/gpt-5.6-terra",
       messages: args.messages,
       provider: {
         data_collection: "deny",
@@ -65,19 +60,9 @@ export const buildOpenRouterTextRequest = (args: {
       args.operation === "interview"
         ? { response_format: { type: "json_object" as const } }
         : {}),
-      ...(args.model === "gpt-5.6-terra"
-        ? {
-            reasoning: {
-              effort: args.operation === "interview" ? "low" : "medium",
-            },
-          }
-        : args.operation === "translation" || args.operation === "interview"
-          ? { reasoning: { enabled: false } }
-          : args.operation === "concept_prompt"
-            ? { reasoning: { enabled: true, effort: "medium" } }
-          : args.operation === "interview_plan"
-            ? { reasoning: { enabled: true, effort: "high" } }
-            : { reasoning: { enabled: true, effort: "high" } }),
+      reasoning: {
+        effort: args.operation === "interview" ? "low" : "medium",
+      },
     }),
   } satisfies RequestInit,
 });

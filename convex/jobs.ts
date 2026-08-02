@@ -40,6 +40,8 @@ type Completion = {
   };
 };
 
+const INTERVIEW_TEXT_MODEL = "gpt-5.6-terra" as const;
+
 const responseText = async (response: Response) => {
   if (!response.ok) {
     const error = new Error(`Provider request failed (${response.status}).`);
@@ -385,7 +387,7 @@ const runInterview = async (
   if (createPlan) {
     const planRequest = buildOpenRouterTextRequest({
       apiKey: env.OPENROUTER_API_KEY,
-      model: interview.model,
+      model: INTERVIEW_TEXT_MODEL,
       operation: "interview_plan",
       messages: buildInterviewPlanMessages({
         instructions: interview.instructions,
@@ -416,7 +418,7 @@ const runInterview = async (
   }
   const request = buildOpenRouterTextRequest({
     apiKey: env.OPENROUTER_API_KEY,
-    model: interview.model,
+    model: INTERVIEW_TEXT_MODEL,
     operation: "interview",
     messages: buildInterviewMessages(
       buildInterviewPolicy({
@@ -451,7 +453,7 @@ const runInterview = async (
   }
   const documentRequest = buildOpenRouterTextRequest({
     apiKey: env.OPENROUTER_API_KEY,
-    model: interview.model,
+    model: INTERVIEW_TEXT_MODEL,
     operation: "document",
     messages: buildProjectDocumentMessages({
       instructions: interview.instructions,
@@ -488,7 +490,7 @@ const runDocumentRevision = async (
   }
   const request = buildOpenRouterTextRequest({
     apiKey: env.OPENROUTER_API_KEY,
-    model: interview.model,
+    model: INTERVIEW_TEXT_MODEL,
     operation: "document",
     messages: buildProjectDocumentRevisionMessages({
       instructions: interview.instructions,
@@ -516,7 +518,7 @@ const conceptSeeds = async (
   }
   const request = buildOpenRouterTextRequest({
     apiKey: env.OPENROUTER_API_KEY,
-    model: interview.model,
+    model: INTERVIEW_TEXT_MODEL,
     operation: "concept_prompt",
     messages: buildConceptSeedMessages({
       clientLanguage: interview.clientLanguage,
@@ -613,10 +615,7 @@ const runConceptGeneration = async (
         }))
       : await conceptSeeds(interview);
   const imageModel: ConceptImageModel =
-    interview.operation?.imageModel ??
-    (interview.model === "deepseek-v4-flash"
-      ? "gpt-image-2-low"
-      : "gpt-image-2");
+    interview.operation?.imageModel ?? "gpt-image-2-low";
   await ctx.runMutation(internalRefs.jobs.setConceptGenerationPhase, {
     interviewId: interview._id,
     phase: "concept_creating",
@@ -633,14 +632,12 @@ const runConceptGeneration = async (
             projectDocument,
             conceptPrompt: seed.prompt,
             conceptIndex: Number.parseInt(seed.id.replace("concept_", ""), 10),
-            ...(additionalConcepts
-              ? {
-                  existingConcepts: [
-                    ...interview.concepts.slice(0, 3),
-                    ...seeds.filter((concept) => concept.id !== seed.id),
-                  ],
-                }
-              : {}),
+            existingConcepts: [
+              ...(additionalConcepts
+                ? interview.concepts.slice(0, 3)
+                : []),
+              ...seeds.filter((concept) => concept.id !== seed.id),
+            ],
           }),
           imageModel,
         ),

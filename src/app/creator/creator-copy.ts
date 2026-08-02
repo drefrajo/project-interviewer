@@ -83,10 +83,9 @@ export const creatorCopy = {
       unavailable: "Interview unavailable",
       frozenTitle: "Interview configuration is frozen",
       frozenDescription:
-        "The first Client message fixed the project name, Client Language, Interview Model, and Interview Instructions.",
+        "The first Client message fixed the project name, Client Language, and Interview Instructions.",
       projectName: "Project name",
       clientLanguage: "Client Language",
-      interviewModel: "Interview Model",
       templateHint:
         "A template prefills this field; it never governs the Interview after copying.",
       templateLabel: "Optional Interview Template",
@@ -94,7 +93,7 @@ export const creatorCopy = {
       builtIn: "Built-in",
       private: "Private",
       instructions: "Interview Instructions",
-      translating: "Translating with DeepSeek V4 Flash…",
+      translating: "Translating Interview Instructions…",
       translateTo: (language: string) => `Translate to ${language}`,
       saveAsTemplate: "Save as template",
       saveTemplatePrompt: "Name this Private Interview Template",
@@ -128,6 +127,10 @@ export const creatorCopy = {
       linkUnavailable: "The link is only returned when created or regenerated.",
       copied: "Copied",
       copyLink: "Copy link",
+      instructions: "Interview Instructions",
+      instructionsDescription:
+        "These are the instructions captured for this Interview. Copy them if you want to reuse or inspect them.",
+      copyInstructions: "Copy instructions",
       regenerateLink: "Regenerate link",
       confirmRegenerate:
         "Regenerate this Interview Link? The current link will stop working immediately.",
@@ -150,11 +153,13 @@ export const creatorCopy = {
       generationFailed: "Generation failed",
       generating: "Generating…",
       roughVisualDirection: "rough visual direction",
+      viewImage: "View larger",
+      closeImage: "Close image",
       downloadImage: "Download image",
       visualDirection: "Visual Direction",
       transcript: "Interview Transcript",
       client: "Client",
-      interviewModel: "Interview Model",
+      interviewModel: "Assistant",
       deletePermanent: "Delete Interview permanently",
       confirmDelete: "Delete this Interview?",
       deleteDescription:
@@ -260,10 +265,9 @@ export const creatorCopy = {
       unavailable: "Interview nicht verfügbar",
       frozenTitle: "Interview-Konfiguration ist eingefroren",
       frozenDescription:
-        "Die erste Client-Nachricht hat Projektname, Client Language, Interview Model und Interview Instructions festgelegt.",
+        "Die erste Client-Nachricht hat Projektname, Client Language und Interview Instructions festgelegt.",
       projectName: "Projektname",
       clientLanguage: "Client Language",
-      interviewModel: "Interview Model",
       templateHint:
         "Eine Vorlage füllt dieses Feld vor, steuert das Interview nach dem Kopieren aber nicht.",
       templateLabel: "Optionale Interview-Vorlage",
@@ -271,7 +275,7 @@ export const creatorCopy = {
       builtIn: "Integriert",
       private: "Privat",
       instructions: "Interview Instructions",
-      translating: "Übersetzung mit DeepSeek V4 Flash läuft…",
+      translating: "Interview Instructions werden übersetzt…",
       translateTo: (language: string) => `Ins ${language} übersetzen`,
       saveAsTemplate: "Als Vorlage speichern",
       saveTemplatePrompt: "Name dieser privaten Interview-Vorlage",
@@ -305,6 +309,10 @@ export const creatorCopy = {
       linkUnavailable: "Der Link wird nur beim Erstellen oder Erneuern angezeigt.",
       copied: "Kopiert",
       copyLink: "Link kopieren",
+      instructions: "Interview Instructions",
+      instructionsDescription:
+        "Diese Anweisungen wurden für dieses Interview gespeichert. Kopieren Sie sie, wenn Sie sie wiederverwenden oder prüfen möchten.",
+      copyInstructions: "Anweisungen kopieren",
       regenerateLink: "Link erneuern",
       confirmRegenerate:
         "Diesen Interview-Link erneuern? Der aktuelle Link funktioniert danach sofort nicht mehr.",
@@ -327,11 +335,13 @@ export const creatorCopy = {
       generationFailed: "Erstellung fehlgeschlagen",
       generating: "Wird erstellt…",
       roughVisualDirection: "grobe visuelle Richtung",
+      viewImage: "Bild vergrößern",
+      closeImage: "Bild schließen",
       downloadImage: "Bild herunterladen",
       visualDirection: "Visuelle Richtung",
       transcript: "Interview-Transkript",
       client: "Client",
-      interviewModel: "Interview Model",
+      interviewModel: "Assistent",
       deletePermanent: "Interview endgültig löschen",
       confirmDelete: "Dieses Interview löschen?",
       deleteDescription:

@@ -12,7 +12,7 @@ The Client should not need an account, learn a project-management system, prepar
 
 The product uses one small, linear workflow:
 
-1. The Creator signs in, optionally selects an Interview Template, chooses the Client Language and Interview Model, edits non-empty Interview Instructions, and creates an Interview.
+1. The Creator signs in, optionally selects an Interview Template, chooses the Client Language, edits non-empty Interview Instructions, and creates an Interview.
 2. The Creator sends its unguessable Interview Link to one Client representative.
 3. The selected Interview Model conducts a concise conversational Interview under a fixed Interview Policy, using no more structure than the Client needs.
 4. When the model has enough information, it produces an implementation-ready Markdown Project Document, including first-draft website copy and explicit placeholders for unknown facts.
@@ -32,7 +32,7 @@ The application uses React, Convex, Better Auth, the Convex Agent component, the
 5. As a Creator, I want to set a business or display name, so that Clients know who invited them.
 6. As a Client, I want to see the Creator's business or display name and verified email address, so that impersonation is harder.
 7. As a Creator, I want Interviews, Templates, and Settings in separate top-level tabs, so that account settings do not dominate normal work.
-8. As a Creator, I want to create an Interview using only a project name, Client Language, Interview Model, optional template, and Interview Instructions, so that setup is fast.
+8. As a Creator, I want to create an Interview using only a project name, Client Language, optional template, and Interview Instructions, so that setup is fast.
 9. As a Creator, I want the project name shown to the Client, so that the invitation is recognizable.
 10. As a Creator, I want Interview Instructions to be required, so that an Interview cannot start without meaningful scope.
 11. As a Creator, I want to edit Interview configuration until the first Client message, so that I can fix preparation mistakes without recreating it.
@@ -62,19 +62,15 @@ The application uses React, Convex, Better Auth, the Convex Agent component, the
 35. As a Creator, I want existing Interviews to retain an instruction snapshot when a template later changes, so that active work remains stable.
 36. As a Creator, I want a Private Interview Template to record its source language, so that translation behavior is predictable.
 37. As a Creator, I want to trigger Template Translation manually, so that no translation cost or content change occurs without my action.
-38. As a Creator, I want Template Translation to use DeepSeek V4 Flash without thinking regardless of the Interview Model, so that translation remains inexpensive.
+38. As a Creator, I want Template Translation to use GPT-5.6 Terra with medium reasoning, so that translation follows the same provider policy as the Interview.
 39. As a Creator, I want language and continuation controls blocked while translation runs, so that I cannot create a mismatched Interview.
 40. As a Creator, I want a warning when translating edited instructions, so that I know the current field—not the template's original text—will be translated.
 41. As a Creator, I want translated instructions to remain an Interview edit unless I explicitly save a new template, so that translation does not mutate reusable content unexpectedly.
 42. As a Creator, I want translation status visible only to me, so that the Client sees a coherent Interview rather than preparation mechanics.
 43. As a Creator, I want to choose English or German as the Client Language independently of the template, so that every applicable template can serve either language.
 44. As a Client, I want the welcome page, conversation, Project Document, and concept flow in one consistent language, so that I do not need to interpret mixed-language UI.
-45. As a Creator, I want to choose GPT-5.6 Terra or DeepSeek V4 Flash per Interview, so that I control the cost and capability tradeoff.
-46. As a Creator, I want the selected Interview Model fixed after the Interview begins, so that behavior does not change silently mid-conversation.
-47. As a Creator, I want a warning when choosing DeepSeek for German, so that I can account for its less certain documented language support without blocking the choice.
-48. As a Creator, I want a warning when DeepSeek may use a compliant route outside Azure or the EU, so that I make an informed privacy decision.
-49. As a Client, I want to see the selected model family and a plain-language privacy link before starting, so that I understand which AI processes my responses.
-50. As a Client, I want to be warned not to submit sensitive personal data, so that I can participate safely.
+45. As a Client, I want to see the GPT-5.6 Terra model family and a plain-language privacy link before starting, so that I understand which AI processes my responses.
+46. As a Client, I want to be warned not to submit sensitive personal data, so that I can participate safely.
 51. As a Client, I want to enter through one link without an account or identity form, so that starting the Interview takes almost no effort.
 52. As a Client, I want the welcome page to identify the project and Creator, so that I can verify the invitation before responding.
 53. As a Client, I want an approximate ten-minute expectation and a short explanation of the document-to-concepts flow, so that I know what participation requires.
@@ -147,12 +143,12 @@ The application uses React, Convex, Better Auth, the Convex Agent component, the
 - Keep only pure supporting modules where they deepen a real boundary: prompt construction and validation, status projection, safe Markdown rendering, and Project Submission ZIP assembly.
 - Use deployment configuration—not product UI—for registration allowlists, built-in templates, supported languages, model routing/privacy requirements, provider credentials, and spend ceilings.
 - Make the Creator application a simple tabbed interface with Interviews, Templates, and Settings. Settings contains only the editable business/display name and read-only verified email identity.
-- Limit Interview creation to project name, explicit Client Language, explicit Interview Model, optional template, and non-empty Interview Instructions.
+- Limit Interview creation to project name, explicit Client Language, optional template, and non-empty Interview Instructions.
 - Make selecting a template copy its content into Interview Instructions. Replacing non-pristine instructions requires confirmation. Later template changes never affect an existing Interview.
 - Ship the three agreed Built-in Interview Templates with separately maintained English and German text. Treat Private Interview Templates as single-source-language content owned by one Creator, with no sharing, tags, versions, marketplace, or automatic mutation.
-- Make Template Translation an explicit action over the current Interview Instructions. It always uses DeepSeek V4 Flash without thinking. Disable language and continuation controls while it runs. If the field differs from the selected template or a prior translation, warn that the current field is the translation source. Translation changes only the field; saving it as a template requires a separate action.
+- Make Template Translation an explicit action over the current Interview Instructions. It uses GPT-5.6 Terra with medium reasoning. Disable language and continuation controls while it runs. If the field differs from the selected template or a prior translation, warn that the current field is the translation source. Translation changes only the field; saving it as a template requires a separate action.
 - Create and activate an unguessable Interview Link immediately with the Interview. The link is a bearer capability for start, resume, and read-only final viewing. Regeneration invalidates the prior capability. Links do not expire automatically.
-- Freeze project name, Client Language, Interview Model, and Interview Instructions atomically with the first accepted Client message.
+- Freeze project name, Client Language, and Interview Instructions atomically with the first accepted Client message.
 - Present Not started, In progress with a secondary step, Submitted, and Needs attention as computed dashboard labels rather than an additional business state machine.
 - Use four linear Client steps: Interview, Review, Concepts, and Submitted. The server validates every transition; the UI does not permit step jumping.
 - Show a minimal welcome page with project name, Creator business/display name and verified email, approximate duration, flow explanation, model family, privacy link, sensitive-data warning, sharing disclosure, and the rough-concept disclaimer. Require no Client name, account, checkbox, or separate consent form.
@@ -161,9 +157,9 @@ The application uses React, Convex, Better Auth, the Convex Agent component, the
 - Treat all Creator and Client text as untrusted content below the fixed Interview Policy. The model must not reveal hidden policy or accept instructions to leave the narrow Interview workflow.
 - Allow existing content to be pasted into Interview Instructions or Client messages. Store public URLs as text but do not crawl them, retrieve them, or claim they were read. Explicitly tell the Client when a supplied link was not inspected.
 - Make the selected Interview Model responsible for the conversation, sufficiency decision, Project Document, revisions, and three separate Visual Concept prompts for each generated batch. Do not introduce separate planner, completion reviewer, evidence, finding, coverage, or document-generator roles.
-- Use GPT-5.6 Terra at medium reasoning or DeepSeek V4 Flash with thinking at high effort for the full Interview. The model selected at creation remains pinned and never falls back to the other model.
+- Use GPT-5.6 Terra for the full Interview, with low reasoning effort for interactive turns and medium effort for planning and artifacts. The model is fixed and never falls back.
 - Route text, translation, and image requests through OpenRouter. Every request must require zero data retention, deny data collection, and disable provider/model fallback. If no compliant route is available, fail the operation.
-- Permit a privacy-compliant DeepSeek route outside Azure or the EU only after the Creator acknowledges the warning. Also show a non-blocking Creator-only warning for German DeepSeek Interviews. Do not expose routing implementation details to Clients.
+- Do not expose routing implementation details to Clients.
 - Produce a single current Markdown Project Document. Its outline comes from Interview Instructions rather than a structured schema. For website work, it includes complete first-draft copy derived from supplied facts, identifies recommendations, asks for blocking facts, and leaves conspicuous placeholders for non-blocking unknown facts. It never invents factual or legal claims.
 - Make Document Review a loop with **Request changes** and **Continue to concepts**. A free-text change request invokes the pinned Interview Model and replaces the current Project Document. There is no direct editing, version history, approval semantics, or separate Creator review gate.
 - Generate a first batch of exactly three named, structurally and stylistically distinct Visual Concepts only after the Client continues from Document Review. While only that first batch exists and is ready, allow the Client to request one second batch of exactly three. Generate one prompt per concept using the pinned Interview Model, then render each independently with GPT Image 2 at 1536×1024.
@@ -191,7 +187,7 @@ The application uses React, Convex, Better Auth, the Convex Agent component, the
 - Add only focused Convex-boundary tests that cannot be proven safely or deterministically by the single browser flow. The necessary cases are Creator ownership, invalidated Interview Links, first-write-wins submission/idempotency, and irreversible cascading deletion. Combine related assertions into as few scenarios as practical.
 - Add one small provider-request contract test because privacy flags and pinned model/reasoning configuration are invisible in the UI and materially affect the product promise. It should cover OpenRouter zero-retention/data-collection/fallback requirements and the minimal Cloudflare Email payload without making network calls.
 - Verify strict CSP without `unsafe-inline` as part of the production-build/browser check rather than through component-level duplicates.
-- Treat real-provider output quality as an opt-in launch evaluation, not a broad permanent test matrix. Before launch, exercise English and German once with each Interview Model and inspect one three-concept image run. Keep this outside the ordinary deterministic test suite unless a concrete regression proves automation is necessary.
+- Treat real-provider output quality as an opt-in launch evaluation, not a broad permanent test matrix. Before launch, exercise English and German once with GPT-5.6 Terra and inspect one three-concept image run. Keep this outside the ordinary deterministic test suite unless a concrete regression proves automation is necessary.
 - Retain only one accessibility pass over the main Client flow at mobile and desktop widths, integrated into the browser verification rather than duplicated across component tests.
 
 ## Out of Scope
@@ -206,7 +202,7 @@ The application uses React, Convex, Better Auth, the Convex Agent component, the
 - A third or later concept batch, final responsive designs, implemented websites, logos, brand identity generation, or arbitrary non-website concept pipelines.
 - Automatic template translation, shared templates, template tags, template versions, a template marketplace, or templates selecting Client Language.
 - More Client Languages than English and German.
-- More Interview Models than GPT-5.6 Terra and DeepSeek V4 Flash, model changes after start, automatic fallback, or Client-selected models.
+- Additional Interview Models, model changes after start, automatic fallback, or Client-selected models.
 - PDF, Word, Google Docs, Google Drive, email-attachment, or live-document exports.
 - Interview expiry, reminders, abandonment automation, archive/trash/recovery, duplication/cloning, or multiple Project Submissions.
 - Product branding customization, custom Creator domains, custom email domains, or white-label Client pages.
@@ -218,6 +214,6 @@ The application uses React, Convex, Better Auth, the Convex Agent component, the
 ## Further Notes
 
 - ADR-0001 records the template-driven Interview architecture.
-- ADR-0002 records the two pinned Interview Models, reasoning modes, privacy routing, and fixed image renderer.
+- ADR-0002 records the single pinned Interview Model, reasoning modes, privacy routing, and fixed image renderer.
 - Product and operational documentation use the same domain vocabulary and describe only the system defined here.
 - “Good enough” means the Project Document gives the Creator enough accurate direction and first-draft copy to begin implementation immediately, while visibly separating unknown Client facts from model recommendations.

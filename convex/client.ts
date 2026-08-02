@@ -31,7 +31,8 @@ const rateLimiter = new RateLimiter(rateLimiterComponent, {
 
 // Development-only controls. Flip this single flag to re-enable the temporary
 // retry mutations and expose their UI to a Client.
-const TEMPORARY_CONCEPT_BATCH_RETRIES_ENABLED = false;
+const TEMPORARY_CONCEPT_BATCH_RETRIES_ENABLED = true;
+const DEFAULT_CONCEPT_IMAGE_MODEL = "gpt-image-2-low" as const;
 
 const findByToken = async (
   ctx: QueryCtx | MutationCtx,
@@ -101,20 +102,14 @@ export const getByLink = query({
       ...(await interviewDto(interview, (id) => ctx.storage.getUrl(id))),
       interviewId: interview._id,
       started: Boolean(interview.startedAt ?? interview.frozenAt),
-      modelFamily:
-        interview.model === "gpt-5.6-terra"
-          ? "GPT-5.6 Terra"
-          : "DeepSeek V4 Flash",
+      modelFamily: "GPT-5.6 Terra",
       creator: {
         displayName: creator.displayName,
         email: creator.email,
       },
       disclosure: {
         approximateMinutes: 10,
-        modelFamily:
-          interview.model === "gpt-5.6-terra"
-            ? "GPT-5.6 Terra"
-            : "DeepSeek V4 Flash",
+        modelFamily: "GPT-5.6 Terra",
       },
       temporaryConceptBatchRetriesEnabled:
         TEMPORARY_CONCEPT_BATCH_RETRIES_ENABLED,
@@ -307,10 +302,7 @@ export const requestMoreConcepts = mutation({
         kind: "concept_generation",
         status: "pending",
         attempt: 0,
-        imageModel:
-          interview.model === "deepseek-v4-flash"
-            ? "gpt-image-2-low"
-            : "gpt-image-2",
+        imageModel: DEFAULT_CONCEPT_IMAGE_MODEL,
         additionalConcepts: true,
       },
       updatedAt: Date.now(),
@@ -376,10 +368,7 @@ export const retryAdditionalConcepts = mutation({
         kind: "concept_generation",
         status: "pending",
         attempt: 0,
-        imageModel:
-          interview.model === "deepseek-v4-flash"
-            ? "gpt-image-2-low"
-            : "gpt-image-2",
+        imageModel: DEFAULT_CONCEPT_IMAGE_MODEL,
         additionalConcepts: true,
         regeneratePrompts: true,
       },
@@ -431,10 +420,7 @@ export const retryFirstConcepts = mutation({
         kind: "concept_generation",
         status: "pending",
         attempt: 0,
-        imageModel:
-          interview.model === "deepseek-v4-flash"
-            ? "gpt-image-2-low"
-            : "gpt-image-2",
+        imageModel: DEFAULT_CONCEPT_IMAGE_MODEL,
         regeneratePrompts: true,
       },
       updatedAt: Date.now(),

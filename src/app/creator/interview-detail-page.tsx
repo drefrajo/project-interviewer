@@ -18,6 +18,7 @@ import {
   secondaryButton,
 } from "../shared/form-controls";
 import { OperationFeedback } from "../shared/operation-feedback";
+import { ImageLightbox } from "../shared/image-lightbox";
 import { SafeMarkdown } from "../shared/safe-markdown";
 import {
   visualDirectionMarkdown,
@@ -68,6 +69,7 @@ export const InterviewDetailPage = () => {
   const remove = useMutation(interviewApi.interviews.remove);
   const [rotatedUrl, setRotatedUrl] = useState("");
   const [copied, setCopied] = useState(false);
+  const [instructionsCopied, setInstructionsCopied] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -119,10 +121,7 @@ export const InterviewDetailPage = () => {
             {interview.projectName}
           </h1>
           <p className="mt-3 text-muted">
-            {text.detail.language[interview.clientLanguage]} ·{" "}
-            {interview.interviewModel === "gpt-5.6-terra"
-              ? "GPT-5.6 Terra"
-              : "DeepSeek V4 Flash"}
+            {text.detail.language[interview.clientLanguage]} · GPT-5.6 Terra
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -195,6 +194,36 @@ export const InterviewDetailPage = () => {
             <RotateCw aria-hidden="true" size={17} /> {text.detail.regenerateLink}
           </button>
         </div>
+      </section>
+      <section className="mt-7 rounded-xl border border-line bg-surface p-5">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 className="font-display text-2xl font-extrabold">
+              {text.detail.instructions}
+            </h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
+              {text.detail.instructionsDescription}
+            </p>
+          </div>
+          <button
+            className={secondaryButton}
+            onClick={() =>
+              void perform(async () => {
+                await navigator.clipboard.writeText(interview.instructions);
+                setInstructionsCopied(true);
+              })
+            }
+            type="button"
+          >
+            <Copy aria-hidden="true" size={17} />
+            {instructionsCopied
+              ? text.detail.copied
+              : text.detail.copyInstructions}
+          </button>
+        </div>
+        <pre className="mt-5 max-h-[32rem] overflow-auto whitespace-pre-wrap rounded-lg bg-soft p-4 font-sans text-sm leading-6">
+          {interview.instructions}
+        </pre>
       </section>
       <div className="mt-7">
         {interview.status === "submitted" && interview.operation ? (
@@ -295,9 +324,10 @@ export const InterviewDetailPage = () => {
               {interview.concepts.map((concept) => (
                 <figure className="overflow-hidden rounded-xl border border-line bg-surface" key={concept.id}>
                   {concept.imageUrl ? (
-                    <img
+                    <ImageLightbox
                       alt={`${concept.name}, ${text.detail.roughVisualDirection}`}
-                      className="aspect-[3/2] w-full object-cover"
+                      closeLabel={text.detail.closeImage}
+                      openLabel={text.detail.viewImage}
                       src={concept.imageUrl}
                     />
                   ) : (

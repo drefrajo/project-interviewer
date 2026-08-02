@@ -1,5 +1,6 @@
 import type { ClientInterviewView } from "../../infrastructure/interview-api";
 import { SafeMarkdown } from "../shared/safe-markdown";
+import { ImageLightbox } from "../shared/image-lightbox";
 import { VisualDirectionSummary } from "../shared/visual-direction-summary";
 import { CLIENT_COPY } from "./client-copy";
 
@@ -32,9 +33,10 @@ export const SubmittedStep = ({
           {(interview.concepts ?? []).map((concept) => (
             <figure className="overflow-hidden rounded-xl border border-line bg-surface" key={concept.id}>
               {concept.imageUrl ? (
-                <img
+                <ImageLightbox
                   alt={`${concept.name}, rough visual direction`}
-                  className="aspect-[3/2] w-full object-cover"
+                  closeLabel={text.closeImage}
+                  openLabel={text.viewImage}
                   src={concept.imageUrl}
                 />
               ) : null}

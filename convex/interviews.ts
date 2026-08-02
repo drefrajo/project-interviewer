@@ -16,7 +16,7 @@ import {
   interviewDto,
   MAX_INSTRUCTIONS_LENGTH,
 } from "./lib/domain";
-import { clientLanguage, interviewModel } from "./schema";
+import { clientLanguage } from "./schema";
 import { internalRefs } from "./internal_refs";
 
 const ownedInterview = async (
@@ -73,9 +73,7 @@ export const create = mutation({
   args: {
     projectName: v.string(),
     clientLanguage,
-    interviewModel,
     instructions: v.string(),
-    acknowledgedDeepSeekRouting: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const creator = await requireCreatorProfile(ctx);
@@ -106,7 +104,7 @@ export const create = mutation({
       linkVersion: 1,
       projectName,
       clientLanguage: args.clientLanguage,
-      model: args.interviewModel,
+      model: "gpt-5.6-terra",
       instructions,
       createdAt: now,
       updatedAt: now,
@@ -125,9 +123,7 @@ export const updateBeforeStart = mutation({
     interviewId: v.id("interviews"),
     projectName: v.string(),
     clientLanguage,
-    interviewModel,
     instructions: v.string(),
-    acknowledgedDeepSeekRouting: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const { interview } = await ownedInterview(ctx, args.interviewId);
@@ -137,7 +133,7 @@ export const updateBeforeStart = mutation({
     await ctx.db.patch("interviews", interview._id, {
       projectName: assertLength("Project name", args.projectName, 160),
       clientLanguage: args.clientLanguage,
-      model: args.interviewModel,
+      model: "gpt-5.6-terra",
       instructions: assertLength(
         "Interview Instructions",
         args.instructions,

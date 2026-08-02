@@ -14,7 +14,7 @@ describe("WelcomeStep", () => {
             email: "creator@example.test",
           },
           clientLanguage: "en",
-          modelFamily: "DeepSeek V4 Flash",
+          modelFamily: "GPT-5.6 Terra",
           temporaryConceptBatchRetriesEnabled: false,
           step: "interview",
           started: false,
@@ -24,7 +24,7 @@ describe("WelcomeStep", () => {
       />,
     );
 
-    expect(screen.getByText("DeepSeek V4 Flash")).toBeInTheDocument();
+    expect(screen.getByText("GPT-5.6 Terra")).toBeInTheDocument();
     expect(
       screen.getByText(
         "External providers are used for AI functionality.",

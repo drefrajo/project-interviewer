@@ -10,6 +10,7 @@ import {
   TextArea,
   TextInput,
 } from "../shared/form-controls";
+import { ImageLightbox } from "../shared/image-lightbox";
 import { CLIENT_COPY } from "./client-copy";
 
 const isHttpUrl = (value: string) => {
@@ -145,7 +146,7 @@ export const ConceptsStep = ({
               <ConceptCardSkeleton key={index} />
             ))
           : concepts.map((concept) => (
-              <label
+              <article
                 className={`overflow-hidden rounded-xl border-2 bg-surface ${
                   selected === concept.id && mode === "concept"
                     ? "border-forest"
@@ -154,9 +155,10 @@ export const ConceptsStep = ({
                 key={concept.id}
               >
                 {concept.imageUrl ? (
-                  <img
+                  <ImageLightbox
                     alt={`${concept.name}, rough visual direction`}
-                    className="aspect-[3/2] w-full object-cover"
+                    closeLabel={text.closeImage}
+                    openLabel={text.viewImage}
                     src={concept.imageUrl}
                   />
                 ) : pending && concept.state !== "failed" ? (
@@ -172,7 +174,7 @@ export const ConceptsStep = ({
                         : "Concept is being generated…"}
                   </div>
                 )}
-                <span className="block p-4">
+                <label className="block p-4">
                   <span className="flex items-start gap-3">
                     <input
                       checked={selected === concept.id && mode === "concept"}
@@ -196,8 +198,8 @@ export const ConceptsStep = ({
                       ) : null}
                     </span>
                   </span>
-                </span>
-              </label>
+                </label>
+              </article>
             ))}
         {pending && concepts.length === 3
           ? Array.from({ length: 3 }, (_, index) => (

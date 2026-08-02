@@ -116,7 +116,7 @@ export const translate = action({
     );
     const request = buildOpenRouterTextRequest({
       apiKey: env.OPENROUTER_API_KEY,
-      model: "deepseek-v4-flash",
+      model: "gpt-5.6-terra",
       messages: [
         {
           role: "system",

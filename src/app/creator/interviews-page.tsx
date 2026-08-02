@@ -67,7 +67,7 @@ export const InterviewsPage = () => {
               <p className="mt-2 text-sm text-muted">
                 {interview.status === "in_progress"
                   ? text.interviews.currentStep(text.interviews.step[interview.step])
-                  : `${text.interviews.language[interview.clientLanguage]} · ${interview.interviewModel === "gpt-5.6-terra" ? "GPT-5.6 Terra" : "DeepSeek V4 Flash"}`}
+                  : text.interviews.language[interview.clientLanguage]}
               </p>
               <span className="mt-auto inline-flex items-center gap-1 pt-6 font-bold text-forest">
                 {text.interviews.open} <ArrowRight aria-hidden="true" size={16} />

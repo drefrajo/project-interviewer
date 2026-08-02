@@ -100,16 +100,14 @@ describe("Create Interview template language", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("defaults to DeepSeek V4 Flash without routing warnings", () => {
+  it("does not expose an interview model selector", () => {
     renderForm();
 
     expect(
-      screen.getByRole("combobox", { name: "Interview Model" }),
-    ).toHaveValue("deepseek-v4-flash");
-    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
-    expect(
-      screen.queryByText(/privacy-compliant DeepSeek route/i),
+      screen.queryByRole("combobox", { name: "Interview Model" }),
     ).not.toBeInTheDocument();
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+    expect(screen.queryByText(/privacy routing/i)).not.toBeInTheDocument();
     expect(
       screen.queryByText(/German-language support is less certain/i),
     ).not.toBeInTheDocument();

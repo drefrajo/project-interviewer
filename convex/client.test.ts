@@ -36,7 +36,7 @@ describe("Client Visual Concept controls", () => {
         linkVersion: 1,
         projectName: "Portfolio",
         clientLanguage: "en",
-        model: "deepseek-v4-flash",
+        model: "gpt-5.6-terra",
         instructions: "Interview the Client.",
         createdAt: 1,
         updatedAt: 1,
@@ -150,7 +150,7 @@ describe("Client Visual Concept controls", () => {
         linkVersion: 1,
         projectName: "Portfolio",
         clientLanguage: "en",
-        model: "deepseek-v4-flash",
+        model: "gpt-5.6-terra",
         instructions: "Interview the Client.",
         createdAt: 1,
         updatedAt: 1,
@@ -239,7 +239,7 @@ describe("Client Visual Concept controls", () => {
     );
   });
 
-  it("rejects the disabled second-batch retry mutation", async () => {
+  it("retries only the second concept batch", async () => {
     const t = convexTest(schema, modules);
     registerRateLimiter(t);
     const token = "temporary-retry-more-concepts-token";
@@ -281,12 +281,34 @@ describe("Client Visual Concept controls", () => {
       });
     });
 
-    await expect(
-      t.mutation(api.client.retryAdditionalConcepts, { token }),
-    ).rejects.toThrow("Temporary Visual Concept batch retries are disabled.");
+    await t.mutation(api.client.retryAdditionalConcepts, { token });
+
+    const interview = await t.run(async (ctx) =>
+      await ctx.db
+        .query("interviews")
+        .withIndex("by_linkHash", (q) => q.eq("linkHash", linkHash))
+        .unique(),
+    );
+    expect(interview).toMatchObject({
+      concepts: [
+        { id: "concept_1", status: "ready" },
+        { id: "concept_2", status: "ready" },
+        { id: "concept_3", status: "ready" },
+        { id: "concept_4", status: "pending" },
+        { id: "concept_5", status: "pending" },
+        { id: "concept_6", status: "pending" },
+      ],
+      operation: {
+        kind: "concept_generation",
+        status: "pending",
+        imageModel: "gpt-image-2-low",
+        additionalConcepts: true,
+        regeneratePrompts: true,
+      },
+    });
   });
 
-  it("rejects the disabled first-batch retry mutation", async () => {
+  it("removes the second batch and retries only the first concept batch", async () => {
     const t = convexTest(schema, modules);
     registerRateLimiter(t);
     const token = "temporary-retry-first-concepts-token";
@@ -309,7 +331,7 @@ describe("Client Visual Concept controls", () => {
         linkVersion: 1,
         projectName: "Portfolio",
         clientLanguage: "en",
-        model: "deepseek-v4-flash",
+        model: "gpt-5.6-terra",
         instructions: "Interview the Client.",
         createdAt: 1,
         updatedAt: 1,
@@ -328,9 +350,23 @@ describe("Client Visual Concept controls", () => {
       });
     });
 
-    await expect(
-      t.mutation(api.client.retryFirstConcepts, { token }),
-    ).rejects.toThrow("Temporary Visual Concept batch retries are disabled.");
+    await t.mutation(api.client.retryFirstConcepts, { token });
+
+    const interview = await t.run(async (ctx) =>
+      await ctx.db
+        .query("interviews")
+        .withIndex("by_linkHash", (q) => q.eq("linkHash", linkHash))
+        .unique(),
+    );
+    expect(interview).toMatchObject({
+      concepts: [],
+      operation: {
+        kind: "concept_generation",
+        status: "pending",
+        imageModel: "gpt-image-2-low",
+        regeneratePrompts: true,
+      },
+    });
   });
 
   it("requires a note when submitting inspiration links", async () => {

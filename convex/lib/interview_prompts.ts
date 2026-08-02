@@ -169,14 +169,28 @@ open decision. Do not invent brand or content traits merely to differentiate a c
 Require strong pairwise contrast: every pair must differ on at least three of these
 interface axes: palette and contrast, typography, spatial density, composition,
 media framing and scale, navigation and controls, and motion emphasis. Do not return
-three versions of the same theme, type family, and image grid. ${
+three versions of the same theme, type family, and image grid.
+
+Macro-layout contrast is mandatory in addition to those visual differences. The
+three concepts must use different page skeletons, with every pair differing on at
+least two of: primary navigation placement or model; above-the-fold information
+flow and content order; dominant media geometry and scale; client-gallery entry
+placement or presentation; contact or conversion integration; and the division of
+the viewport into regions or sequences. Palette, typography, spacing, and decoration
+do not count as macro-layout differences. A required interaction model or content
+mapping fixes what elements mean and do, not where every element must sit, unless
+the Client explicitly fixed the layout itself.
+
+${
       args.existingConcepts?.length
         ? `This is coverage expansion after the Client rejected the previous set,
 not a refinement round. Silently map the occupied territory, find plausible
 unoccupied territory, and identify visual assumptions shared by most existing
 concepts. Each new concept must challenge a
 different shared visual assumption, differ from every existing concept on at least
-three interface axes, and make a different dominant design bet.
+three interface axes, and make a different dominant design bet. Each new page
+skeleton must also differ from every existing page skeleton on at least two
+macro-layout dimensions.
 
 Together the new concepts must cover three areas: art direction and typography;
 spatial composition and media scale; navigation and interaction rhythm. No two new
@@ -187,14 +201,15 @@ requirement. If a required constraint closes one area, use the next least-explor
 interface axis. Do not merely rename, recolor, invert, or lightly rearrange an
 existing direction, and do not introduce arbitrary colors or brand traits for novelty.`
         : `Assign these roles in order:
-1. faithful refinement — the strongest polished expression nearest the confirmed tone;
-2. atmospheric counterpoint — a plausible alternate interface mood through palette, type, and density;
-3. structural counterpoint — a bold but usable reinterpretation of composition and feed rhythm.`
+1. faithful baseline — the strongest polished page skeleton nearest the confirmed direction;
+2. spatial counterpoint — a different viewport partition, content sequence, and media scale;
+3. navigational counterpoint — a different navigation model, gallery entry, conversion integration, and browsing rhythm.`
     }
 If an explicit Client constraint closes one axis, create contrast on the others.
 
-Each image prompt must be self-contained: explicitly repeat the defining interaction
-model, the content mappings, and the recognizable UI elements that must be visible.
+Each image prompt must be self-contained. State its macro-layout, viewport regions,
+and content sequence before visual styling, then explicitly repeat the defining
+interaction model, content mappings, and recognizable UI elements that must be visible.
 Describe a straight-on website UI/UX concept, not a device mockup, mood board,
 poster, or advertising image. Show a polished desktop viewport with the defining
 interface recognizable above the fold and enough lower-page context to communicate
@@ -309,9 +324,9 @@ export const buildVisualConceptImagePrompt = (args: {
 }) =>
   {
     const roles = [
-      "faithful refinement: stay nearest the confirmed tone, but make every visual choice decisive and coherent",
-      "atmospheric counterpoint: create a plausible alternate interface mood through surfaces, typography, controls, and density while keeping the supplied content faithful",
-      "structural counterpoint: use a bold, usable composition unlike a conventional centered square grid, while preserving the defining interaction and content mappings",
+      "faithful baseline: use the polished page skeleton nearest the confirmed direction, while making its hierarchy decisive and coherent",
+      "spatial counterpoint: change the viewport partition, above-the-fold information flow, content sequence, and media scale while preserving meaning and behavior",
+      "navigational counterpoint: change navigation placement and model, gallery entry, conversion integration, and browsing rhythm while preserving meaning and behavior",
     ];
     const role =
       args.conceptIndex <= roles.length
@@ -342,6 +357,13 @@ Follow the Diversity Role. This concept's Visual Direction overrides visual-styl
 recommendations in the Project Document. The Project Document remains authoritative
 for facts, content, explicit Client constraints, interaction models, and content
 mappings. Do not drift back to the safest shared theme or grid.
+
+LAYOUT DIVERSITY:
+A recognizable interaction model is not a fixed page skeleton. Preserve what each
+element means and does, while varying its placement, hierarchy, sequence, scale,
+and relationship to other regions according to this concept. Do not default to the
+same header, horizontal item strip, feed grid, and lower contact block. Make this
+concept's macro-layout recognizable before palette, typography, or decoration.
 
 CONTENT FIDELITY:
 Apply visual variation to the interface around the content: surfaces, typography,

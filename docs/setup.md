@@ -6,7 +6,7 @@ Project Interviewer uses:
 
 - Convex for application data, generated-image storage, scheduled operations, Agent transcripts, rate limiting, and Better Auth integration;
 - Google and GitHub OAuth for Creator authentication;
-- OpenRouter for GPT-5.6 Terra, DeepSeek V4 Flash, and GPT Image 2;
+- OpenRouter for GPT-5.6 Terra and GPT Image 2;
 - Cloudflare Email Service for Project Submission notifications; and
 - Cloudflare static asset hosting for the React/Vite SPA.
 
@@ -72,15 +72,12 @@ The first provider used for a verified email owns that Creator account. An attem
 
 ## OpenRouter
 
-Configure only these Interview Models:
+Configure GPT-5.6 Terra as the sole Interview Model. Interactive Interview
+turns use low reasoning effort; planning, documents, revisions, concept
+planning, and Template Translation use medium effort.
 
-- GPT-5.6 Terra with medium reasoning;
-- DeepSeek V4 Flash with thinking at high effort; and
-- DeepSeek V4 Flash without thinking for Creator-triggered Template Translation.
-
-GPT Interviews use GPT Image 2 for Visual Concepts. DeepSeek Interviews use
-Nano Banana 2 (`google/gemini-3.1-flash-image`). Both render the three Visual
-Concepts at the configured 3:2 aspect ratio.
+All Interviews use GPT Image 2 at low quality for Visual Concepts. It renders
+the three Visual Concepts at the configured 3:2 aspect ratio.
 
 Every request denies data collection, disables zero-data-retention routing, and disables model/provider fallback. The OpenRouter account and guardrails must not enforce ZDR, since request-level `zdr: false` cannot override those higher-level restrictions. A request fails when no route matching the remaining policy is available. OpenRouter's account-level spend limit is authoritative; the application does not maintain a second spend counter. Per-Interview-Link rate limits remain active to prevent abuse.
 

@@ -12,7 +12,7 @@ describe("parseConceptSeeds", () => {
     expect(parseConceptSeeds(JSON.stringify({ concepts }))).toHaveLength(3);
   });
 
-  it("parses three concepts from a fenced DeepSeek response", () => {
+  it("parses three concepts from a fenced provider response", () => {
     const response = `\`\`\`json
 ${JSON.stringify({ concepts }, null, 2)}
 \`\`\``;

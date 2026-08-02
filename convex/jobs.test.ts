@@ -29,7 +29,7 @@ const insertRunningInterview = async (
       linkVersion: 1,
       projectName: "Portfolio",
       clientLanguage: "en",
-      model: "deepseek-v4-flash",
+      model: "gpt-5.6-terra",
       instructions: "Interview the Client.",
       createdAt: 1,
       updatedAt: 1,

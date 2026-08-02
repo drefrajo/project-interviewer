@@ -77,7 +77,7 @@ export const interviewDto = async (
   _id: interview._id,
   projectName: interview.projectName,
   clientLanguage: interview.clientLanguage,
-  interviewModel: interview.model,
+  interviewModel: "gpt-5.6-terra" as const,
   instructions: interview.instructions,
   configurationFrozen: Boolean(interview.frozenAt),
   step: interview.step,

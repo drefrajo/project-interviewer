@@ -6,7 +6,6 @@ import {
   interviewApi,
   interviewIdFrom,
   type ClientLanguage,
-  type InterviewModel,
 } from "../../infrastructure/interview-api";
 import {
   builtInInterviewTemplateForLanguage,
@@ -48,8 +47,6 @@ export const InterviewForm = () => {
   const [projectName, setProjectName] = useState("");
   const [clientLanguage, setClientLanguage] =
     useState<ClientLanguage>("en");
-  const [interviewModel, setInterviewModel] =
-    useState<InterviewModel>("deepseek-v4-flash");
   const [instructions, setInstructions] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [templateBaseline, setTemplateBaseline] = useState("");
@@ -63,7 +60,6 @@ export const InterviewForm = () => {
     initialized.current = true;
     setProjectName(interview.projectName);
     setClientLanguage(interview.clientLanguage);
-    setInterviewModel(interview.interviewModel);
     setInstructions(interview.instructions);
     setTemplateBaseline(interview.instructions);
   }, [editing, interview]);
@@ -182,7 +178,6 @@ export const InterviewForm = () => {
     const input = {
       projectName: projectName.trim(),
       clientLanguage,
-      interviewModel,
       instructions: instructions.trim(),
     };
     try {
@@ -245,7 +240,7 @@ export const InterviewForm = () => {
             value={projectName}
           />
         </Field>
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div className="max-w-md">
           <Field label={text.form.clientLanguage}>
             <Select
               disabled={translating}
@@ -258,18 +253,6 @@ export const InterviewForm = () => {
             >
               <option value="en">{text.interviews.language.en}</option>
               <option value="de">{text.interviews.language.de}</option>
-            </Select>
-          </Field>
-          <Field label={text.form.interviewModel}>
-            <Select
-              disabled={translating}
-              onChange={(event) =>
-                setInterviewModel(event.target.value as InterviewModel)
-              }
-              value={interviewModel}
-            >
-              <option value="deepseek-v4-flash">DeepSeek V4 Flash</option>
-              <option value="gpt-5.6-terra">GPT-5.6 Terra</option>
             </Select>
           </Field>
         </div>

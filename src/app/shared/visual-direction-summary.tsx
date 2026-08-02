@@ -3,6 +3,7 @@ import type {
   VisualConcept,
   VisualDirection,
 } from "../../infrastructure/interview-api";
+import { ImageLightbox } from "./image-lightbox";
 
 const copy = {
   en: {
@@ -11,6 +12,8 @@ const copy = {
     inspiration: "Selected inspiration",
     note: "Additional note",
     rough: "rough visual direction",
+    viewImage: "View larger",
+    closeImage: "Close image",
   },
   de: {
     selected: "Ausgewähltes Konzept",
@@ -18,6 +21,8 @@ const copy = {
     inspiration: "Ausgewählte Inspiration",
     note: "Zusätzliche Notiz",
     rough: "grobe visuelle Richtung",
+    viewImage: "Bild vergrößern",
+    closeImage: "Bild schließen",
   },
 } satisfies Record<ClientLanguage, Record<string, string>>;
 
@@ -67,9 +72,10 @@ export const VisualDirectionSummary = ({
     return (
       <article className="mt-4 grid overflow-hidden rounded-xl border border-line bg-surface sm:grid-cols-[minmax(14rem,20rem)_1fr]">
         {concept.imageUrl ? (
-          <img
+          <ImageLightbox
             alt={`${concept.name}, ${text.rough}`}
-            className="aspect-[3/2] h-full w-full object-cover"
+            closeLabel={text.closeImage}
+            openLabel={text.viewImage}
             src={concept.imageUrl}
           />
         ) : (
