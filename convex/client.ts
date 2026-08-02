@@ -17,6 +17,12 @@ import {
   MAX_VISUAL_NOTE_LENGTH,
 } from "./lib/domain";
 import { isMalformedStructuredInterviewOutput } from "./lib/interview_output";
+import {
+  consumeReservedInterviewPass,
+  interviewPassState,
+  isInterviewPassBacked,
+  reservationKeyFor,
+} from "./lib/pass_accounting";
 import { visualDirection } from "./schema";
 import { internalRefs } from "./internal_refs";
 
@@ -98,10 +104,31 @@ export const getByLink = query({
     const { interview } = access;
     const creator = await ctx.db.get("creatorProfiles", interview.creatorId);
     if (!creator) throw new Error("Interview creator not found.");
+    const reservationRequired = !isInterviewPassBacked(interview);
+    if (reservationRequired) {
+      return {
+        interviewId: interview._id,
+        projectName: interview.projectName,
+        creator: {
+          displayName: creator.displayName,
+          email: creator.email,
+        },
+        clientLanguage: interview.clientLanguage,
+        modelFamily: "GPT-5.6 Terra",
+        temporaryConceptBatchRetriesEnabled:
+          TEMPORARY_CONCEPT_BATCH_RETRIES_ENABLED,
+        step: "interview" as const,
+        started: false,
+        reservationRequired: true,
+        passState: "unreserved" as const,
+      };
+    }
     return {
       ...(await interviewDto(interview, (id) => ctx.storage.getUrl(id))),
       interviewId: interview._id,
       started: Boolean(interview.startedAt ?? interview.frozenAt),
+      reservationRequired: false,
+      passState: interviewPassState(interview),
       modelFamily: "GPT-5.6 Terra",
       creator: {
         displayName: creator.displayName,
@@ -121,20 +148,31 @@ export const start = mutation({
   args: { token: v.string() },
   handler: async (ctx, args) => {
     const { interview, linkHash } = await byToken(ctx, args.token);
+    if (!isInterviewPassBacked(interview)) {
+      throw new Error("This Interview Link is waiting for the Creator to reserve a pass.");
+    }
     if (interview.submission) throw new Error("The Interview is read-only.");
     if (interview.operation || interview.startedAt) return null;
     await rateLimiter.limit(ctx, "billableAi", {
       key: linkHash,
       throws: true,
     });
+    await consumeReservedInterviewPass(ctx, {
+      creatorId: interview.creatorId,
+      interviewId: interview._id,
+      reservationKey: reservationKeyFor(interview),
+    });
+    const now = Date.now();
     await ctx.db.patch("interviews", interview._id, {
-      startedAt: Date.now(),
+      startedAt: now,
+      passState: "consumed",
+      passConsumedAt: now,
       operation: {
         kind: "interview_response",
         status: "pending",
         attempt: 0,
       },
-      updatedAt: Date.now(),
+      updatedAt: now,
     });
     await ctx.scheduler.runAfter(0, internalRefs.jobs.runPending, {
       interviewId: interview._id,
@@ -147,6 +185,9 @@ export const sendMessage = mutation({
   args: { token: v.string(), content: v.string() },
   handler: async (ctx, args) => {
     const { interview, linkHash } = await byToken(ctx, args.token);
+    if (interviewPassState(interview) !== "consumed") {
+      throw new Error("Start the Interview before sending a Client message.");
+    }
     if (interview.submission || interview.step !== "interview") {
       throw new Error("The Interview is read-only.");
     }
@@ -173,6 +214,8 @@ export const sendMessage = mutation({
     await ctx.db.patch("interviews", interview._id, {
       startedAt: interview.startedAt ?? now,
       frozenAt: interview.frozenAt ?? now,
+      passState: "consumed",
+      passConsumedAt: interview.passConsumedAt ?? now,
       clientMessageCount: interview.clientMessageCount + 1,
       suggestedReplies: [],
       operation: {
@@ -476,6 +519,9 @@ export const retryMalformedResponse = mutation({
   args: { token: v.string() },
   handler: async (ctx, args) => {
     const { interview, linkHash } = await byToken(ctx, args.token);
+    if (!isInterviewPassBacked(interview)) {
+      throw new Error("This Interview Link is waiting for the Creator to reserve a pass.");
+    }
     if (
       interview.submission ||
       interview.step !== "interview" ||
@@ -597,6 +643,9 @@ export const listTranscript = query({
   },
   handler: async (ctx, args) => {
     const { interview } = await byToken(ctx, args.token);
+    if (!isInterviewPassBacked(interview)) {
+      throw new Error("This Interview Link is waiting for the Creator to reserve a pass.");
+    }
     return await listMessages(ctx, agentComponent, {
       threadId: interview.agentThreadId,
       paginationOpts: args.paginationOpts,

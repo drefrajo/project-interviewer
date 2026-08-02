@@ -65,12 +65,17 @@ export const InterviewDetailPage = () => {
   });
   const getDownload = useAction(interviewApi.downloads.getManifest);
   const rotate = useMutation(interviewApi.interviews.rotateLink);
+  const reserveLink = useMutation(interviewApi.interviews.reserveLink);
+  const deactivate = useMutation(interviewApi.interviews.deactivate);
   const retry = useMutation(interviewApi.interviews.retry);
   const remove = useMutation(interviewApi.interviews.remove);
+  const balance = useQuery(interviewApi.billing.getBalance, {});
   const [rotatedUrl, setRotatedUrl] = useState("");
   const [copied, setCopied] = useState(false);
   const [instructionsCopied, setInstructionsCopied] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmReservation, setConfirmReservation] = useState(false);
+  const [confirmDeactivation, setConfirmDeactivation] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -83,6 +88,7 @@ export const InterviewDetailPage = () => {
         : ""),
     [interview, rotatedUrl],
   );
+  const passState = interview?.passState ?? "unreserved";
 
   if (interview === undefined) {
     return <DetailLoading label={text.form.formLoading} />;
@@ -144,6 +150,54 @@ export const InterviewDetailPage = () => {
           {error}
         </p>
       ) : null}
+      <section className="mt-7 rounded-xl border border-forest/30 bg-soft p-5">
+        <h2 className="font-display text-2xl font-extrabold">
+          {passState === "unreserved"
+            ? text.detail.reservationTitle
+            : text.detail.reservationReady}
+        </h2>
+        <p className="mt-2 max-w-3xl leading-7 text-muted">
+          {passState === "unreserved"
+            ? text.detail.reservationDescription
+            : passState === "consumed"
+              ? text.detail.passConsumed
+              : text.detail.reservationReady}
+        </p>
+        {passState === "unreserved" ? (
+          balance === undefined ? (
+            <p className="mt-4 text-sm font-bold text-muted" role="status">
+              {text.detail.checkingBalance}
+            </p>
+          ) : balance && balance.availablePasses > 0 ? (
+            <button
+              className={`${primaryButton} mt-4`}
+              disabled={busy}
+              onClick={() => setConfirmReservation(true)}
+              type="button"
+            >
+              {text.detail.reserveAndCopyLink}
+            </button>
+          ) : (
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <p className="text-sm font-bold text-error-text">
+                {text.detail.insufficientBalance}
+              </p>
+              <Link className={secondaryButton} to="/billing">
+                {text.detail.buyPasses}
+              </Link>
+            </div>
+          )
+        ) : passState === "reserved" ? (
+          <button
+            className={`${secondaryButton} mt-4`}
+            disabled={busy}
+            onClick={() => setConfirmDeactivation(true)}
+            type="button"
+          >
+            {text.detail.deactivateInterview}
+          </button>
+        ) : null}
+      </section>
       <section className="mt-7 rounded-xl border border-line bg-surface p-5">
         <h2 className="font-display text-2xl font-extrabold">
           {text.detail.interviewLink}
@@ -174,7 +228,7 @@ export const InterviewDetailPage = () => {
           </button>
           <button
             className={secondaryButton}
-            disabled={busy}
+            disabled={busy || !interviewUrl}
             onClick={() =>
               void perform(async () => {
                 if (
@@ -441,6 +495,48 @@ export const InterviewDetailPage = () => {
         <p>
           {text.detail.deleteDescription}
         </p>
+      </ConfirmDialog>
+      <ConfirmDialog
+        cancelLabel={text.common.cancel}
+        confirmLabel={text.detail.reserveAndCopyLink}
+        onCancel={() => setConfirmReservation(false)}
+        onConfirm={() =>
+          void perform(async () => {
+            const result = await reserveLink({ interviewId });
+            const url = linkFrom(result);
+            if (url) {
+              setRotatedUrl(url);
+              await navigator.clipboard.writeText(url);
+              setCopied(true);
+            }
+            setConfirmReservation(false);
+          })
+        }
+        open={confirmReservation}
+        title={text.detail.reservationConfirmTitle}
+      >
+        <p>
+          {text.detail.reservationConfirmDescription(
+            balance?.availablePasses ?? 0,
+          )}
+        </p>
+      </ConfirmDialog>
+      <ConfirmDialog
+        cancelLabel={text.common.cancel}
+        confirmLabel={text.detail.deactivateInterview}
+        onCancel={() => setConfirmDeactivation(false)}
+        onConfirm={() =>
+          void perform(async () => {
+            await deactivate({ interviewId });
+            setRotatedUrl("");
+            setCopied(false);
+            setConfirmDeactivation(false);
+          })
+        }
+        open={confirmDeactivation}
+        title={text.detail.confirmDeactivate}
+      >
+        <p>{text.detail.deactivateDescription}</p>
       </ConfirmDialog>
     </main>
   );

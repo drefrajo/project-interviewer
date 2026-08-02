@@ -35,45 +35,64 @@ export const InterviewsPage = () => {
         </p>
       ) : interviews.length ? (
         <section className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {interviews.map((interview) => (
-            <Link
-              className="group flex min-h-56 flex-col rounded-xl border border-line bg-surface p-5 text-ink no-underline transition hover:-translate-y-0.5 hover:shadow-lg"
-              key={interview._id}
-              to={`/interviews/${interview._id}`}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <span
-                  className={`rounded-full px-2.5 py-1 text-xs font-extrabold ${
-                    interview.status === "needs_attention"
-                      ? "bg-error-surface text-error-text"
-                      : interview.status === "submitted"
-                        ? "bg-lime text-forest dark:text-forest-strong"
-                        : "bg-soft text-forest"
-                  }`}
-                >
-                  {text.interviews.status[interview.status]}
+          {interviews.map((interview) => {
+            const needsReservation =
+              interview.status === "not_started" &&
+              interview.passState === "unreserved";
+            const isReady =
+              interview.status === "not_started" &&
+              interview.passState === "reserved";
+            const statusLabel = needsReservation
+              ? text.interviews.reservationRequired
+              : interview.status === "not_started"
+                ? text.interviews.ready
+                : text.interviews.status[interview.status];
+            return (
+              <Link
+                className="group flex min-h-56 flex-col rounded-xl border border-line bg-surface p-5 text-ink no-underline transition hover:-translate-y-0.5 hover:shadow-lg"
+                key={interview._id}
+                to={`/interviews/${interview._id}`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-xs font-extrabold ${
+                      needsReservation
+                        ? "bg-error-surface text-error-text"
+                        : interview.status === "needs_attention"
+                          ? "bg-error-surface text-error-text"
+                          : interview.status === "submitted"
+                            ? "bg-lime text-forest dark:text-forest-strong"
+                            : isReady
+                              ? "bg-forest text-white dark:bg-forest-strong"
+                            : "bg-soft text-forest"
+                    }`}
+                  >
+                    {statusLabel}
+                  </span>
+                  {interview.updatedAt ? (
+                    <time className="text-xs text-muted">
+                      {new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en", {
+                        dateStyle: "medium",
+                      }).format(interview.updatedAt)}
+                    </time>
+                  ) : null}
+                </div>
+                <h2 className="mt-8 font-display text-2xl font-extrabold">
+                  {interview.projectName}
+                </h2>
+                <p className="mt-2 text-sm text-muted">
+                  {interview.passState === "unreserved"
+                    ? text.interviews.reservationRequired
+                    : interview.status === "in_progress"
+                      ? text.interviews.currentStep(text.interviews.step[interview.step])
+                      : text.interviews.language[interview.clientLanguage]}
+                </p>
+                <span className="mt-auto inline-flex items-center gap-1 pt-6 font-bold text-forest">
+                  {text.interviews.open} <ArrowRight aria-hidden="true" size={16} />
                 </span>
-                {interview.updatedAt ? (
-                  <time className="text-xs text-muted">
-                    {new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en", {
-                      dateStyle: "medium",
-                    }).format(interview.updatedAt)}
-                  </time>
-                ) : null}
-              </div>
-              <h2 className="mt-8 font-display text-2xl font-extrabold">
-                {interview.projectName}
-              </h2>
-              <p className="mt-2 text-sm text-muted">
-                {interview.status === "in_progress"
-                  ? text.interviews.currentStep(text.interviews.step[interview.step])
-                  : text.interviews.language[interview.clientLanguage]}
-              </p>
-              <span className="mt-auto inline-flex items-center gap-1 pt-6 font-bold text-forest">
-                {text.interviews.open} <ArrowRight aria-hidden="true" size={16} />
-              </span>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </section>
       ) : (
         <section className="mt-10 rounded-xl border border-dashed border-line bg-surface p-8 text-center">

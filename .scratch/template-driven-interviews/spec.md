@@ -126,14 +126,28 @@ The application uses React, Convex, Better Auth, the Convex Agent component, the
 103. As a product operator, I want temporary AI failures retried twice before requiring human action, so that ordinary provider instability is handled without creating duplicate messages or artifacts.
 104. As a product operator, I want concurrent submissions resolved by first-write-wins behavior, so that duplicate tabs cannot corrupt Interview state.
 105. As a maintainer, I want README, setup, deployment, architecture, and domain documentation to describe only this product, so that there is one coherent source of truth.
+106. As a Creator, I want one non-expiring Introductory Pass, so that every Creator can share one Interview before buying a pack.
+107. As a Creator, I want to buy one Interview Pass for €29 or five Interview Passes for €99, plus applicable taxes, so that I can pay once for complete Interviews without subscriptions or metering.
+108. As a Creator, I want creating and editing an Interview to remain free, so that I can prepare the configuration before sharing it.
+109. As a Creator, I want the first link copy/share action to reserve exactly one pass, so that the link can never be shared without paid backing.
+110. As a Client, I want welcome-page previews and crawlers to leave the pass reserved, so that only deliberate Start begins the paid workflow.
+111. As a Client, I want deliberate Start to consume the reservation exactly once before AI work, so that duplicate actions cannot double-spend.
+112. As a Creator, I want link rotation and later copies to reuse the same reservation, so that link security is independent of monetization.
+113. As a Creator, I want a pass returned when I delete or deactivate an unstarted Interview, so that an unused reservation is not lost.
+114. As a Creator, I want my purchased passes, refunds, disputes, reservations, starts, and reversals explained by an append-only Pass Ledger, so that billing access is auditable and reconcilable.
+115. As a product operator, I want Stripe fulfillment to be webhook-driven and idempotent, so that browser navigation, delayed payment methods, retries, and reordered events cannot grant passes incorrectly.
 
 ## Implementation Decisions
 
 - Adopt the canonical vocabulary in the domain glossary: Creator, Client, Interview Policy, Interview Template, Built-in Interview Template, Private Interview Template, Interview Instructions, Client Language, Interview Model, Template Translation, Interview, Interview Link, Interview Transcript, Suggested Reply, Project Document, Document Review, Visual Concept, Visual Direction, and Project Submission.
-- Use three application-owned Convex tables:
+- Adopt the monetization vocabulary in the domain glossary: Interview Pass, Pass Balance, Introductory Pass, Pass Purchase, Pass Reservation, Interview Start, and Pass Ledger.
+- Use application-owned Convex tables for:
   - `creatorProfiles` owns the Creator's auth identity reference and business/display name.
   - `interviewTemplates` owns Built-in and Creator-private template content, source language, ownership, and timestamps.
   - `interviews` owns the immutable configuration snapshot after start, Interview Link capability state, current product step, current Project Document, up to six bounded Visual Concept records across at most two batches, Visual Direction, Project Submission state, aggregate usage, and the current asynchronous operation/error state.
+  - pass accounts and an append-only Pass Ledger own cached balances and every grant, debit, reversal, refund, dispute adjustment, and operator adjustment.
+  - Pass Purchases own the internal pending/confirmed state and the Stripe identifiers required for reconciliation.
+  - Stripe event records deduplicate signed webhook deliveries without storing raw payloads.
 - Store each Interview Transcript in one Convex Agent component thread rather than duplicating messages in application tables.
 - Store generated Visual Concept images in Convex storage and expose them only through authorized application reads.
 - Use Better Auth with Google and GitHub OAuth. Do not support passkeys or account linking. Associate an account with the provider used on first registration; when the other provider presents the same verified email, show which provider owns the account instead of linking or creating a duplicate.
@@ -141,13 +155,18 @@ The application uses React, Convex, Better Auth, the Convex Agent component, the
 - Build a small authorized Convex API around Creator-owned Interview and template operations, Client bearer-link operations, Agent messages, Project Document review, Visual Direction, Project Submission, downloads, and deletion.
 - Have React call the small Convex API directly. Use one Convex-backed browser runtime in every environment and no parallel local application mode.
 - Keep only pure supporting modules where they deepen a real boundary: prompt construction and validation, status projection, safe Markdown rendering, and Project Submission ZIP assembly.
+- Keep Stripe calls behind a deep provider seam. Checkout accepts only a server-defined pack identifier, allowlisted Price IDs map to server-owned pass counts, and the configured sandbox/live mode is checked against Stripe before mutations.
+- Use Stripe Managed Payments hosted Checkout with `mode=payment`, `managed_payments.enabled=true`, API version `2025-03-31.basil` or later, EUR, and the provisional eligible business-use cloud AIaaS tax code `txcd_10105002`. Treat the classification as pending owner/Stripe confirmation for live mode.
+- Grant one Introductory Pass idempotently to every Creator, including existing Creators. The first Creator link copy/share reserves exactly one pass atomically; deliberate Client Start records the permanent consumption boundary before AI work; deletion or deactivation before Start releases the reservation once.
+- Use one-time packs only: 1 Interview Pass for €29 and 5 Interview Passes for €99. Do not add subscriptions, usage/token billing, per-model pricing, a 20-pass tier, or paid/custom Radar rules.
 - Use deployment configuration—not product UI—for registration allowlists, built-in templates, supported languages, model routing/privacy requirements, provider credentials, and spend ceilings.
 - Make the Creator application a simple tabbed interface with Interviews, Templates, and Settings. Settings contains only the editable business/display name and read-only verified email identity.
+- Add a compact Creator Pass Balance and a focused purchase page with one-pass and five-pass actions, plus applicable taxes copy, pending/confirmed/failure/cancellation feedback, and English/German localization. Do not expose Stripe IDs or ledger details.
 - Limit Interview creation to project name, explicit Client Language, optional template, and non-empty Interview Instructions.
 - Make selecting a template copy its content into Interview Instructions. Replacing non-pristine instructions requires confirmation. Later template changes never affect an existing Interview.
 - Ship the three agreed Built-in Interview Templates with separately maintained English and German text. Treat Private Interview Templates as single-source-language content owned by one Creator, with no sharing, tags, versions, marketplace, or automatic mutation.
 - Make Template Translation an explicit action over the current Interview Instructions. It uses GPT-5.6 Terra with medium reasoning. Disable language and continuation controls while it runs. If the field differs from the selected template or a prior translation, warn that the current field is the translation source. Translation changes only the field; saving it as a template requires a separate action.
-- Create and activate an unguessable Interview Link immediately with the Interview. The link is a bearer capability for start, resume, and read-only final viewing. Regeneration invalidates the prior capability. Links do not expire automatically.
+- Create an unguessable Interview Link capability with the Interview, but expose it for copying/sharing only after the first atomic pass reservation. The link is a bearer capability for welcome, start, resume, and read-only final viewing while reserved or consumed. Regeneration invalidates the prior capability and transfers the reservation. Links do not expire automatically.
 - Freeze project name, Client Language, and Interview Instructions atomically with the first accepted Client message.
 - Present Not started, In progress with a secondary step, Submitted, and Needs attention as computed dashboard labels rather than an additional business state machine.
 - Use four linear Client steps: Interview, Review, Concepts, and Submitted. The server validates every transition; the UI does not permit step jumping.
@@ -177,6 +196,7 @@ The application uses React, Convex, Better Auth, the Convex Agent component, the
 - Host the static React/Vite application on Cloudflare, use Convex for application/backend/storage/Agent/auth-component integration, OpenRouter for model access, and Cloudflare Email Service for notifications. Do not add a custom server, database, queue, object store, or Worker solely for email.
 - Apply a strict Content Security Policy with no `unsafe-inline`, no wildcard sources where exact origins are possible, no inline styles, no style blocks, and no inline-script assumptions. Adapt React components accordingly. Permit only the exact application, Convex, auth, and authorized generated-image origins required at runtime.
 - Set Client routes to `noindex` and a strict referrer policy. Do not add third-party analytics or scripts.
+- Add authenticated success and cancellation routes that query purchase state only; browser success navigation never grants passes. Add a public Convex HTTP webhook route that verifies the exact raw body and handles synchronous, delayed, refund, and dispute events idempotently.
 - Render Markdown with raw HTML disabled, sanitization enabled, safe HTTP(S)-only URL handling, and secure external-link behavior.
 - Keep README, setup, launch, architecture, environment, data-model, and domain documentation limited to the product and architecture described by this specification.
 
@@ -185,6 +205,7 @@ The application uses React, Convex, Better Auth, the Convex Agent component, the
 - Tests must protect externally observable behavior, an authorization/privacy boundary, or irreversible data behavior. Do not add tests merely because a module exists, do not test private implementation details, and do not repeat the same behavior at multiple layers.
 - Use the existing highest runtime seam as the primary prior art: a Playwright browser test against the real React application and Convex development deployment. Keep one deterministic end-to-end happy path that proves a Creator can create an Interview, a Client can complete the Interview and Document Review, select a Visual Direction, submit the project, and the Creator can see and download the Project Submission. Replace external AI, image, and email calls at their narrow Convex boundary so the test is reliable and inexpensive.
 - Add only focused Convex-boundary tests that cannot be proven safely or deterministically by the single browser flow. The necessary cases are Creator ownership, invalidated Interview Links, first-write-wins submission/idempotency, and irreversible cascading deletion. Combine related assertions into as few scenarios as practical.
+- Add focused monetization boundary tests for Introductory Pass idempotency, allowlisted pack fulfillment, unpaid and delayed Checkout events, duplicate/reordered webhooks, signature failures, concurrent reservation and Start, Client-link gating, deletion/deactivation release, refund/dispute non-double-spending, ownership, success-route non-fulfillment, existing Interview behavior, and English/German purchase/reservation copy. Use provider-boundary fakes; never call Stripe in `bun run verify`.
 - Add one small provider-request contract test because privacy flags and pinned model/reasoning configuration are invisible in the UI and materially affect the product promise. It should cover OpenRouter zero-retention/data-collection/fallback requirements and the minimal Cloudflare Email payload without making network calls.
 - Verify strict CSP without `unsafe-inline` as part of the production-build/browser check rather than through component-level duplicates.
 - Treat real-provider output quality as an opt-in launch evaluation, not a broad permanent test matrix. Before launch, exercise English and German once with GPT-5.6 Terra and inspect one three-concept image run. Keep this outside the ordinary deterministic test suite unless a concrete regression proves automation is necessary.
@@ -206,7 +227,7 @@ The application uses React, Convex, Better Auth, the Convex Agent component, the
 - PDF, Word, Google Docs, Google Drive, email-attachment, or live-document exports.
 - Interview expiry, reminders, abandonment automation, archive/trash/recovery, duplication/cloning, or multiple Project Submissions.
 - Product branding customization, custom Creator domains, custom email domains, or white-label Client pages.
-- Public registration, subscriptions, billing, per-Interview Stripe Managed Payments, quotas, Creator-supplied provider keys, or an administration UI.
+- Public registration, subscriptions, quotas, Creator-supplied provider keys, or an administration UI.
 - Product analytics, third-party telemetry, activity feeds, audit logs, raw prompt logging, or diagnostic provider-response retention.
 - Voice, audio, camera, screen sharing, rich-text editing, reactions, and dynamic form questions.
 - A custom application server, custom database, external queue, separate object store, or Cloudflare Worker added only to send email.
@@ -215,5 +236,6 @@ The application uses React, Convex, Better Auth, the Convex Agent component, the
 
 - ADR-0001 records the template-driven Interview architecture.
 - ADR-0002 records the single pinned Interview Model, reasoning modes, privacy routing, and fixed image renderer.
+- ADR-0003 records prepaid Interview Passes, the Stripe Managed Payments integration, reservation/start boundaries, ledger, refund/dispute behavior, and excluded pricing models.
 - Product and operational documentation use the same domain vocabulary and describe only the system defined here.
 - “Good enough” means the Project Document gives the Creator enough accurate direction and first-draft copy to begin implementation immediately, while visibly separating unknown Client facts from model recommendations.

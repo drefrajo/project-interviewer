@@ -7,6 +7,9 @@ export const creatorCopy = {
       tabs: { interviews: "Interviews", templates: "Templates", settings: "Settings" },
       signOut: "Sign out",
       workspace: "Creator workspace",
+      passBalance: (count: number) =>
+        `${count} ${count === 1 ? "Interview Pass" : "Interview Passes"}`,
+      buyPasses: "Buy passes",
     },
     auth: {
       workspaceLabel: "Creator workspace",
@@ -41,6 +44,8 @@ export const creatorCopy = {
         submitted: "Submitted",
         needs_attention: "Needs attention",
       },
+      reservationRequired: "Needs pass reservation",
+      ready: "Ready",
       step: {
         interview: "Interview",
         review: "Document Review",
@@ -75,7 +80,7 @@ export const creatorCopy = {
     },
     form: {
       description:
-        "The Interview Link works as soon as you create it. Configuration remains editable until the Client sends their first message.",
+        "Creating and editing an Interview is free. Reserve a pass when you first share its Interview Link; configuration remains editable until the Client sends their first message.",
       editPreparation: "Edit preparation",
       newInterview: "New Interview",
       editInterview: "Edit Interview",
@@ -123,8 +128,8 @@ export const creatorCopy = {
       delete: "Delete",
       interviewLink: "Interview Link",
       linkDescription:
-        "Anyone with this bearer link can start, resume, and view the final Interview. Regenerating it invalidates the old link immediately.",
-      linkUnavailable: "The link is only returned when created or regenerated.",
+        "The first share reserves one pass. The Client can preview the welcome page without consuming it; the pass is consumed only when the Client deliberately starts. Regenerating transfers the reservation and does not use another pass.",
+      linkUnavailable: "Reserve a pass before copying or sharing this link.",
       copied: "Copied",
       copyLink: "Copy link",
       instructions: "Interview Instructions",
@@ -169,6 +174,56 @@ export const creatorCopy = {
       additionalNote: "Additional note",
       selectedConcept: "Selected concept",
       inspirationLinks: "Inspiration links",
+      reservationTitle: "Interview needs a pass reservation",
+      reservationDescription:
+        "Preparation is free. The first time you copy or share this link, one Interview Pass is reserved. The Client only consumes it by deliberately starting the Interview.",
+      reservationReady: "This Interview has a reserved pass and its link is ready.",
+      passConsumed: "The Interview Pass was consumed when the Client deliberately started and is now permanent.",
+      reserveAndCopyLink: "Reserve 1 pass and copy link",
+      reservationConfirmTitle: "Reserve a pass and copy this link?",
+      reservationConfirmDescription: (balance: number) =>
+        `You currently have ${balance} available ${balance === 1 ? "pass" : "passes"}. This reserves one pass; it is consumed only when the Client starts.`,
+      insufficientBalance:
+        "You do not have an available Interview Pass. Buy a pack before sharing this Interview.",
+      buyPasses: "Buy passes",
+      checkingBalance: "Checking your available passes…",
+      deactivateInterview: "Deactivate link",
+      confirmDeactivate: "Release this Interview's reservation?",
+      deactivateDescription:
+        "The reserved pass will return to your available balance. The Interview remains editable, but its current link will not be usable until you reserve a pass again.",
+    },
+    billing: {
+      title: "Interview Passes",
+      intro:
+        "One pass pays for one complete Interview after the Client starts, including the conversation, document, revisions, Visual Concepts, submission, storage, and downloads.",
+      available: "Available passes",
+      reserved: "Reserved passes",
+      introductory: "Introductory passes",
+      purchased: "Purchased passes",
+      nonExpiring: "Passes do not expire.",
+      taxes: "plus applicable taxes",
+      buyOneTitle: "1 Interview Pass",
+      buyOneDescription: "One complete started Interview",
+      buyFiveTitle: "5 Interview Passes",
+      buyFiveDescription: "Five complete started Interviews",
+      buyOne: "Buy for €29",
+      buyFive: "Buy for €99",
+      redirecting: "Opening secure Checkout…",
+      checkoutError: "Checkout could not be opened. Please try again.",
+      successTitle: "Purchase status",
+      successPending:
+        "Payment is still being confirmed. Your Pass Balance will update after the signed payment notification arrives.",
+      successConfirmed: "Payment confirmed. Your Interview Passes are available.",
+      successFailed: "The payment was not confirmed. No passes were added.",
+      successRefunded: "This purchase was refunded and its passes were revoked.",
+      successPartialRefund:
+        "This purchase has a partial refund and is awaiting reconciliation.",
+      cancelledTitle: "Checkout cancelled",
+      cancelledDescription: "No passes were added. You can try again whenever you are ready.",
+      backToInterviews: "Back to Interviews",
+      backToPasses: "Back to passes",
+      loading: "Checking purchase status…",
+      unavailable: "Pass purchases are not configured for this deployment yet.",
     },
     settings: {
       title: "Settings",
@@ -188,6 +243,9 @@ export const creatorCopy = {
       tabs: { interviews: "Interviews", templates: "Vorlagen", settings: "Einstellungen" },
       signOut: "Abmelden",
       workspace: "Creator-Arbeitsbereich",
+      passBalance: (count: number) =>
+        `${count} ${count === 1 ? "Interview-Pass" : "Interview-Pässe"}`,
+      buyPasses: "Pässe kaufen",
     },
     auth: {
       workspaceLabel: "Creator-Arbeitsbereich",
@@ -223,6 +281,8 @@ export const creatorCopy = {
         submitted: "Übermittelt",
         needs_attention: "Aufmerksamkeit erforderlich",
       },
+      reservationRequired: "Pass-Reservierung erforderlich",
+      ready: "Bereit",
       step: {
         interview: "Interview",
         review: "Dokumentprüfung",
@@ -257,7 +317,7 @@ export const creatorCopy = {
     },
     form: {
       description:
-        "Der Interview-Link funktioniert sofort nach dem Erstellen. Die Konfiguration bleibt bearbeitbar, bis der Client seine erste Nachricht sendet.",
+        "Das Erstellen und Bearbeiten eines Interviews ist kostenlos. Reservieren Sie beim ersten Teilen des Interview-Links einen Pass; die Konfiguration bleibt bis zur ersten Client-Nachricht bearbeitbar.",
       editPreparation: "Vorbereitung bearbeiten",
       newInterview: "Neues Interview",
       editInterview: "Interview bearbeiten",
@@ -305,8 +365,8 @@ export const creatorCopy = {
       delete: "Löschen",
       interviewLink: "Interview-Link",
       linkDescription:
-        "Jede Person mit diesem Bearer-Link kann das Interview starten, fortsetzen und das Ergebnis ansehen. Eine Erneuerung macht den alten Link sofort ungültig.",
-      linkUnavailable: "Der Link wird nur beim Erstellen oder Erneuern angezeigt.",
+        "Beim ersten Teilen wird ein Pass reserviert. Der Client kann die Willkommensseite ansehen, ohne ihn zu verbrauchen; erst der bewusste Start verbraucht den Pass. Eine Erneuerung überträgt die Reservierung und verbraucht keinen weiteren Pass.",
+      linkUnavailable: "Reservieren Sie einen Pass, bevor Sie diesen Link kopieren oder teilen.",
       copied: "Kopiert",
       copyLink: "Link kopieren",
       instructions: "Interview Instructions",
@@ -351,6 +411,56 @@ export const creatorCopy = {
       additionalNote: "Zusätzliche Notiz",
       selectedConcept: "Ausgewähltes Konzept",
       inspirationLinks: "Inspirationslinks",
+      reservationTitle: "Für das Interview muss ein Pass reserviert werden",
+      reservationDescription:
+        "Die Vorbereitung ist kostenlos. Beim ersten Kopieren oder Teilen wird ein Interview-Pass reserviert. Erst der bewusste Start durch den Client verbraucht ihn.",
+      reservationReady: "Für dieses Interview ist ein Pass reserviert; der Link ist bereit.",
+      passConsumed: "Der Interview-Pass wurde beim bewussten Start durch den Client verbraucht und ist dauerhaft gebunden.",
+      reserveAndCopyLink: "1 Pass reservieren und Link kopieren",
+      reservationConfirmTitle: "Einen Pass reservieren und diesen Link kopieren?",
+      reservationConfirmDescription: (balance: number) =>
+        `Sie haben derzeit ${balance} ${balance === 1 ? "verfügbaren Pass" : "verfügbare Pässe"}. Dadurch wird ein Pass reserviert; verbraucht wird er erst beim Start durch den Client.`,
+      insufficientBalance:
+        "Sie haben keinen verfügbaren Interview-Pass. Kaufen Sie ein Paket, bevor Sie dieses Interview teilen.",
+      buyPasses: "Pässe kaufen",
+      checkingBalance: "Verfügbare Pässe werden geprüft…",
+      deactivateInterview: "Link deaktivieren",
+      confirmDeactivate: "Reservierung dieses Interviews freigeben?",
+      deactivateDescription:
+        "Der reservierte Pass wird Ihrem verfügbaren Bestand wieder gutgeschrieben. Das Interview bleibt bearbeitbar, aber der aktuelle Link ist bis zu einer neuen Reservierung nicht nutzbar.",
+    },
+    billing: {
+      title: "Interview-Pässe",
+      intro:
+        "Ein Pass bezahlt ein vollständiges Interview nach dem Start durch den Client – einschließlich Gespräch, Dokument, Überarbeitungen, visueller Konzepte, Übergabe, Speicherung und Downloads.",
+      available: "Verfügbare Pässe",
+      reserved: "Reservierte Pässe",
+      introductory: "Einführungspässe",
+      purchased: "Gekaufte Pässe",
+      nonExpiring: "Pässe laufen nicht ab.",
+      taxes: "zzgl. anfallender Steuern",
+      buyOneTitle: "1 Interview-Pass",
+      buyOneDescription: "Ein vollständiges gestartetes Interview",
+      buyFiveTitle: "5 Interview-Pässe",
+      buyFiveDescription: "Fünf vollständige gestartete Interviews",
+      buyOne: "Für €29 kaufen",
+      buyFive: "Für €99 kaufen",
+      redirecting: "Sicherer Checkout wird geöffnet…",
+      checkoutError: "Der Checkout konnte nicht geöffnet werden. Bitte versuchen Sie es erneut.",
+      successTitle: "Kaufstatus",
+      successPending:
+        "Die Zahlung wird noch bestätigt. Ihr Pass-Bestand wird nach der signierten Zahlungsbenachrichtigung aktualisiert.",
+      successConfirmed: "Zahlung bestätigt. Ihre Interview-Pässe sind verfügbar.",
+      successFailed: "Die Zahlung wurde nicht bestätigt. Es wurden keine Pässe hinzugefügt.",
+      successRefunded: "Dieser Kauf wurde erstattet und seine Pässe wurden entzogen.",
+      successPartialRefund:
+        "Dieser Kauf enthält eine teilweise Erstattung und wartet auf Abstimmung.",
+      cancelledTitle: "Checkout abgebrochen",
+      cancelledDescription: "Es wurden keine Pässe hinzugefügt. Sie können es später erneut versuchen.",
+      backToInterviews: "Zurück zu den Interviews",
+      backToPasses: "Zurück zu den Pässen",
+      loading: "Kaufstatus wird geprüft…",
+      unavailable: "Passkäufe sind für diese Bereitstellung noch nicht konfiguriert.",
     },
     settings: {
       title: "Einstellungen",

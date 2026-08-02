@@ -15,10 +15,12 @@ describe("WelcomeStep", () => {
           },
           clientLanguage: "en",
           modelFamily: "GPT-5.6 Terra",
-          temporaryConceptBatchRetriesEnabled: false,
-          step: "interview",
-          started: false,
-        }}
+        temporaryConceptBatchRetriesEnabled: false,
+        step: "interview",
+        started: false,
+        reservationRequired: false,
+        passState: "reserved",
+      }}
         onStart={() => undefined}
         pending={false}
       />,

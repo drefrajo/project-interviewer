@@ -60,6 +60,47 @@ Confirm that:
 - the Creator can download a complete ZIP and each individual artifact; and
 - the submitted Client page is read-only and shows the Creator's business/display name and verified email.
 
+## Monetization and Stripe gate
+
+Complete this section in sandbox before any live-mode action:
+
+- confirm the connected Stripe account is the intended sandbox account and
+  that the secret begins with `sk_test_`; a live connection is a hard stop;
+- confirm Managed Payments is enabled and the owner has accepted any required
+  terms;
+- confirm exactly two active one-time EUR Prices: €29 for 1 Interview Pass and
+  €99 for 5 Interview Passes, with no subscription, metered, 20-pass, or
+  per-model catalog;
+- obtain owner/Stripe confirmation that `txcd_10105002` is the correct
+  business-use cloud AIaaS classification before live setup;
+- set the sandbox-only secret, webhook signing secret, two sandbox Price IDs,
+  and success/cancellation URLs in the Convex environment, then run
+  `bun run validate:convex-deploy`;
+- register the public Convex `/stripe/webhook` endpoint for the documented
+  Checkout, delayed-payment, refund, and dispute events;
+- complete a sandbox purchase for each pack, including a delayed-payment
+  result where available, and verify webhook-only fulfillment, exactly-once
+  retries, unpaid completion, cancellation, refund, partial-refund flagging,
+  dispute debit/restoration, and a negative-balance case;
+- verify the Creator receives exactly one Introductory Pass, that first link
+  sharing reserves one pass atomically, deliberate Client Start consumes it
+  exactly once, link rotation is free, and deletion/deactivation before versus
+  after Start has the documented release behavior;
+- reconcile the cached balance against the append-only Pass Ledger and record
+  the operator/support contact for refunds, disputes, payment questions,
+  product access, and privacy/deletion requests. Stripe handles its Managed
+  Payments transaction support; the product operator still owns product
+  fulfillment, account access, product quality, application data, and
+  operator adjustments.
+
+Live cutover is a separately approved action. The owner must create or reuse
+the two eligible live catalog objects only after confirming Managed Payments
+eligibility and the tax classification, set live values in a separate Convex
+deployment secret store, verify the Stripe account reports live mode, register
+the live webhook, and review the first real fulfillment/reconciliation event.
+Do not substitute a live account for missing sandbox access, do not create live
+objects during development, and do not make a live test purchase.
+
 ## Human approval
 
 The product is ready to open beyond the allowlist only after a representative Creator and Client complete the full flow on mobile and desktop, understand that Visual Concepts are rough directions rather than final designs, and judge the Project Submission sufficient to begin implementation.

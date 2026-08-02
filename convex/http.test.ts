@@ -61,4 +61,32 @@ describe("Better Auth HTTP route registration", () => {
       "http://localhost:5173",
     );
   });
+
+  it("rejects an invalid Stripe signature before calling the billing mutation", async () => {
+    process.env = {
+      ...originalEnvironment,
+      SITE_URL: "http://localhost:5173",
+      STRIPE_MODE: "sandbox",
+      STRIPE_WEBHOOK_SIGNING_SECRET: "whsec_test_secret",
+    };
+    vi.resetModules();
+    const { default: http } = await import("./http");
+    const route = http.lookup("/stripe/webhook", "POST");
+    expect(route).not.toBeNull();
+    const runMutation = vi.fn();
+    const handler = route?.[0] as unknown as {
+      _handler(context: { runMutation: typeof runMutation }, request: Request): Promise<Response>;
+    };
+    const response = await handler._handler(
+      { runMutation },
+      new Request("https://example.convex.site/stripe/webhook", {
+        method: "POST",
+        body: JSON.stringify({ id: "evt_invalid" }),
+        headers: { "stripe-signature": "t=1,v1=00" },
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(runMutation).not.toHaveBeenCalled();
+  });
 });

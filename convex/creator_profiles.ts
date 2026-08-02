@@ -4,6 +4,7 @@ import { authComponent } from "./auth";
 import { getCreatorProfile, requireIdentity } from "./lib/auth";
 import { assertLength } from "./lib/domain";
 import { isOAuthProviderId } from "./lib/oauth";
+import { ensureIntroductoryPass } from "./lib/pass_accounting";
 
 export const getCurrent = query({
   args: {},
@@ -52,7 +53,7 @@ export const upsertCurrent = mutation({
           updatedAt: now,
         }),
         current._id)
-      : await ctx.db.insert("creatorProfiles", {
+        : await ctx.db.insert("creatorProfiles", {
           authUserId: identity.subject,
           tokenIdentifier: identity.tokenIdentifier,
           email,
@@ -61,6 +62,8 @@ export const upsertCurrent = mutation({
           createdAt: now,
           updatedAt: now,
         });
+
+    await ensureIntroductoryPass(ctx, id);
 
     return { id, displayName, email };
   },

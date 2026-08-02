@@ -1,4 +1,5 @@
 import type { Doc } from "../_generated/dataModel";
+import { interviewPassState } from "./pass_accounting";
 
 export const MAX_INSTRUCTIONS_LENGTH = 50_000;
 export const MAX_CLIENT_MESSAGE_LENGTH = 10_000;
@@ -80,6 +81,7 @@ export const interviewDto = async (
   interviewModel: "gpt-5.6-terra" as const,
   instructions: interview.instructions,
   configurationFrozen: Boolean(interview.frozenAt),
+  passState: interviewPassState(interview),
   step: interview.step,
   status: dashboardStatus(interview),
   operation: interview.operation

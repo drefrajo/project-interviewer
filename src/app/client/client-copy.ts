@@ -4,6 +4,9 @@ export const CLIENT_COPY = {
   en: {
     steps: ["Interview", "Review", "Concepts", "Submitted"],
     start: "Start interview",
+    reservationRequiredTitle: "This Interview is waiting for a pass reservation",
+    reservationRequiredDescription:
+      "The Creator must reserve a pass before this Interview Link can be used. Viewing this page does not consume a pass.",
     send: "Send",
     retryResponse: "Retry response",
     reply: "Your reply",
@@ -48,6 +51,9 @@ export const CLIENT_COPY = {
   de: {
     steps: ["Interview", "Prüfung", "Konzepte", "Übermittelt"],
     start: "Interview starten",
+    reservationRequiredTitle: "Dieses Interview wartet auf eine Pass-Reservierung",
+    reservationRequiredDescription:
+      "Der Creator muss einen Pass reservieren, bevor dieser Interview-Link genutzt werden kann. Das Anzeigen dieser Seite verbraucht keinen Pass.",
     send: "Senden",
     retryResponse: "Antwort erneut erzeugen",
     reply: "Ihre Antwort",

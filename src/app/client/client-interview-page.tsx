@@ -98,6 +98,41 @@ export const ClientInterviewPage = () => {
   }
 
   const text = CLIENT_COPY[interview.clientLanguage];
+  if (interview.reservationRequired) {
+    return (
+      <div className="flex min-h-screen flex-col bg-canvas text-ink">
+        <a className="skip-link" href="#main-content">
+          {interview.clientLanguage === "de"
+            ? "Zum Hauptinhalt springen"
+            : "Skip to main content"}
+        </a>
+        <header className="border-b border-line bg-surface px-4 py-4 sm:px-8">
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-5">
+            <span className="font-display font-extrabold">
+              {interview.projectName}
+            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted">
+                {interview.creator.displayName}
+              </span>
+              <ThemeToggle />
+            </div>
+          </div>
+        </header>
+        <main className="grid flex-1 place-items-center px-4 py-10" id="main-content">
+          <section className="w-full max-w-xl rounded-xl border border-line bg-surface p-6">
+            <h1 className="font-display text-3xl font-extrabold">
+              {text.reservationRequiredTitle}
+            </h1>
+            <p className="mt-3 leading-7 text-muted">
+              {text.reservationRequiredDescription}
+            </p>
+          </section>
+        </main>
+        <LegalFooter language={interview.clientLanguage} />
+      </div>
+    );
+  }
   const submitted = interview.step === "submitted";
   const pending =
     busy || (!submitted && interview.operation?.state === "pending");

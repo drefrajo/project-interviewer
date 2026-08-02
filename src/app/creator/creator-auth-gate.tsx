@@ -58,7 +58,7 @@ export const CreatorAuthGate = ({
   };
 
   useEffect(() => {
-    if (!session.data || profile !== null || attempted.current) return;
+    if (!session.data || attempted.current) return;
     attempted.current = true;
     const suggestedName =
       session.data.user.name?.trim() ||

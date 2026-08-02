@@ -16,6 +16,13 @@ import {
   interviewDto,
   MAX_INSTRUCTIONS_LENGTH,
 } from "./lib/domain";
+import {
+  ensureIntroductoryPass,
+  interviewPassState,
+  releaseInterviewReservation,
+  reservationKeyFor,
+  reserveInterviewPass,
+} from "./lib/pass_accounting";
 import { clientLanguage } from "./schema";
 import { internalRefs } from "./internal_refs";
 
@@ -54,17 +61,20 @@ export const get = query({
   args: { interviewId: v.id("interviews") },
   handler: async (ctx, args) => {
     const { interview } = await ownedInterview(ctx, args.interviewId);
-    const linkToken = await openCapabilityToken(
-      {
-        ciphertext: interview.linkTokenCiphertext,
-        iv: interview.linkTokenIv,
-      },
-      env.CAPABILITY_ENCRYPTION_SECRET,
-      `interview-link:${interview.linkHash}`,
-    );
+    const linkToken =
+      interviewPassState(interview) === "unreserved"
+        ? undefined
+        : await openCapabilityToken(
+            {
+              ciphertext: interview.linkTokenCiphertext,
+              iv: interview.linkTokenIv,
+            },
+            env.CAPABILITY_ENCRYPTION_SECRET,
+            `interview-link:${interview.linkHash}`,
+          );
     return {
       ...(await interviewDto(interview, (id) => ctx.storage.getUrl(id))),
-      linkToken,
+      ...(linkToken ? { linkToken } : {}),
     };
   },
 });
@@ -77,6 +87,7 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     const creator = await requireCreatorProfile(ctx);
+    await ensureIntroductoryPass(ctx, creator._id);
     const projectName = assertLength("Project name", args.projectName, 160);
     const instructions = assertLength(
       "Interview Instructions",
@@ -106,6 +117,7 @@ export const create = mutation({
       clientLanguage: args.clientLanguage,
       model: "gpt-5.6-terra",
       instructions,
+      passState: "unreserved",
       createdAt: now,
       updatedAt: now,
       step: "interview",
@@ -114,7 +126,67 @@ export const create = mutation({
       concepts: [],
       usage: { inputTokens: 0, outputTokens: 0, estimatedCostUsd: 0 },
     });
-    return { interviewId, linkToken: token, linkVersion: 1 };
+    return { interviewId, linkVersion: 1 };
+  },
+});
+
+export const reserveLink = mutation({
+  args: { interviewId: v.id("interviews") },
+  handler: async (ctx, args) => {
+    const { creator, interview } = await ownedInterview(ctx, args.interviewId);
+    const state = interviewPassState(interview);
+    const reservationKey = `reservation:${interview._id}:${
+      (interview.passReservationVersion ?? 0) + 1
+    }`;
+    await (state === "unreserved"
+      ? reserveInterviewPass(ctx, {
+          creatorId: creator._id,
+          interviewId: interview._id,
+          reservationKey,
+        })
+      : Promise.resolve(null));
+    if (state === "unreserved") {
+      await ctx.db.patch("interviews", interview._id, {
+        passState: "reserved",
+        passReservationKey: reservationKey,
+        passReservationVersion: (interview.passReservationVersion ?? 0) + 1,
+        updatedAt: Date.now(),
+      });
+    }
+    const linkToken = await openCapabilityToken(
+      {
+        ciphertext: interview.linkTokenCiphertext,
+        iv: interview.linkTokenIv,
+      },
+      env.CAPABILITY_ENCRYPTION_SECRET,
+      `interview-link:${interview.linkHash}`,
+    );
+    return {
+      linkToken,
+      linkVersion: interview.linkVersion,
+      reserved: state === "unreserved",
+      alreadyReserved: state !== "unreserved",
+    };
+  },
+});
+
+export const deactivate = mutation({
+  args: { interviewId: v.id("interviews") },
+  handler: async (ctx, args) => {
+    const { creator, interview } = await ownedInterview(ctx, args.interviewId);
+    if (interviewPassState(interview) !== "reserved") {
+      return { released: false };
+    }
+    await releaseInterviewReservation(ctx, {
+      creatorId: creator._id,
+      interviewId: interview._id,
+      reservationKey: reservationKeyFor(interview),
+    });
+    await ctx.db.patch("interviews", interview._id, {
+      passState: "unreserved",
+      updatedAt: Date.now(),
+    });
+    return { released: true };
   },
 });
 
@@ -149,6 +221,9 @@ export const rotateLink = mutation({
   args: { interviewId: v.id("interviews") },
   handler: async (ctx, args) => {
     const { interview } = await ownedInterview(ctx, args.interviewId);
+    if (interviewPassState(interview) === "unreserved") {
+      throw new Error("Reserve a pass before rotating or sharing the link.");
+    }
     const token = createCapabilityToken();
     const linkHash = await hashCapability(token);
     const sealedToken = await sealCapabilityToken(
@@ -177,6 +252,16 @@ export const remove = mutation({
     const { interview } = await ownedInterview(ctx, args.interviewId);
     if (args.confirmation !== interview.projectName) {
       throw new Error("Deletion confirmation does not match the project name.");
+    }
+    if (
+      interview.clientMessageCount === 0 &&
+      interviewPassState(interview) === "reserved"
+    ) {
+      await releaseInterviewReservation(ctx, {
+        creatorId: interview.creatorId,
+        interviewId: interview._id,
+        reservationKey: reservationKeyFor(interview),
+      });
     }
     for (const concept of interview.concepts) {
       if (concept.imageId) await ctx.storage.delete(concept.imageId);

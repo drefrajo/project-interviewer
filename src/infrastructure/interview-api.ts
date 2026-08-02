@@ -17,6 +17,20 @@ export type InterviewStatus =
   | "in_progress"
   | "submitted"
   | "needs_attention";
+export type PassBalance = {
+  availablePasses: number;
+  reservedPasses: number;
+  introductoryPasses: number;
+  purchasedPasses: number;
+};
+export type PurchaseStatus = {
+  purchaseId: string;
+  packId: "one_pass" | "five_passes";
+  passCount: number;
+  amountMinor: number;
+  currency: "eur";
+  status: "pending" | "confirmed" | "failed" | "refunded" | "partial_refund";
+};
 
 export interface CreatorProfile {
   displayName: string;
@@ -65,6 +79,7 @@ export interface InterviewSummary {
   interviewModel: InterviewModel;
   status: InterviewStatus;
   step: InterviewStep;
+  passState: "unreserved" | "reserved" | "consumed";
   updatedAt?: number;
   operation?: {
     state: "pending" | "failed";
@@ -82,6 +97,7 @@ export interface CreatorInterviewView extends InterviewSummary {
   interviewUrl?: string;
   linkToken?: string;
   configurationFrozen?: boolean;
+  passState: "unreserved" | "reserved" | "consumed";
   projectDocument?: string;
   concepts?: VisualConcept[];
   visualDirection?: VisualDirection;
@@ -97,6 +113,8 @@ export interface ClientInterviewView {
   temporaryConceptBatchRetriesEnabled: boolean;
   step: InterviewStep;
   started: boolean;
+  reservationRequired: boolean;
+  passState: "unreserved" | "reserved" | "consumed";
   projectDocument?: string;
   concepts?: VisualConcept[];
   visualDirection?: VisualDirection;
@@ -184,6 +202,19 @@ interface InterviewApi {
       },
       { interviewId: string; interviewUrl?: string; linkToken?: string } | string
     >;
+    reserveLink: Mutation<
+      { interviewId: string },
+      {
+        linkToken: string;
+        linkVersion: number;
+        reserved: boolean;
+        alreadyReserved: boolean;
+      }
+    >;
+    deactivate: Mutation<
+      { interviewId: string },
+      { released: boolean }
+    >;
     updateBeforeStart: Mutation<{
       interviewId: string;
       projectName: string;
@@ -196,6 +227,14 @@ interface InterviewApi {
     >;
     remove: Mutation<{ interviewId: string; confirmation: string }>;
     retry: Mutation<{ interviewId: string }>;
+  };
+  billing: {
+    getBalance: Query<Record<string, never>, PassBalance | null>;
+    getPurchaseStatus: Query<{ purchaseId: string }, PurchaseStatus | null>;
+    createCheckoutSession: Action<
+      { packId: "one_pass" | "five_passes" },
+      { purchaseId: string; url: string }
+    >;
   };
   client: {
     getByLink: Query<{ token: string }, ClientInterviewView | null>;

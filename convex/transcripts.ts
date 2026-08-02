@@ -9,6 +9,7 @@ import {
   clientFacingInterviewContent,
   isMalformedStructuredInterviewOutput,
 } from "./lib/interview_output";
+import { isInterviewPassBacked } from "./lib/pass_accounting";
 
 const transcript = async (
   ctx: Parameters<typeof listMessages>[0],
@@ -88,6 +89,9 @@ export const listForClient = query({
       .withIndex("by_linkHash", (q) => q.eq("linkHash", linkHash))
       .unique();
     if (!interview) throw new Error("Interview Link is invalid.");
+    if (!isInterviewPassBacked(interview)) {
+      throw new Error("This Interview Link is waiting for the Creator to reserve a pass.");
+    }
     return await transcript(
       ctx,
       interview.agentThreadId,

@@ -31,6 +31,7 @@ const insertRunningInterview = async (
       clientLanguage: "en",
       model: "gpt-5.6-terra",
       instructions: "Interview the Client.",
+      passState: "consumed",
       createdAt: 1,
       updatedAt: 1,
       step: "interview",

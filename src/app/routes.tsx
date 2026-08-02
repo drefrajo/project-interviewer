@@ -8,6 +8,11 @@ import { InterviewForm } from "./creator/interview-form";
 import { InterviewsPage } from "./creator/interviews-page";
 import { SettingsPage } from "./creator/settings-page";
 import { TemplatesPage } from "./creator/templates-page";
+import {
+  BillingCancelPage,
+  BillingPage,
+  BillingSuccessPage,
+} from "./creator/billing-page";
 
 export const createRoutes = (
   authClient: ProductionAuthClient,
@@ -30,6 +35,9 @@ export const createRoutes = (
       { path: "interviews/:interviewId/edit", element: <InterviewForm /> },
       { path: "templates", element: <TemplatesPage /> },
       { path: "settings", element: <SettingsPage /> },
+      { path: "billing", element: <BillingPage /> },
+      { path: "billing/success", element: <BillingSuccessPage /> },
+      { path: "billing/cancel", element: <BillingCancelPage /> },
     ],
   },
   { path: "*", element: <Navigate replace to="/interviews" /> },

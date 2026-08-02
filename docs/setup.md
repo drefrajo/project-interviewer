@@ -45,6 +45,82 @@ bunx convex env set CREATOR_ALLOWLIST creator@example.com
 Repeat that command for each server variable. Keep independent values and
 budgets for local development, shared development, and production.
 
+## Stripe Managed Payments and Interview Passes
+
+Interview Passes are prepaid, non-expiring entitlements. Creating and editing
+an Interview is free; the first Creator copy/share action reserves exactly one
+pass and makes its Interview Link usable. The Client's deliberate Start
+converts that reservation into a consumed pass before billable AI work. The
+sandbox catalog contains only these tax-exclusive
+business prices:
+
+| Pack | Price | Passes | Mode |
+| --- | ---: | ---: | --- |
+| 1 Interview Pass | €29 | 1 | one-time |
+| 5 Interview Passes | €99 | 5 | one-time |
+
+The UI says “plus applicable taxes.” The application uses Stripe Managed
+Payments Checkout with `mode=payment`, `managed_payments.enabled=true`, and
+API version `2025-03-31.basil`. The configured product tax code is provisionally
+`txcd_10105002` (business-use cloud AIaaS); the owner must obtain final Stripe
+and tax confirmation before any live setup.
+
+Configure the following server-only variables on the matching Convex
+deployment. Keep sandbox and live values in separate deployment secret stores;
+never put these values in `VITE_` variables or source control:
+
+- `STRIPE_MODE`: `sandbox` for `sk_test_...`, or `live` for `sk_live_...`;
+- `STRIPE_SECRET_KEY`: preferably a restricted key;
+- `STRIPE_WEBHOOK_SIGNING_SECRET`;
+- `STRIPE_ONE_PASS_PRICE_ID` and `STRIPE_FIVE_PASS_PRICE_ID`;
+- `STRIPE_CHECKOUT_SUCCESS_URL` and `STRIPE_CHECKOUT_CANCEL_URL`.
+
+For sandbox setup, the owner must:
+
+1. Connect the Stripe sandbox account and confirm that the Dashboard and key
+   are in sandbox mode. If the connected account is live, stop; do not create
+   or change any Stripe object.
+2. Enable Managed Payments and accept its owner-controlled terms if Stripe
+   requires the Creator to reserve a pass before sharing. Confirm that this product and the business-use AIaaS
+   tax code are eligible.
+3. Create or reuse exactly the two sandbox Products/Prices above. Keep their
+   approved Price IDs only in the Convex environment configuration.
+4. Register `POST https://<deployment>.convex.site/stripe/webhook` with these
+   events: `checkout.session.completed`,
+   `checkout.session.async_payment_succeeded`,
+   `checkout.session.async_payment_failed`, `charge.refunded`,
+   `refund.created`, `charge.dispute.created`, `charge.dispute.closed`,
+   `charge.dispute.funds_reinstated`, and
+   `charge.dispute.funds_withdrawn`. Store the signing secret in
+   `STRIPE_WEBHOOK_SIGNING_SECRET`.
+5. Set the environment values with `bunx convex env set` and run
+   `bun run validate:convex-deploy`. The validator fails closed on incomplete
+   configuration or sandbox/live key mismatch.
+6. Complete a sandbox Checkout using a Stripe test payment method. Confirm
+   that only the signed webhook changes the Pass Balance, delayed payments are
+   handled, the success page only reports server state, and duplicate events
+   do not add passes.
+
+Existing Creator profiles receive one Introductory Pass through an idempotent
+ledger grant. Existing started or submitted Interviews are treated as consumed
+without a retroactive debit; existing unstarted Interviews require a
+reservation before their links can be copied or shared.
+
+Refunds and dispute losses append compensating ledger debits. If consumed
+passes are revoked, the balance may become negative and future reservations are
+blocked until reconciliation or an explicit operator adjustment; Interview
+history is never rewritten. Partial refunds are flagged for reconciliation
+and never guessed into a pass count. A reserved pass is released only by
+deactivation or deletion before Start; Start permanently consumes it. Use the
+internal reconciliation capability
+(`billing:reconcileCreator`) and append-only ledger when investigating a case;
+there is intentionally no administration UI in this release.
+
+Do not perform live catalog creation, live webhook registration, or a live test
+purchase as part of development. Live-mode Stripe mutations require separate
+owner approval after the sandbox flow, Managed Payments eligibility, and tax
+classification have been confirmed.
+
 Run Convex and Vite in separate terminals:
 
 ```sh

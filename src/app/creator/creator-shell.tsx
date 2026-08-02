@@ -1,6 +1,6 @@
 import { useQuery } from "convex/react";
 import { FileText, LogOut, Settings, Shapes } from "lucide-react";
-import { NavLink, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet } from "react-router-dom";
 import type { ProductionAuthClient } from "../../infrastructure/auth-client";
 import { interviewApi } from "../../infrastructure/interview-api";
 import { LegalFooter } from "../shared/legal-footer";
@@ -21,6 +21,7 @@ export const CreatorShell = ({
     { to: "/settings", label: text.shell.tabs.settings, icon: Settings },
   ] as const;
   const profile = useQuery(interviewApi.creator_profiles.getCurrent, {});
+  const balance = useQuery(interviewApi.billing.getBalance, {});
   return (
     <div className="flex min-h-screen flex-col bg-canvas text-ink">
       <a className="skip-link" href="#main-content">
@@ -42,6 +43,14 @@ export const CreatorShell = ({
           </NavLink>
           <div className="flex items-center gap-3 text-sm text-muted">
             <span className="hidden sm:inline">{profile?.displayName}</span>
+            <Link
+              className="rounded-full border border-line bg-soft px-3 py-2 font-bold text-forest no-underline transition hover:border-forest"
+              to="/settings#passes"
+            >
+              {balance
+                ? text.shell.passBalance(balance.availablePasses)
+                : text.shell.buyPasses}
+            </Link>
             <ThemeToggle />
             <button
               aria-label={text.shell.signOut}

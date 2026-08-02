@@ -87,3 +87,33 @@ _Avoid_: Approval, final design
 **Project Submission**:
 The single immutable completed handoff produced by an Interview, containing the Project Document, all generated Visual Concepts, the Client's Visual Direction, and the Interview Transcript. After submission the Client may only view it.
 _Avoid_: Project approval, final requirements
+
+## Monetization
+
+**Interview Pass**:
+A non-expiring entitlement that pays for one complete Interview after the Client deliberately starts it, including its conversation, Project Document, revisions, Visual Concepts, Project Submission, storage, and downloads.
+_Avoid_: Token, credit, message allowance
+
+**Pass Balance**:
+The Creator's separate available and reserved Interview Pass counts after grants, reservations, releases, starts, refunds, disputes, and manual adjustments.
+_Avoid_: Wallet, quota, subscription balance
+
+**Introductory Pass**:
+The one non-expiring Interview Pass granted to every Creator once, including Creators who existed before monetization.
+_Avoid_: Trial, free trial, coupon
+
+**Pass Purchase**:
+A confirmed one-time purchase of an allowlisted Interview Pass pack through Stripe Managed Payments.
+_Avoid_: Subscription, invoice, usage charge
+
+**Pass Reservation**:
+The Creator-authorized, atomic hold of exactly one available Interview Pass the first time an Interview Link is copied or shared. A reserved link is usable for the welcome page, but the pass is not consumed until the Client deliberately starts.
+_Avoid_: Activation, publish, unlock
+
+**Interview Start**:
+The Client's deliberate action that atomically converts a valid Interview Pass reservation into a consumed pass before any billable AI work. Repeated starts have exactly-once effects.
+_Avoid_: Page view, preview, first crawler request
+
+**Pass Ledger**:
+The append-only record of every Interview Pass grant, reservation hold, reservation release, start consumption, refund, dispute adjustment, and operator adjustment used to explain available, reserved, and consumed state.
+_Avoid_: Activity log, audit log
