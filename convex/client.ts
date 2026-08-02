@@ -31,8 +31,8 @@ const rateLimiter = new RateLimiter(rateLimiterComponent, {
 
 // Development-only controls. Flip this single flag to re-enable the temporary
 // retry mutations and expose their UI to a Client.
-const TEMPORARY_CONCEPT_BATCH_RETRIES_ENABLED = true;
-const DEFAULT_CONCEPT_IMAGE_MODEL = "gpt-image-2-low" as const;
+const TEMPORARY_CONCEPT_BATCH_RETRIES_ENABLED = false;
+const DEFAULT_CONCEPT_IMAGE_MODEL = "gpt-image-2" as const;
 
 const findByToken = async (
   ctx: QueryCtx | MutationCtx,
@@ -432,70 +432,6 @@ export const retryFirstConcepts = mutation({
   },
 });
 
-export const restartConceptGeneration = mutation({
-  args: {
-    token: v.string(),
-    imageModel: v.union(
-      v.literal("gpt-image-2"),
-      v.literal("gpt-image-2-low"),
-      v.literal("nano-banana-2"),
-      v.literal("nano-banana-2-lite"),
-    ),
-    regeneratePrompts: v.boolean(),
-  },
-  handler: async (ctx, args) => {
-    const { interview, linkHash } = await byToken(ctx, args.token);
-    if (
-      interview.submission ||
-      interview.step !== "concepts" ||
-      !interview.projectDocument
-    ) {
-      throw new Error("The Interview is not ready to restart Visual Concepts.");
-    }
-    if (
-      interview.operation?.status === "pending" ||
-      interview.operation?.status === "running"
-    ) {
-      throw new Error("Visual Concept generation is already in progress.");
-    }
-    await rateLimiter.limit(ctx, "billableAi", {
-      key: linkHash,
-      throws: true,
-    });
-    await Promise.all(
-      interview.concepts.flatMap((concept) =>
-        concept.imageId ? [ctx.storage.delete(concept.imageId)] : [],
-      ),
-    );
-    const concepts =
-      !args.regeneratePrompts && interview.concepts.length === 3
-        ? interview.concepts.map(({ id, name, rationale, prompt }) => ({
-            id,
-            name,
-            rationale,
-            prompt,
-            status: "pending" as const,
-          }))
-        : [];
-    await ctx.db.patch("interviews", interview._id, {
-      concepts,
-      visualDirection: undefined,
-      operation: {
-        kind: "concept_generation",
-        status: "pending",
-        attempt: 0,
-        imageModel: args.imageModel,
-        regeneratePrompts: args.regeneratePrompts,
-      },
-      updatedAt: Date.now(),
-    });
-    await ctx.scheduler.runAfter(0, internalRefs.jobs.runPending, {
-      interviewId: interview._id,
-    });
-    return null;
-  },
-});
-
 export const retry = mutation({
   args: { token: v.string() },
   handler: async (ctx, args) => {
@@ -514,9 +450,6 @@ export const retry = mutation({
     const operation = {
       kind: interview.operation.kind,
       attempt: 0,
-      ...(interview.operation.imageModel
-        ? { imageModel: interview.operation.imageModel }
-        : {}),
       ...(interview.operation.regeneratePrompts !== undefined
         ? { regeneratePrompts: interview.operation.regeneratePrompts }
         : {}),

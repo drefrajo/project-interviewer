@@ -11,11 +11,6 @@ export type {
   PrivateInterviewTemplate,
 } from "../domain/interview-templates";
 export type InterviewModel = "gpt-5.6-terra";
-export type ConceptImageModel =
-  | "gpt-image-2"
-  | "gpt-image-2-low"
-  | "nano-banana-2"
-  | "nano-banana-2-lite";
 export type InterviewStep = "interview" | "review" | "concepts" | "submitted";
 export type InterviewStatus =
   | "not_started"
@@ -211,11 +206,6 @@ interface InterviewApi {
     requestMoreConcepts: Mutation<{ token: string }>;
     retryAdditionalConcepts: Mutation<{ token: string }>;
     retryFirstConcepts: Mutation<{ token: string }>;
-    restartConceptGeneration: Mutation<{
-      token: string;
-      imageModel: ConceptImageModel;
-      regeneratePrompts: boolean;
-    }>;
     retry: Mutation<{ token: string }>;
     retryMalformedResponse: Mutation<{ token: string }>;
     setVisualDirection: Mutation<{

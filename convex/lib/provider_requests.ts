@@ -3,12 +3,6 @@ export type ProviderMessage = Readonly<{
   content: string;
 }>;
 
-export type ConceptImageModel =
-  | "gpt-image-2"
-  | "gpt-image-2-low"
-  | "nano-banana-2"
-  | "nano-banana-2-lite";
-
 const requireSecret = (
   value: string | undefined,
   name: string,
@@ -69,7 +63,6 @@ export const buildOpenRouterTextRequest = (args: {
 
 export const buildOpenRouterImageRequest = (args: {
   apiKey: string | undefined;
-  imageModel: ConceptImageModel;
   prompt: string;
 }) => ({
   url: "https://openrouter.ai/api/v1/images",
@@ -80,21 +73,11 @@ export const buildOpenRouterImageRequest = (args: {
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      model:
-        args.imageModel === "nano-banana-2"
-          ? "google/gemini-3.1-flash-image"
-          : args.imageModel === "nano-banana-2-lite"
-            ? "google/gemini-3.1-flash-lite-image"
-            : "openai/gpt-image-2",
+      model: "openai/gpt-image-2",
       prompt: args.prompt,
       aspect_ratio: "3:2",
       n: 1,
-      ...(args.imageModel === "nano-banana-2" ||
-      args.imageModel === "nano-banana-2-lite"
-        ? {}
-        : {
-            quality: args.imageModel === "gpt-image-2-low" ? "low" : "medium",
-          }),
+      quality: "medium",
       provider: {
         data_collection: "deny",
         zdr: false,

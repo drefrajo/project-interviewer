@@ -160,6 +160,26 @@ sections, or an unrelated site structure. Visual recommendations in the Project
 Document are not automatically binding across all three concepts unless identified
 as explicit Client requirements.
 
+Before proposing concepts, silently separate the supplied project data into:
+
+SHARED EXPERIENCE GRAMMAR
+Project-defining behavior every concept must preserve. Derive it only from the
+Creator Instructions and Project Document: explicit interface references,
+content-to-interface mappings, identity and hierarchy, application navigation,
+content-unit structure, primary interactions, and important visible state or progress.
+
+VARIABLE DESIGN TERRITORY
+Decisions the Client left open, such as arrangement, scale, density, typography,
+palette, media framing, control placement, and motion.
+
+When the project names a recognizable interface or product pattern, do not reduce
+it to one visual motif. Preserve multiple recognition anchors across identity and
+hierarchy, application navigation, content-unit structure, primary interactions,
+and visible state or progress. Every explicit “X behaves as Y” mapping must affect
+both presentation and behavior: require its entry point, hierarchy, and a visible
+interaction state, not merely the same shape or label. Do not invent unsupported
+platform features, engagement metrics, or social behavior from the reference.
+
 Make every alternative plausible for the stated goals, audience, identity, and
 content. Diversity must be decision-relevant, not opposition or novelty for its own
 sake. Preserve content fidelity: source media and other supplied content keep their
@@ -206,10 +226,16 @@ existing direction, and do not introduce arbitrary colors or brand traits for no
 3. navigational counterpoint — a different navigation model, gallery entry, conversion integration, and browsing rhythm.`
     }
 If an explicit Client constraint closes one axis, create contrast on the others.
+Every counterpoint must remain an alternative arrangement of the same product
+experience. It must not reinterpret the project as a magazine, archive,
+presentation deck, or conventional portfolio website unless the project explicitly
+allows that product model.
 
 Each image prompt must be self-contained. State its macro-layout, viewport regions,
 and content sequence before visual styling, then explicitly repeat the defining
 interaction model, content mappings, and recognizable UI elements that must be visible.
+Each prompt must contain "Shared experience grammar:" followed by the fixed
+recognition anchors and "Concept-specific layout:" followed by its distinct arrangement.
 Describe a straight-on website UI/UX concept, not a device mockup, mood board,
 poster, or advertising image. Show a polished desktop viewport with the defining
 interface recognizable above the fold and enough lower-page context to communicate
@@ -358,12 +384,20 @@ recommendations in the Project Document. The Project Document remains authoritat
 for facts, content, explicit Client constraints, interaction models, and content
 mappings. Do not drift back to the safest shared theme or grid.
 
-LAYOUT DIVERSITY:
+SHARED EXPERIENCE GRAMMAR IS IMMUTABLE:
+Follow every recognition anchor stated in the concept prompt and every explicit
+mapping in the project data. A recognizable interface analogy is not satisfied by
+one decorative motif; it must remain apparent through identity hierarchy,
+application navigation, content units, interactions, and visible state.
+
+CONCEPT-SPECIFIC LAYOUT IS VARIABLE:
 A recognizable interaction model is not a fixed page skeleton. Preserve what each
-element means and does, while varying its placement, hierarchy, sequence, scale,
-and relationship to other regions according to this concept. Do not default to the
-same header, horizontal item strip, feed grid, and lower contact block. Make this
-concept's macro-layout recognizable before palette, typography, or decoration.
+element means and does while varying its placement, hierarchy, sequence, scale, and
+relationship to other regions according to this concept. Do not default to the same
+header, horizontal item strip, feed grid, and lower contact block. Do not replace
+the shared grammar with a generic editorial homepage, portfolio archive, gallery
+landing page, or conventional sequence of website sections. Make the macro-layout
+recognizable before palette, typography, or decoration.
 
 CONTENT FIDELITY:
 Apply visual variation to the interface around the content: surfaces, typography,
@@ -372,7 +406,8 @@ supports an alternate content treatment, preserve the source treatment. Do not a
 the depicted media's color, tone, texture, subject matter, or style. If the concept
 direction conflicts with this rule, express the idea through the interface instead.
 
-Render a straight-on 3:2 desktop website UI screenshot, without a laptop, phone,
+Render one believable application viewport and interaction state as a straight-on
+3:2 desktop website UI screenshot, without a laptop, phone,
 browser chrome, hands, room scene, poster, or mood-board framing. Prioritize
 interface fidelity over cinematic imagery. Preserve every explicit interaction
 model and content-to-interface mapping from the project data. When the project
@@ -380,7 +415,14 @@ references a recognizable product or interface pattern, express its full interfa
 grammar through layout, navigation, controls, hierarchy, and content rhythm; do
 not reduce it to one decorative motif and do not substitute a generic hero-led
 marketing page. Use an original visual identity rather than copying a third-party
-logo or wordmark. Make the defining interface immediately recognizable above the
-fold and show enough lower-page context to clarify how the experience continues.
+logo or wordmark. Let content visibly continue beyond the viewport. Do not compress
+the entire website, contact form, footer, and every content section into one screenshot.
+
+Before rendering, silently check:
+- Would the named interface influence still be recognizable if its most obvious
+  decorative motif were removed?
+- Are required content mappings visible as interface behavior rather than labels?
+- Does this concept preserve the same product grammar while using a genuinely
+  different layout?
 `.trim();
   };

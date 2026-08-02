@@ -127,6 +127,30 @@ describe("Interview prompt contracts", () => {
     );
   });
 
+  it("separates fixed experience grammar from variable concept layout", () => {
+    const messages = buildConceptSeedMessages({
+      clientLanguage: "en",
+      instructions: instagramLikeInstructions,
+      projectDocument: "# Photographer portfolio",
+    });
+    const systemPrompt = messages[0]?.content ?? "";
+
+    expect(systemPrompt).toContain("SHARED EXPERIENCE GRAMMAR");
+    expect(systemPrompt).toContain("VARIABLE DESIGN TERRITORY");
+    expect(systemPrompt).toContain("identity and hierarchy");
+    expect(systemPrompt).toContain("application navigation");
+    expect(systemPrompt).toContain("content-unit structure");
+    expect(systemPrompt).toContain("visible state or progress");
+    expect(systemPrompt).toContain('"Shared experience grammar:"');
+    expect(systemPrompt).toContain('"Concept-specific layout:"');
+    expect(systemPrompt).toContain(
+      "It must not reinterpret the project as a magazine, archive",
+    );
+    expect(systemPrompt).toContain(
+      "presentation deck, or conventional portfolio website",
+    );
+  });
+
   it("plans an additional batch outside the territory occupied by prior concepts", () => {
     const messages = buildConceptSeedMessages({
       clientLanguage: "en",
@@ -215,6 +239,17 @@ describe("Interview prompt contracts", () => {
     );
     expect(normalized).toContain(
       "Do not default to the same header, horizontal item strip, feed grid, and lower contact block",
+    );
+    expect(normalized).toContain("SHARED EXPERIENCE GRAMMAR IS IMMUTABLE");
+    expect(normalized).toContain("CONCEPT-SPECIFIC LAYOUT IS VARIABLE");
+    expect(normalized).toContain(
+      "Render one believable application viewport and interaction state",
+    );
+    expect(normalized).toContain(
+      "Do not compress the entire website, contact form, footer, and every content section into one screenshot",
+    );
+    expect(normalized).toContain(
+      "Would the named interface influence still be recognizable",
     );
   });
 

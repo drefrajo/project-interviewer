@@ -3,8 +3,21 @@ import { v } from "convex/values";
 
 export const clientLanguage = v.union(v.literal("en"), v.literal("de"));
 export const interviewModel = v.literal("gpt-5.6-terra");
-// Existing documents may still contain the retired model. New writes and all
-// active provider calls use `interviewModel` above.
+// Existing operation documents may still contain retired image-model values.
+// They are accepted only for validation; generation always uses GPT Image 2
+// medium and never forwards these values to a provider.
+const storedConceptImageModel = v.union(
+  v.literal("gpt-image-2"),
+  v.literal("gpt-image-2-low"),
+  v.literal("nano-banana-2"),
+  v.literal("nano-banana-2-lite"),
+  v.literal("flux-2-pro-1mp"),
+  v.literal("flux-2-max-1mp"),
+  v.literal("flux-2-flex-1mp"),
+  v.literal("flux-2-klein-4b-1mp"),
+);
+// Existing documents may still contain the retired interview model. New writes
+// and all active provider calls use the current model above.
 const storedInterviewModel = v.union(
   v.literal("gpt-5.6-terra"),
   v.literal("deepseek-v4-flash"),
@@ -61,14 +74,7 @@ export const operation = v.object({
       v.literal("concept_creating"),
     ),
   ),
-  imageModel: v.optional(
-    v.union(
-      v.literal("gpt-image-2"),
-      v.literal("gpt-image-2-low"),
-      v.literal("nano-banana-2"),
-      v.literal("nano-banana-2-lite"),
-    ),
-  ),
+  imageModel: v.optional(storedConceptImageModel),
   regeneratePrompts: v.optional(v.boolean()),
   additionalConcepts: v.optional(v.boolean()),
   input: v.optional(v.string()),

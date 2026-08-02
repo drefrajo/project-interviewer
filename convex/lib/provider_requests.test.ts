@@ -21,25 +21,8 @@ describe("provider request privacy contract", () => {
     });
     const gptImage = buildOpenRouterImageRequest({
       apiKey: "secret",
-      imageModel: "gpt-image-2",
       prompt: "rough visual direction",
     });
-    const gptLowImage = buildOpenRouterImageRequest({
-      apiKey: "secret",
-      imageModel: "gpt-image-2-low",
-      prompt: "rough visual direction",
-    });
-    const nanoImage = buildOpenRouterImageRequest({
-      apiKey: "secret",
-      imageModel: "nano-banana-2",
-      prompt: "rough visual direction",
-    });
-    const nanoLiteImage = buildOpenRouterImageRequest({
-      apiKey: "secret",
-      imageModel: "nano-banana-2-lite",
-      prompt: "rough visual direction",
-    });
-
     expect(JSON.parse(String(text.init.body))).toMatchObject({
       model: "openai/gpt-5.6-terra",
       reasoning: { effort: "low" },
@@ -71,47 +54,7 @@ describe("provider request privacy contract", () => {
         require_parameters: true,
       },
     });
-    expect(JSON.parse(String(gptLowImage.init.body))).toMatchObject({
-      model: "openai/gpt-image-2",
-      quality: "low",
-      aspect_ratio: "3:2",
-      provider: {
-        data_collection: "deny",
-        zdr: false,
-        allow_fallbacks: false,
-        require_parameters: true,
-      },
-    });
-    expect(JSON.parse(String(nanoImage.init.body))).toMatchObject({
-      model: "google/gemini-3.1-flash-image",
-      aspect_ratio: "3:2",
-      n: 1,
-      provider: {
-        data_collection: "deny",
-        zdr: false,
-        allow_fallbacks: false,
-        require_parameters: true,
-      },
-    });
-    expect(JSON.parse(String(nanoLiteImage.init.body))).toMatchObject({
-      model: "google/gemini-3.1-flash-lite-image",
-      aspect_ratio: "3:2",
-      n: 1,
-      provider: {
-        data_collection: "deny",
-        zdr: false,
-        allow_fallbacks: false,
-        require_parameters: true,
-      },
-    });
-    expect(JSON.parse(String(nanoImage.init.body))).not.toHaveProperty(
-      "quality",
-    );
-    expect(JSON.parse(String(nanoLiteImage.init.body))).not.toHaveProperty(
-      "quality",
-    );
     expect(gptImage.url).toBe("https://openrouter.ai/api/v1/images");
-    expect(nanoImage.url).toBe("https://openrouter.ai/api/v1/images");
     expect(JSON.parse(String(gptImage.init.body))).not.toHaveProperty("size");
   });
 

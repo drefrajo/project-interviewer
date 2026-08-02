@@ -25,7 +25,6 @@ import {
   buildCloudflareEmailRequest,
   buildOpenRouterImageRequest,
   buildOpenRouterTextRequest,
-  type ConceptImageModel,
   type ProviderMessage,
 } from "./lib/provider_requests";
 import { visualConcept } from "./schema";
@@ -533,11 +532,9 @@ const conceptSeeds = async (
 
 const imageBlob = async (
   prompt: string,
-  imageModel: ConceptImageModel,
 ) => {
   const request = buildOpenRouterImageRequest({
     apiKey: env.OPENROUTER_API_KEY,
-    imageModel,
     prompt,
   });
   let response: Response;
@@ -606,7 +603,8 @@ const runConceptGeneration = async (
             prompt,
           }))
       : await conceptSeeds(interview, 3)
-    : interview.concepts.length === 3 && !regeneratePrompts
+    : (interview.concepts.length === 3 || interview.concepts.length === 6) &&
+        !regeneratePrompts
       ? interview.concepts.map(({ id, name, rationale, prompt }) => ({
           id,
           name,
@@ -614,8 +612,6 @@ const runConceptGeneration = async (
           prompt,
         }))
       : await conceptSeeds(interview);
-  const imageModel: ConceptImageModel =
-    interview.operation?.imageModel ?? "gpt-image-2-low";
   await ctx.runMutation(internalRefs.jobs.setConceptGenerationPhase, {
     interviewId: interview._id,
     phase: "concept_creating",
@@ -639,7 +635,6 @@ const runConceptGeneration = async (
               ...seeds.filter((concept) => concept.id !== seed.id),
             ],
           }),
-          imageModel,
         ),
       ),
   );

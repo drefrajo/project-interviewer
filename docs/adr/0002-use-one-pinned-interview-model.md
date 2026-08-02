@@ -14,10 +14,11 @@ explicitly disables ZDR routing, and fails rather than falling back to another
 model or a retention-enabled endpoint. Clients receive the exact model name and
 a concise statement that external providers are used for AI functionality.
 
-GPT Image 2 at low quality renders Visual Concepts. It uses the same 3:2
+GPT Image 2 at medium quality renders Visual Concepts. It uses the same 3:2
 concept framing, while the image model remains separate from the text-model
 provider path.
 
 The application no longer exposes a model selector. The schema temporarily
-accepts the retired model value only so existing stored Interviews continue to
-validate; all new writes and subsequent operations use GPT-5.6 Terra.
+accepts retired stored model values only so existing Interviews continue to
+validate; all new writes and subsequent operations use GPT-5.6 Terra and GPT
+Image 2 at medium quality.
