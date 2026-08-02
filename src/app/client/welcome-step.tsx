@@ -8,7 +8,9 @@ import { primaryButton } from "../shared/form-controls";
 
 const copy = {
   en: {
-    invitedBy: "Interview from",
+    invitedBy: "You were invited by",
+    inviterCheck:
+      "Before you start, check that this name and email match the person you expect.",
     intro:
       "Answer a focused conversation, review the resulting Project Document, then choose a rough visual direction.",
     duration: "About 10 minutes",
@@ -20,7 +22,9 @@ const copy = {
     start: "Start interview",
   },
   de: {
-    invitedBy: "Interview von",
+    invitedBy: "Sie wurden eingeladen von",
+    inviterCheck:
+      "Prüfen Sie vor dem Start, ob Name und E-Mail zu der Person passen, die Sie erwarten.",
     intro:
       "Beantworten Sie einige gezielte Fragen, prüfen Sie das Projektdokument und wählen Sie anschließend eine grobe visuelle Richtung.",
     duration: "Etwa 10 Minuten",
@@ -46,13 +50,24 @@ export const WelcomeStep = ({
   const text = copy[interview.clientLanguage];
   return (
     <section className="mx-auto w-full max-w-3xl rounded-box border border-line bg-panel p-6 shadow-[0_1.5rem_4rem_rgb(15_23_42_/_8%)] dark:shadow-[0_1.5rem_4rem_rgb(2_6_23_/_50%)] sm:p-10">
-      <p className="text-xs font-extrabold tracking-[0.14em] text-forest uppercase">
-        {text.invitedBy} {interview.creator.displayName}
-      </p>
-      <h1 className="mt-3 font-display text-4xl leading-tight font-extrabold tracking-tight sm:text-5xl">
+      <h1 className="font-display text-4xl leading-tight font-extrabold tracking-tight sm:text-5xl">
         {interview.projectName}
       </h1>
       <p className="mt-4 max-w-2xl text-lg leading-8 text-muted">{text.intro}</p>
+      <div className="mt-7 rounded-xl border-2 border-forest/30 bg-soft p-5 sm:p-6">
+        <p className="text-xs font-extrabold tracking-[0.14em] text-forest uppercase">
+          {text.invitedBy}
+        </p>
+        <address className="mt-2 not-italic">
+          <p className="font-display text-2xl font-extrabold tracking-tight">
+            {interview.creator.displayName}
+          </p>
+          <p className="mt-1 break-all text-base text-muted">
+            {interview.creator.email}
+          </p>
+        </address>
+        <p className="mt-4 text-sm leading-6 text-muted">{text.inviterCheck}</p>
+      </div>
       <dl className="mt-8 grid gap-4 sm:grid-cols-2">
         <Disclosure icon={<Clock3 />} text={text.duration} />
         <Disclosure icon={<Eye />} text={text.shared} />
@@ -65,9 +80,6 @@ export const WelcomeStep = ({
           {interview.modelFamily}
         </p>
         <p className="mt-1">{text.providers}</p>
-        <p className="mt-2">
-          {interview.creator.displayName} · {interview.creator.email}
-        </p>
       </div>
       <button
         className={`${primaryButton} mt-8 w-full sm:w-auto`}

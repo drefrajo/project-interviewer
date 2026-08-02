@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { WelcomeStep } from "./welcome-step";
 
 describe("WelcomeStep", () => {
-  it("shows the exact model and a concise external-provider disclosure", () => {
+  it("prominently identifies the inviter and shows the exact model", () => {
     render(
       <WelcomeStep
         interview={{
@@ -27,6 +27,9 @@ describe("WelcomeStep", () => {
     );
 
     expect(screen.getByText("GPT-5.6 Terra")).toBeInTheDocument();
+    expect(screen.getByText("You were invited by")).toBeInTheDocument();
+    expect(screen.getByText("Creator")).toBeInTheDocument();
+    expect(screen.getByText("creator@example.test")).toBeInTheDocument();
     expect(
       screen.getByText(
         "External providers are used for AI functionality.",
