@@ -1,4 +1,11 @@
-import { useEffect, useState } from "react";
+import {
+  createContext,
+  createElement,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
 
 export type CreatorLanguage = "en" | "de";
 
@@ -16,7 +23,7 @@ export const creatorLanguageFromBrowser = (
   return "en";
 };
 
-const browserLanguages = () => {
+export const browserLanguages = () => {
   if (typeof navigator === "undefined") return [];
   return navigator.languages?.length
     ? navigator.languages
@@ -25,14 +32,41 @@ const browserLanguages = () => {
       : [];
 };
 
-export const useCreatorLanguage = (): CreatorLanguage => {
-  const [language] = useState(() =>
-    creatorLanguageFromBrowser(browserLanguages()),
+export const creatorLanguageFromCurrentBrowser = (): CreatorLanguage =>
+  creatorLanguageFromBrowser(browserLanguages());
+
+type CreatorLanguageContextValue = {
+  language: CreatorLanguage;
+  setLanguage: (language: CreatorLanguage) => void;
+};
+
+const CreatorLanguageContext = createContext<CreatorLanguageContextValue>({
+  language: creatorLanguageFromCurrentBrowser(),
+  setLanguage: () => undefined,
+});
+
+export const CreatorLanguageProvider = ({
+  children,
+}: {
+  children: ReactNode;
+}) => {
+  const [language, setLanguage] = useState<CreatorLanguage>(
+    creatorLanguageFromCurrentBrowser,
   );
 
   useEffect(() => {
     document.documentElement.lang = language;
   }, [language]);
 
-  return language;
+  return createElement(
+    CreatorLanguageContext.Provider,
+    { value: { language, setLanguage } },
+    children,
+  );
 };
+
+export const useCreatorLanguage = (): CreatorLanguage =>
+  useContext(CreatorLanguageContext).language;
+
+export const useSetCreatorLanguage = () =>
+  useContext(CreatorLanguageContext).setLanguage;

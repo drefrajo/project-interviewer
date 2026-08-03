@@ -35,6 +35,7 @@ export type PurchaseStatus = {
 export interface CreatorProfile {
   displayName: string;
   email: string;
+  language?: "en" | "de";
   provider?: "google" | "github" | null;
 }
 
@@ -162,10 +163,14 @@ interface InterviewApi {
   creator_profiles: {
     getCurrent: Query<Record<string, never>, CreatorProfile | null>;
     upsertCurrent: Mutation<
-      { displayName?: string },
+      { displayName?: string; language?: "en" | "de" },
       CreatorProfile
     >;
     updateDisplayName: Mutation<{ displayName: string }, CreatorProfile>;
+    updateSettings: Mutation<
+      { displayName: string; language: "en" | "de" },
+      CreatorProfile
+    >;
   };
   templates: {
     list: Query<Record<string, never>, PrivateInterviewTemplate[]>;

@@ -2,6 +2,10 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export const clientLanguage = v.union(v.literal("en"), v.literal("de"));
+export const creatorLanguage = v.union(
+  v.literal("en"),
+  v.literal("de"),
+);
 export const interviewModel = v.literal("gpt-5.6-terra");
 // Existing operation documents may still contain retired image-model values.
 // They are accepted only for validation; generation always uses GPT Image 2
@@ -167,6 +171,9 @@ export default defineSchema({
     tokenIdentifier: v.string(),
     email: v.string(),
     displayName: v.string(),
+    language: v.optional(creatorLanguage),
+    // Kept so profiles created by the previous email-only setting remain valid.
+    emailLanguage: v.optional(creatorLanguage),
     provider: v.optional(v.union(v.literal("google"), v.literal("github"))),
     stripeCustomerId: v.optional(v.string()),
     createdAt: v.number(),

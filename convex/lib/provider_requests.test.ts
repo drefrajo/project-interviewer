@@ -125,21 +125,52 @@ describe("provider request privacy contract", () => {
       apiUrl: "https://api.example.test/send",
       apiToken: "secret",
       from: "product@example.test",
+      fromName: undefined,
       to: "creator@example.test",
+      creatorName: "Alex",
+      language: "en",
       projectName: "Website",
       dashboardUrl: "https://app.example.test/interviews/123",
       submissionId: "submission_123",
     });
     const body = JSON.parse(String(request.init.body));
     expect(body).toEqual({
-      from: "product@example.test",
+      from: {
+        address: "product@example.test",
+        name: "drefrajo | Interview",
+      },
       to: ["creator@example.test"],
-      subject: "Project submitted: Website",
-      text: "Website was submitted.\n\nOpen the authenticated dashboard: https://app.example.test/interviews/123",
+      subject: "Your Project Submission is ready: Website",
+      text: "Hello Alex,\n\nThe Client has completed the Interview for \"Website\" and submitted the Project Submission.\n\nIt includes the Project Document, the generated Visual Concepts, the selected Visual Direction, and the Interview Transcript.\n\nOpen it in your authenticated Creator workspace:\nhttps://app.example.test/interviews/123\n\nThe Project Submission is complete and read-only for the Client.\n\nBest,\nInterview",
       headers: { "X-Project-Submission-ID": "submission_123" },
     });
     expect(request.init.headers).toMatchObject({
       "idempotency-key": "submission_123",
+    });
+  });
+
+  it("builds a German submission email", () => {
+    const request = buildCloudflareEmailRequest({
+      apiUrl: "https://api.example.test/send",
+      apiToken: "secret",
+      from: "product@example.test",
+      fromName: "drefrajo | Interview",
+      to: "creator@example.test",
+      creatorName: "Alex",
+      language: "de",
+      projectName: "Website",
+      dashboardUrl: "https://app.example.test/interviews/123",
+      submissionId: "submission_123",
+    });
+    const body = JSON.parse(String(request.init.body));
+
+    expect(body).toMatchObject({
+      from: {
+        address: "product@example.test",
+        name: "drefrajo | Interview",
+      },
+      subject: "Ihre Projektübergabe ist bereit: Website",
+      text: "Hallo Alex,\n\nder Client hat das Interview für „Website“ abgeschlossen und die Projektübergabe übermittelt.\n\nSie enthält das Projektdokument, die generierten visuellen Konzepte, die ausgewählte visuelle Richtung und das Interview-Transkript.\n\nIn Ihrem authentifizierten Creator-Workspace öffnen:\nhttps://app.example.test/interviews/123\n\nDie Projektübergabe ist abgeschlossen und für den Client schreibgeschützt.\n\nViele Grüße\nInterview",
     });
   });
 
@@ -149,7 +180,10 @@ describe("provider request privacy contract", () => {
         apiUrl: undefined,
         apiToken: undefined,
         from: undefined,
+        fromName: undefined,
         to: "creator@example.test",
+        creatorName: "Alex",
+        language: "en",
         projectName: "Website",
         dashboardUrl: "https://app.example.test/interviews/123",
         submissionId: "submission_123",

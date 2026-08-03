@@ -15,6 +15,7 @@ describe("Creator settings layout", () => {
     convex.useQuery.mockReturnValue({
       displayName: "Studio Example",
       email: "creator@example.com",
+      language: "en",
     });
     convex.useMutation.mockReturnValue(vi.fn(async () => null));
     convex.useAction.mockReturnValue(vi.fn(async () => ""));
@@ -32,5 +33,6 @@ describe("Creator settings layout", () => {
     ).toBeTruthy();
     expect(screen.getByRole("button", { name: "Buy for €29" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Buy for €99" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox")).toHaveValue("en");
   });
 });

@@ -5,6 +5,7 @@ import { getCreatorProfile, requireIdentity } from "./lib/auth";
 import { assertLength } from "./lib/domain";
 import { isOAuthProviderId } from "./lib/oauth";
 import { ensureIntroductoryPass } from "./lib/pass_accounting";
+import { creatorLanguage } from "./schema";
 
 export const getCurrent = query({
   args: {},
@@ -15,6 +16,7 @@ export const getCurrent = query({
           id: profile._id,
           displayName: profile.displayName,
           email: profile.email,
+          language: profile.language ?? profile.emailLanguage ?? "en",
           provider: profile.provider ?? null,
         }
       : null;
@@ -22,7 +24,10 @@ export const getCurrent = query({
 });
 
 export const upsertCurrent = mutation({
-  args: { displayName: v.optional(v.string()) },
+  args: {
+    displayName: v.optional(v.string()),
+    language: v.optional(creatorLanguage),
+  },
   handler: async (ctx, args) => {
     const identity = await requireIdentity(ctx);
     const authUser = await authComponent.getAuthUser(ctx);
@@ -45,10 +50,13 @@ export const upsertCurrent = mutation({
     const provider = isOAuthProviderId(authUser.provider)
       ? authUser.provider
       : current?.provider;
+    const language =
+      current?.language ?? current?.emailLanguage ?? args.language ?? "en";
     const id = current
       ? (await ctx.db.patch("creatorProfiles", current._id, {
           displayName,
           email,
+          language,
           ...(provider ? { provider } : {}),
           updatedAt: now,
         }),
@@ -58,6 +66,7 @@ export const upsertCurrent = mutation({
           tokenIdentifier: identity.tokenIdentifier,
           email,
           displayName,
+          language,
           ...(provider ? { provider } : {}),
           createdAt: now,
           updatedAt: now,
@@ -65,7 +74,7 @@ export const upsertCurrent = mutation({
 
     await ensureIntroductoryPass(ctx, id);
 
-    return { id, displayName, email };
+    return { id, displayName, email, language };
   },
 });
 
@@ -82,6 +91,29 @@ export const updateDisplayName = mutation({
     return {
       displayName,
       email: profile.email,
+      provider: profile.provider ?? undefined,
+    };
+  },
+});
+
+export const updateSettings = mutation({
+  args: {
+    displayName: v.string(),
+    language: creatorLanguage,
+  },
+  handler: async (ctx, args) => {
+    const profile = await getCreatorProfile(ctx);
+    if (!profile) throw new Error("Creator profile required.");
+    const displayName = assertLength("Display name", args.displayName, 120);
+    await ctx.db.patch("creatorProfiles", profile._id, {
+      displayName,
+      language: args.language,
+      updatedAt: Date.now(),
+    });
+    return {
+      displayName,
+      email: profile.email,
+      language: args.language,
       provider: profile.provider ?? undefined,
     };
   },

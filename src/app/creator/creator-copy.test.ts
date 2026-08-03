@@ -29,6 +29,13 @@ describe("Creator monetization copy", () => {
     );
   });
 
+  it("uses translated interview and creator language labels", () => {
+    expect(creatorCopy.en.form.interviewLanguage).toBe("Interview language");
+    expect(creatorCopy.de.form.interviewLanguage).toBe("Interview-Sprache");
+    expect(creatorCopy.en.settings.language).toBe("Language");
+    expect(creatorCopy.de.settings.language).toBe("Sprache");
+  });
+
   it.each(["en", "de"] as const)(
     "includes prices, tax disclosure, and reservation language in %s",
     (language) => {

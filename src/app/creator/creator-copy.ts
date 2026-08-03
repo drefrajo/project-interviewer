@@ -88,9 +88,9 @@ export const creatorCopy = {
       unavailable: "Interview unavailable",
       frozenTitle: "Interview configuration is frozen",
       frozenDescription:
-        "The first Client message fixed the project name, Client Language, and Interview Instructions.",
+        "The first Client message fixed the project name, interview language, and Interview Instructions.",
       projectName: "Project name",
-      clientLanguage: "Client Language",
+      interviewLanguage: "Interview language",
       templateHint:
         "A template prefills this field; it never governs the Interview after copying.",
       templateLabel: "Optional Interview Template",
@@ -109,8 +109,8 @@ export const creatorCopy = {
       copiedTemplate:
         "Template copied. You can freely customize these Interview Instructions.",
       languageChanged:
-        "Client Language changed. Your edited Interview Instructions were kept.",
-      builtInSwitched: "Built-in template switched to match the Client Language.",
+        "Interview language changed. Your edited Interview Instructions were kept.",
+      builtInSwitched: "Built-in template switched to match the interview language.",
       noMatchingBuiltIn:
         "No matching built-in template is available. Existing Interview Instructions were kept.",
       translationUpdated:
@@ -232,6 +232,10 @@ export const creatorCopy = {
       displayName: "Business or display name",
       emailHint: "Your verified identity cannot be changed here.",
       email: "Verified email",
+      language: "Language",
+      languageHint:
+        "This language is used for the Creator workspace and notification emails.",
+      languageOptions: { en: "English", de: "German" },
       save: "Save settings",
       saved: "Settings saved.",
     },
@@ -325,9 +329,9 @@ export const creatorCopy = {
       unavailable: "Interview nicht verfügbar",
       frozenTitle: "Interview-Konfiguration ist eingefroren",
       frozenDescription:
-        "Die erste Client-Nachricht hat Projektname, Client Language und Interview Instructions festgelegt.",
+        "Die erste Client-Nachricht hat Projektname, Interview-Sprache und Interviewanweisungen festgelegt.",
       projectName: "Projektname",
-      clientLanguage: "Client Language",
+      interviewLanguage: "Interview-Sprache",
       templateHint:
         "Eine Vorlage füllt dieses Feld vor, steuert das Interview nach dem Kopieren aber nicht.",
       templateLabel: "Optionale Interview-Vorlage",
@@ -346,8 +350,8 @@ export const creatorCopy = {
       copiedTemplate:
         "Vorlage kopiert. Sie können diese Interview Instructions frei anpassen.",
       languageChanged:
-        "Client Language geändert. Ihre bearbeiteten Interview Instructions wurden beibehalten.",
-      builtInSwitched: "Integrierte Vorlage an die Client Language angepasst.",
+        "Interview-Sprache geändert. Ihre bearbeiteten Interviewanweisungen wurden beibehalten.",
+      builtInSwitched: "Integrierte Vorlage an die Interview-Sprache angepasst.",
       noMatchingBuiltIn:
         "Keine passende integrierte Vorlage verfügbar. Die bisherigen Interview Instructions wurden beibehalten.",
       translationUpdated:
@@ -469,6 +473,10 @@ export const creatorCopy = {
       displayName: "Geschäfts- oder Anzeigename",
       emailHint: "Ihre verifizierte Identität kann hier nicht geändert werden.",
       email: "Verifizierte E-Mail",
+      language: "Sprache",
+      languageHint:
+        "Diese Sprache wird für den Creator-Arbeitsbereich und E-Mail-Benachrichtigungen verwendet.",
+      languageOptions: { en: "Englisch", de: "Deutsch" },
       save: "Einstellungen speichern",
       saved: "Einstellungen gespeichert.",
     },

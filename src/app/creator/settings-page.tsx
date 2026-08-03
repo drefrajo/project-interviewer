@@ -1,32 +1,46 @@
 import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState, type FormEvent } from "react";
 import { interviewApi } from "../../infrastructure/interview-api";
-import { Field, primaryButton, TextInput } from "../shared/form-controls";
+import { Field, primaryButton, Select, TextInput } from "../shared/form-controls";
 import { creatorCopy } from "./creator-copy";
-import { useCreatorLanguage } from "./creator-language";
+import {
+  type CreatorLanguage,
+  useCreatorLanguage,
+  useSetCreatorLanguage,
+} from "./creator-language";
 import { PassesSection } from "./passes-section";
 
 export const SettingsPage = () => {
   const language = useCreatorLanguage();
+  const setCreatorLanguage = useSetCreatorLanguage();
   const text = creatorCopy[language];
   const profile = useQuery(interviewApi.creator_profiles.getCurrent, {});
-  const update = useMutation(
-    interviewApi.creator_profiles.updateDisplayName,
-  );
+  const update = useMutation(interviewApi.creator_profiles.updateSettings);
   const [displayName, setDisplayName] = useState("");
+  const [selectedLanguage, setSelectedLanguage] =
+    useState<CreatorLanguage>(language);
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
   useEffect(() => {
-    if (profile) setDisplayName(profile.displayName);
-  }, [profile]);
+    if (profile) {
+      setDisplayName(profile.displayName);
+      const profileLanguage = profile.language ?? "en";
+      setSelectedLanguage(profileLanguage);
+      setCreatorLanguage(profileLanguage);
+    }
+  }, [profile, setCreatorLanguage]);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setBusy(true);
     setStatus("");
     try {
-      await update({ displayName: displayName.trim() });
-      setStatus(text.settings.saved);
+      await update({
+        displayName: displayName.trim(),
+        language: selectedLanguage,
+      });
+      setCreatorLanguage(selectedLanguage);
+      setStatus(creatorCopy[selectedLanguage].settings.saved);
     } catch (cause) {
       setStatus(cause instanceof Error ? cause.message : String(cause));
     } finally {
@@ -63,6 +77,20 @@ export const SettingsPage = () => {
               readOnly
               value={profile?.email ?? ""}
             />
+          </Field>
+          <Field
+            hint={text.settings.languageHint}
+            label={text.settings.language}
+          >
+            <Select
+              onChange={(event) =>
+                setSelectedLanguage(event.target.value as CreatorLanguage)
+              }
+              value={selectedLanguage}
+            >
+              <option value="en">{text.settings.languageOptions.en}</option>
+              <option value="de">{text.settings.languageOptions.de}</option>
+            </Select>
           </Field>
           <div className="flex items-center gap-4">
             <button

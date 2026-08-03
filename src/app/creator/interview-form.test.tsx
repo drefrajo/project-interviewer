@@ -84,7 +84,7 @@ describe("Create Interview template language", () => {
     ).toBeInTheDocument();
 
     await user.selectOptions(
-      screen.getByRole("combobox", { name: "Client Language" }),
+      screen.getByRole("combobox", { name: "Interview language" }),
       "de",
     );
 
@@ -113,7 +113,7 @@ describe("Create Interview template language", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("translates into the currently selected Client Language", async () => {
+  it("translates into the currently selected interview language", async () => {
     const user = userEvent.setup();
     const translate = vi.fn(
       async ({
@@ -132,7 +132,7 @@ describe("Create Interview template language", () => {
     renderForm();
 
     const languageSelect = screen.getByRole("combobox", {
-      name: "Client Language",
+      name: "Interview language",
     });
     const instructions = screen.getByRole("textbox", {
       name: /^Interview Instructions/,
@@ -165,7 +165,7 @@ describe("Create Interview template language", () => {
     const user = userEvent.setup();
     renderForm();
     const languageSelect = screen.getByRole("combobox", {
-      name: "Client Language",
+      name: "Interview language",
     });
     const templateSelect = screen.getByRole("combobox", {
       name: /^Optional Interview Template/,
@@ -187,7 +187,7 @@ describe("Create Interview template language", () => {
     const user = userEvent.setup();
     renderForm();
     const languageSelect = screen.getByRole("combobox", {
-      name: "Client Language",
+      name: "Interview language",
     });
     const templateSelect = screen.getByRole("combobox", {
       name: /^Optional Interview Template/,
@@ -211,7 +211,7 @@ describe("Create Interview template language", () => {
     const user = userEvent.setup();
     renderForm();
     const languageSelect = screen.getByRole("combobox", {
-      name: "Client Language",
+      name: "Interview language",
     });
     const templateSelect = screen.getByRole("combobox", {
       name: /^Optional Interview Template/,

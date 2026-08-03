@@ -12,6 +12,8 @@ import { ThemeToggle } from "../shared/theme-toggle";
 import { creatorCopy } from "./creator-copy";
 import {
   type CreatorLanguage,
+  creatorLanguageFromCurrentBrowser,
+  useSetCreatorLanguage,
   useCreatorLanguage,
 } from "./creator-language";
 
@@ -25,6 +27,7 @@ export const CreatorAuthGate = ({
   children: ReactNode;
 }) => {
   const language = useCreatorLanguage();
+  const setCreatorLanguage = useSetCreatorLanguage();
   const text = creatorCopy[language];
   const session = authClient.useSession();
   const providers = useQuery(
@@ -44,6 +47,10 @@ export const CreatorAuthGate = ({
   );
   const attemptedProvider = oauthProviderFromSearch(window.location.search);
 
+  useEffect(() => {
+    if (!session.data) attempted.current = false;
+  }, [session.data]);
+
   const signIn = (provider: OAuthProviderId) => {
     const callbackURL = new URL(window.location.href);
     callbackURL.searchParams.delete("auth_provider");
@@ -59,17 +66,28 @@ export const CreatorAuthGate = ({
   };
 
   useEffect(() => {
-    if (!session.data || attempted.current) return;
+    if (!session.data || profile === undefined || attempted.current) return;
     attempted.current = true;
     const suggestedName =
       session.data.user.name?.trim() ||
       session.data.user.email?.split("@")[0] ||
       "Creator";
-    void upsertProfile({ displayName: suggestedName }).catch((cause: unknown) => {
+    void upsertProfile({
+      displayName: suggestedName,
+      language: creatorLanguageFromCurrentBrowser(),
+    }).catch((cause: unknown) => {
       attempted.current = false;
       setError(cause instanceof Error ? cause.message : String(cause));
     });
   }, [profile, session.data, upsertProfile]);
+
+  useEffect(() => {
+    if (!session.data || profile === null) {
+      setCreatorLanguage(creatorLanguageFromCurrentBrowser());
+    } else if (profile) {
+      setCreatorLanguage(profile.language ?? "en");
+    }
+  }, [profile, session.data, setCreatorLanguage]);
 
   if (session.isPending || (session.data && profile === undefined)) {
     return (

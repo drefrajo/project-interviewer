@@ -45,7 +45,7 @@ export const InterviewForm = () => {
   const translate = useAction(interviewApi.templates.translate);
   const initialized = useRef(false);
   const [projectName, setProjectName] = useState("");
-  const [clientLanguage, setClientLanguage] =
+  const [interviewLanguage, setInterviewLanguage] =
     useState<ClientLanguage>("en");
   const [instructions, setInstructions] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
@@ -59,7 +59,7 @@ export const InterviewForm = () => {
     if (!editing || !interview || initialized.current) return;
     initialized.current = true;
     setProjectName(interview.projectName);
-    setClientLanguage(interview.clientLanguage);
+    setInterviewLanguage(interview.clientLanguage);
     setInstructions(interview.instructions);
     setTemplateBaseline(interview.instructions);
   }, [editing, interview]);
@@ -73,9 +73,9 @@ export const InterviewForm = () => {
       (templates ?? []).filter(
         (template) =>
           template.kind === "private" ||
-          template.sourceLanguage === clientLanguage,
+          template.sourceLanguage === interviewLanguage,
       ),
-    [clientLanguage, templates],
+    [interviewLanguage, templates],
   );
   const editedSinceTemplate =
     Boolean(selectedTemplate) && instructions !== templateBaseline;
@@ -87,7 +87,7 @@ export const InterviewForm = () => {
       return;
     }
     const next =
-      builtInInterviewTemplateForLanguage(template, clientLanguage)
+      builtInInterviewTemplateForLanguage(template, interviewLanguage)
         ?.instructions ?? template.instructions;
     if (
       instructions.trim() &&
@@ -106,8 +106,8 @@ export const InterviewForm = () => {
     );
   };
 
-  const changeClientLanguage = (language: ClientLanguage) => {
-    if (language === clientLanguage) return;
+  const changeInterviewLanguage = (language: ClientLanguage) => {
+    if (language === interviewLanguage) return;
     if (selectedTemplate?.kind === "built_in") {
       if (editedSinceTemplate) {
         setSelectedTemplateId("");
@@ -136,11 +136,11 @@ export const InterviewForm = () => {
         }
       }
     }
-    setClientLanguage(language);
+    setInterviewLanguage(language);
   };
 
   const translateInstructions = async () => {
-    const targetLanguage = clientLanguage;
+    const targetLanguage = interviewLanguage;
     if (
       editedSinceTemplate &&
       !window.confirm(
@@ -177,7 +177,7 @@ export const InterviewForm = () => {
     setError("");
     const input = {
       projectName: projectName.trim(),
-      clientLanguage,
+      clientLanguage: interviewLanguage,
       instructions: instructions.trim(),
     };
     try {
@@ -241,15 +241,15 @@ export const InterviewForm = () => {
           />
         </Field>
         <div className="max-w-md">
-          <Field label={text.form.clientLanguage}>
+          <Field label={text.form.interviewLanguage}>
             <Select
               disabled={translating}
               onChange={(event) =>
-                changeClientLanguage(
+                changeInterviewLanguage(
                   event.target.value as ClientLanguage,
                 )
               }
-              value={clientLanguage}
+              value={interviewLanguage}
             >
               <option value="en">{text.interviews.language.en}</option>
               <option value="de">{text.interviews.language.de}</option>
@@ -309,7 +309,7 @@ export const InterviewForm = () => {
               {translating
                 ? text.form.translating
                 : text.form.translateTo(
-                    text.interviews.language[clientLanguage],
+                    text.interviews.language[interviewLanguage],
                   )}
             </button>
             <button
@@ -320,7 +320,7 @@ export const InterviewForm = () => {
                 if (!name?.trim()) return;
                 await createTemplate({
                   name: name.trim(),
-                  sourceLanguage: clientLanguage,
+                  sourceLanguage: interviewLanguage,
                   instructions: instructions.trim(),
                 });
                 setTemplateNotice(text.form.templateSaved);

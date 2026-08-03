@@ -92,37 +92,84 @@ export const buildCloudflareEmailRequest = (args: {
   apiUrl: string | undefined;
   apiToken: string | undefined;
   from: string | undefined;
+  fromName: string | undefined;
   to: string;
+  creatorName: string;
+  language: "en" | "de";
   projectName: string;
   dashboardUrl: string;
   submissionId: string;
-}) => ({
-  url: requireSecret(
-    args.apiUrl,
-    "CLOUDFLARE_EMAIL_API_URL",
-    "EMAIL_CONFIGURATION_MISSING",
-  ),
-  init: {
-    method: "POST",
-    headers: {
-      authorization: `Bearer ${requireSecret(
-        args.apiToken,
-        "CLOUDFLARE_EMAIL_API_TOKEN",
-        "EMAIL_CONFIGURATION_MISSING",
-      )}`,
-      "content-type": "application/json",
-      "idempotency-key": args.submissionId,
-    },
-    body: JSON.stringify({
-      from: requireSecret(
-        args.from,
-        "EMAIL_FROM",
-        "EMAIL_CONFIGURATION_MISSING",
-      ),
-      to: [args.to],
-      subject: `Project submitted: ${args.projectName}`,
-      text: `${args.projectName} was submitted.\n\nOpen the authenticated dashboard: ${args.dashboardUrl}`,
-      headers: { "X-Project-Submission-ID": args.submissionId },
-    }),
-  } satisfies RequestInit,
-});
+}) => {
+  const copy =
+    args.language === "de"
+      ? {
+          subject: `Ihre Projektübergabe ist bereit: ${args.projectName}`,
+          text: [
+            `Hallo ${args.creatorName},`,
+            "",
+            `der Client hat das Interview für „${args.projectName}“ abgeschlossen und die Projektübergabe übermittelt.`,
+            "",
+            "Sie enthält das Projektdokument, die generierten visuellen Konzepte, die ausgewählte visuelle Richtung und das Interview-Transkript.",
+            "",
+            "In Ihrem authentifizierten Creator-Workspace öffnen:",
+            args.dashboardUrl,
+            "",
+            "Die Projektübergabe ist abgeschlossen und für den Client schreibgeschützt.",
+            "",
+            "Viele Grüße",
+            "Interview",
+          ].join("\n"),
+        }
+      : {
+          subject: `Your Project Submission is ready: ${args.projectName}`,
+          text: [
+            `Hello ${args.creatorName},`,
+            "",
+            `The Client has completed the Interview for "${args.projectName}" and submitted the Project Submission.`,
+            "",
+            "It includes the Project Document, the generated Visual Concepts, the selected Visual Direction, and the Interview Transcript.",
+            "",
+            "Open it in your authenticated Creator workspace:",
+            args.dashboardUrl,
+            "",
+            "The Project Submission is complete and read-only for the Client.",
+            "",
+            "Best,",
+            "Interview",
+          ].join("\n"),
+        };
+
+  return {
+    url: requireSecret(
+      args.apiUrl,
+      "CLOUDFLARE_EMAIL_API_URL",
+      "EMAIL_CONFIGURATION_MISSING",
+    ),
+    init: {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${requireSecret(
+          args.apiToken,
+          "CLOUDFLARE_EMAIL_API_TOKEN",
+          "EMAIL_CONFIGURATION_MISSING",
+        )}`,
+        "content-type": "application/json",
+        "idempotency-key": args.submissionId,
+      },
+      body: JSON.stringify({
+        from: {
+          address: requireSecret(
+            args.from,
+            "EMAIL_FROM",
+            "EMAIL_CONFIGURATION_MISSING",
+          ),
+          name: args.fromName?.trim() || "drefrajo | Interview",
+        },
+        to: [args.to],
+        subject: copy.subject,
+        text: copy.text,
+        headers: { "X-Project-Submission-ID": args.submissionId },
+      }),
+    } satisfies RequestInit,
+  };
+};

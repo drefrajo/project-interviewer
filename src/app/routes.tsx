@@ -8,6 +8,7 @@ import { InterviewForm } from "./creator/interview-form";
 import { InterviewsPage } from "./creator/interviews-page";
 import { SettingsPage } from "./creator/settings-page";
 import { TemplatesPage } from "./creator/templates-page";
+import { CreatorLanguageProvider } from "./creator/creator-language";
 import {
   BillingCancelPage,
   BillingPage,
@@ -23,9 +24,11 @@ export const createRoutes = (
   },
   {
     element: (
-      <CreatorAuthGate authClient={authClient}>
-        <CreatorShell authClient={authClient} />
-      </CreatorAuthGate>
+      <CreatorLanguageProvider>
+        <CreatorAuthGate authClient={authClient}>
+          <CreatorShell authClient={authClient} />
+        </CreatorAuthGate>
+      </CreatorLanguageProvider>
     ),
     children: [
       { index: true, element: <Navigate replace to="/interviews" /> },

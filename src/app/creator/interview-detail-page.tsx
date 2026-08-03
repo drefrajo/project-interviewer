@@ -10,6 +10,7 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   interviewApi,
+  type InterviewStatus,
 } from "../../infrastructure/interview-api";
 import { ConfirmDialog } from "../shared/confirm-dialog";
 import {
@@ -54,6 +55,9 @@ const downloadText = (filename: string, content: string) => {
   anchor.click();
   URL.revokeObjectURL(url);
 };
+
+export const shouldShowDetailStep = (status: InterviewStatus) =>
+  status !== "not_started" && status !== "submitted";
 
 export const InterviewDetailPage = () => {
   const language = useCreatorLanguage();
@@ -122,7 +126,10 @@ export const InterviewDetailPage = () => {
       <header className="flex flex-col items-start justify-between gap-5 lg:flex-row lg:items-end">
         <div>
           <p className="text-xs font-extrabold tracking-[0.14em] text-forest uppercase">
-            {text.interviews.status[interview.status]} · {text.interviews.step[interview.step]}
+            {text.interviews.status[interview.status]}
+            {shouldShowDetailStep(interview.status)
+              ? ` · ${text.interviews.step[interview.step]}`
+              : ""}
           </p>
           <h1 className="mt-2 font-display text-4xl font-extrabold">
             {interview.projectName}

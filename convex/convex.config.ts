@@ -18,6 +18,7 @@ const app = defineApp({
     CLOUDFLARE_EMAIL_API_URL: v.optional(v.string()),
     CLOUDFLARE_EMAIL_API_TOKEN: v.optional(v.string()),
     EMAIL_FROM: v.optional(v.string()),
+    EMAIL_FROM_NAME: v.optional(v.string()),
     STRIPE_MODE: v.optional(v.string()),
     STRIPE_SECRET_KEY: v.optional(v.string()),
     STRIPE_WEBHOOK_SIGNING_SECRET: v.optional(v.string()),
