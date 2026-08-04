@@ -3,7 +3,8 @@ dist
 .env
 .env.local
 .convex
-convex/**/_generated/
+# Convex bindings are generated but committed so clean CI checkouts can typecheck.
+convex/_generated/ai/
 coverage
 *.tsbuildinfo
 .DS_Store

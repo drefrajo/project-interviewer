@@ -17,14 +17,11 @@ The deterministic repository gate contains only tests that protect a user-visibl
 
 Do not add lower-level tests that duplicate these behaviors.
 
-The configured application gate additionally runs one browser flow against the
-real React application and a dedicated Convex development deployment. Replace
-AI, image, and email calls only at their narrow Convex boundaries. Verify
-Creator Interview creation, the complete Client Interview and Document Review,
-the first concept batch and, if exercised, the second batch, Visual Direction
-selection, immutable submission, Creator visibility, and ZIP download. Include
-one accessibility pass at desktop and mobile widths and inspect the served
-Content Security Policy. This gate must not use a production deployment.
+The hosted development environment is the manual integration gate. Exercise the
+complete Creator and Client flow there, including Document Review, Visual
+Direction selection, immutable submission, Creator visibility, and ZIP download.
+Include one accessibility pass at desktop and mobile widths and inspect the
+served Content Security Policy. This gate must not use a production deployment.
 
 ## Provider and language evaluation
 

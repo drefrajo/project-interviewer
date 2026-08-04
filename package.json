@@ -19,9 +19,12 @@
     "verify": "bun run test && bun run typecheck && bun run lint && bun run build:production",
     "validate:production": "bun scripts/validate-production.ts",
     "validate:production-build": "bun scripts/validate-production-build.ts",
+    "validate:deploy-machine": "bun scripts/validate-deploy-machine.ts",
     "validate:convex-deploy": "bun scripts/validate-convex-deploy.ts",
     "deploy:convex": "bun run validate:convex-deploy && bunx convex deploy",
-    "deploy:cloudflare": "bun run build:production && bunx wrangler deploy"
+    "deploy:convex:ci": "bun run validate:deploy-machine && bunx convex deploy",
+    "deploy:cloudflare": "bun run build:production && bunx wrangler deploy --env production",
+    "deploy:cloudflare:development": "bun run build:production && bunx wrangler deploy --env development"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "^2.0.0",

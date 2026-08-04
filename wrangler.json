@@ -5,5 +5,13 @@
   "assets": {
     "directory": "./dist",
     "not_found_handling": "single-page-application"
+  },
+  "env": {
+    "development": {
+      "name": "project-interviewer-development"
+    },
+    "production": {
+      "name": "project-interviewer"
+    }
   }
 }

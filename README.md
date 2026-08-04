@@ -47,4 +47,4 @@ It runs the automated behavior and boundary tests, TypeScript, ESLint, and the
 production build/security-header validation. It does not contact paid AI,
 image, or email providers and does not deploy hosted state.
 
-See [setup](docs/setup.md), [launch readiness](docs/launch-readiness.md), the [domain glossary](CONTEXT.md), and the [product specification](.scratch/template-driven-interviews/spec.md).
+See [setup](docs/setup.md), [deployment](docs/deployment.md), [launch readiness](docs/launch-readiness.md), the [domain glossary](CONTEXT.md), and the [product specification](.scratch/template-driven-interviews/spec.md).

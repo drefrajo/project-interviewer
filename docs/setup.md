@@ -217,11 +217,23 @@ Build the static SPA:
 bun run build:production
 ```
 
-Deploy Convex and then the Cloudflare static application:
+For hosted environments, use the GitHub Actions workflow. It deploys Convex
+before the matching Cloudflare Worker and builds the SPA with that environment's
+public Convex URLs. See [deployment](deployment.md) for the required GitHub
+environment variables, secrets, and branch flow.
+
+For manual deployment, deploy Convex and then the Cloudflare static application:
 
 ```sh
 bun run deploy:convex
 bun run deploy:cloudflare
+```
+
+The development Worker uses its Wrangler environment explicitly:
+
+```sh
+bun run deploy:convex
+bun run deploy:cloudflare:development
 ```
 
 Hosted-state changes require an explicit deployment decision; repository verification does not deploy.
