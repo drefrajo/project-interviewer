@@ -86,4 +86,37 @@ describe("Stripe webhook boundary", () => {
       ),
     ).toThrow("Unsupported Stripe webhook event");
   });
+
+  it("sanitizes Stripe Price updates for catalog refresh without persisting payloads", () => {
+    const event = parseStripeWebhookEvent(
+      JSON.stringify({
+        id: "evt_price_updated",
+        type: "price.updated",
+        livemode: false,
+        data: {
+          object: {
+            id: "price_replacement",
+            lookup_key: "interview_pass_one",
+            active: true,
+            currency: "eur",
+            unit_amount: 3100,
+            product: "prod_one",
+            secret: "must not be persisted",
+          },
+        },
+      }),
+    );
+    expect(event).toEqual({
+      eventId: "evt_price_updated",
+      eventType: "price.updated",
+      objectId: "price_replacement",
+      livemode: false,
+      lookupKey: "interview_pass_one",
+      priceId: "price_replacement",
+      productId: "prod_one",
+      priceActive: true,
+      priceCurrency: "eur",
+      priceUnitAmount: 3100,
+    });
+  });
 });

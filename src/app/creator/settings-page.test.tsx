@@ -12,16 +12,34 @@ vi.mock("convex/react", () => convex);
 
 describe("Creator settings layout", () => {
   beforeEach(() => {
-    convex.useQuery.mockReturnValue({
-      displayName: "Studio Example",
-      email: "creator@example.com",
-      language: "en",
+    let queryCount = 0;
+    convex.useQuery.mockImplementation(() => {
+      const slot = queryCount++ % 3;
+      if (slot === 1) {
+        return {
+          availablePasses: 1,
+          reservedPasses: 0,
+          introductoryPasses: 1,
+          purchasedPasses: 0,
+        };
+      }
+      if (slot === 2) {
+        return [
+          { packId: "one_pass", passCount: 1, amountMinor: 3100, currency: "eur" },
+          { packId: "five_passes", passCount: 5, amountMinor: 12300, currency: "eur" },
+        ];
+      }
+      return {
+        displayName: "Studio Example",
+        email: "creator@example.com",
+        language: "en",
+      };
     });
     convex.useMutation.mockReturnValue(vi.fn(async () => null));
     convex.useAction.mockReturnValue(vi.fn(async () => ""));
   });
 
-  it("shows Passes before the identity settings section", () => {
+  it("shows live catalog amounts and puts Passes before identity settings", () => {
     render(<SettingsPage />);
 
     const passesHeading = screen.getByRole("heading", { name: "Interview Passes" });
@@ -31,8 +49,8 @@ describe("Creator settings layout", () => {
       passesHeading.compareDocumentPosition(settingsHeading) &
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Buy for €29" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Buy for €99" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Buy for €31" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Buy for €123" })).toBeInTheDocument();
     expect(screen.getByRole("combobox")).toHaveValue("en");
   });
 });

@@ -9,26 +9,31 @@ const configuration = readStripeConfiguration({
   STRIPE_MODE: "sandbox",
   STRIPE_SECRET_KEY: "sk_test_sandbox-key",
   STRIPE_WEBHOOK_SIGNING_SECRET: "whsec_sandbox-secret",
-  STRIPE_ONE_PASS_PRICE_ID: "price_one_sandbox",
-  STRIPE_FIVE_PASS_PRICE_ID: "price_five_sandbox",
+  STRIPE_ONE_PASS_LOOKUP_KEY: "interview_pass_one",
+  STRIPE_FIVE_PASS_LOOKUP_KEY: "interview_pass_five",
   STRIPE_CHECKOUT_SUCCESS_URL: "https://example.test/billing/success",
   STRIPE_CHECKOUT_CANCEL_URL: "https://example.test/billing/cancel",
 });
 
 describe("Stripe provider boundary", () => {
-  it("uses server-owned catalog parameters, API version, and idempotency keys", async () => {
+  it("resolves the current lookup-key Price and uses server-owned checkout parameters", async () => {
     const requests: Array<{ url: string; init: RequestInit }> = [];
     const responses = [
-      { id: "acct_sandbox", object: "account" },
+      { id: "acct_sandbox", object: "account", livemode: false },
       {
-        id: "price_one_sandbox",
-        active: true,
-        livemode: false,
-        currency: "eur",
-        unit_amount: 2900,
-        type: "one_time",
-        recurring: null,
-        product: "prod_one_sandbox",
+        data: [
+          {
+            id: "price_one_sandbox",
+            lookup_key: "interview_pass_one",
+            active: true,
+            livemode: false,
+            currency: "eur",
+            unit_amount: 2900,
+            type: "one_time",
+            recurring: null,
+            product: "prod_one_sandbox",
+          },
+        ],
       },
       { tax_code: "txcd_10105002", active: true, livemode: false },
       { id: "cus_sandbox" },
@@ -52,10 +57,15 @@ describe("Stripe provider boundary", () => {
       configuration,
       fakeFetch,
     );
-    const pack = packForId(configuration, "one_pass");
+    const definition = packForId(configuration, "one_pass");
 
     await expect(gateway.getAccount()).resolves.toEqual({ livemode: false });
-    await expect(gateway.assertApprovedCatalogItem(pack)).resolves.toBeUndefined();
+    const pack = await gateway.resolveApprovedCatalogItem(definition);
+    expect(pack).toMatchObject({
+      priceId: "price_one_sandbox",
+      amountMinor: 2900,
+      passCount: 1,
+    });
     await expect(
       gateway.retrieveCustomer("cus_sandbox"),
     ).resolves.toEqual({ id: "cus_sandbox" });
@@ -79,6 +89,9 @@ describe("Stripe provider boundary", () => {
       "Bearer sk_test_sandbox-key",
     );
     expect(accountHeaders.get("Stripe-Version")).toBe("2025-03-31.basil");
+    expect(requests[1]?.url).toContain(
+      "/v1/prices?lookup_keys[]=interview_pass_one",
+    );
     const checkout = new URLSearchParams(
       String(requests.at(-1)?.init.body ?? ""),
     );
@@ -106,8 +119,8 @@ describe("Stripe provider boundary", () => {
       STRIPE_MODE: "live",
       STRIPE_SECRET_KEY: "sk_live_sandbox-key",
       STRIPE_WEBHOOK_SIGNING_SECRET: "whsec_live-secret",
-      STRIPE_ONE_PASS_PRICE_ID: "price_one_live",
-      STRIPE_FIVE_PASS_PRICE_ID: "price_five_live",
+      STRIPE_ONE_PASS_LOOKUP_KEY: "interview_pass_one",
+      STRIPE_FIVE_PASS_LOOKUP_KEY: "interview_pass_five",
       STRIPE_CHECKOUT_SUCCESS_URL: "https://example.test/billing/success",
       STRIPE_CHECKOUT_CANCEL_URL: "https://example.test/billing/cancel",
     });

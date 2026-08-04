@@ -16,9 +16,17 @@ export type StripeWebhookEvent = {
   amount?: number;
   amountRefunded?: number;
   disputeStatus?: string;
+  lookupKey?: string;
+  priceId?: string;
+  productId?: string;
+  priceActive?: boolean;
+  priceCurrency?: string;
+  priceUnitAmount?: number;
 };
 
 const supportedEventTypes = new Set<SupportedEventType>([
+  "price.created",
+  "price.updated",
   "checkout.session.completed",
   "checkout.session.async_payment_succeeded",
   "checkout.session.async_payment_failed",
@@ -140,6 +148,13 @@ export const parseStripeWebhookEvent = (rawBody: string): StripeWebhookEvent => 
   const amount = numberValue(object.amount);
   const amountRefunded = numberValue(object.amount_refunded);
   const disputeStatus = stringValue(dispute.status);
+  const lookupKey = stringValue(object.lookup_key);
+  const priceId = stringValue(object.id);
+  const productId = idValue(object.product);
+  const priceActive =
+    typeof object.active === "boolean" ? object.active : undefined;
+  const priceCurrency = stringValue(object.currency);
+  const priceUnitAmount = numberValue(object.unit_amount);
   const livemode = typeof parsed.livemode === "boolean" ? parsed.livemode : undefined;
   return {
     eventId: parsed.id,
@@ -155,5 +170,11 @@ export const parseStripeWebhookEvent = (rawBody: string): StripeWebhookEvent => 
     ...(amount !== undefined ? { amount } : {}),
     ...(amountRefunded !== undefined ? { amountRefunded } : {}),
     ...(disputeStatus ? { disputeStatus } : {}),
+    ...(lookupKey ? { lookupKey } : {}),
+    ...(eventType.startsWith("price.") && priceId ? { priceId } : {}),
+    ...(productId ? { productId } : {}),
+    ...(priceActive !== undefined ? { priceActive } : {}),
+    ...(priceCurrency ? { priceCurrency } : {}),
+    ...(priceUnitAmount !== undefined ? { priceUnitAmount } : {}),
   };
 };

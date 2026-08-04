@@ -31,6 +31,12 @@ export type PurchaseStatus = {
   currency: "eur";
   status: "pending" | "confirmed" | "failed" | "refunded" | "partial_refund";
 };
+export type PassCatalogItem = {
+  packId: "one_pass" | "five_passes";
+  passCount: 1 | 5;
+  amountMinor: number;
+  currency: "eur";
+};
 
 export interface CreatorProfile {
   displayName: string;
@@ -235,6 +241,8 @@ interface InterviewApi {
   };
   billing: {
     getBalance: Query<Record<string, never>, PassBalance | null>;
+    getCatalog: Query<Record<string, never>, PassCatalogItem[] | null>;
+    getPublicCatalog: Query<Record<string, never>, PassCatalogItem[] | null>;
     getPurchaseStatus: Query<{ purchaseId: string }, PurchaseStatus | null>;
     createCheckoutSession: Action<
       { packId: "one_pass" | "five_passes" },

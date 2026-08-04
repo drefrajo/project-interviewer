@@ -24,3 +24,6 @@ effects. Browser redirects must never fulfill purchases.
   omit `livemode`; sandbox `sk_test_` plus the independently verified Price and
   Product mode checks remain required before any Stripe mutation, while live
   mode still fails closed.
+- 2026-08-03: Replaced fixed Price-ID configuration with stable Stripe lookup
+  keys. The current active Price is resolved at checkout, cached for the UI,
+  refreshed by Price webhooks, and repaired by an hourly read-only Convex sync.

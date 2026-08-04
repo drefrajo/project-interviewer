@@ -33,6 +33,14 @@ Existing started or submitted Interviews are treated as consumed without a
 retroactive debit. Existing unstarted Interviews require a reservation before
 their links can be copied or shared.
 
+The application allowlists stable Stripe lookup keys for the two packs rather
+than fixed Price IDs. Checkout resolves the current active Price for the key,
+stores that Price ID and amount on the internal purchase, and exposes only a
+cached public amount to the Creator UI. Stripe Price webhooks refresh the
+cache, with an hourly read-only Convex sync as a recovery path. This lets the
+owner replace a sandbox or live Price in Stripe without a code or UI release;
+the server-owned lookup key and pass count remain unchanged.
+
 Subscriptions, usage-based/token billing, per-message or per-image pricing,
 Interview-Model pricing, and a 20-pass tier are deliberately excluded. They
 would make the price boundary harder to explain and are not needed to sell a

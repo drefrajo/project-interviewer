@@ -1,20 +1,32 @@
 export type StripeMode = "sandbox" | "live";
 
-export type InterviewPassPack = {
-  id: "one_pass" | "five_passes";
+export type InterviewPassPackId = "one_pass" | "five_passes";
+
+/**
+ * A lookup key is the durable application/catalog identity. Stripe Price IDs
+ * are deliberately resolved at runtime and stored only on purchases and the
+ * synchronized catalog snapshot for reconciliation.
+ */
+export type InterviewPassPackDefinition = {
+  id: InterviewPassPackId;
   label: string;
-  priceId: string;
+  lookupKey: string;
   passCount: 1 | 5;
-  amountMinor: 2900 | 9900;
   currency: "eur";
+};
+
+export type InterviewPassPack = InterviewPassPackDefinition & {
+  priceId: string;
+  productId: string;
+  amountMinor: number;
 };
 
 export type StripeConfiguration = {
   mode: StripeMode;
   secretKey: string;
   webhookSigningSecret: string;
-  onePassPriceId: string;
-  fivePassPriceId: string;
+  onePassLookupKey: string;
+  fivePassesLookupKey: string;
   checkoutSuccessUrl: string;
   checkoutCancelUrl: string;
   apiVersion: "2025-03-31.basil";
@@ -25,8 +37,8 @@ type ConfigurationSource = Readonly<{
   STRIPE_MODE?: string | undefined;
   STRIPE_SECRET_KEY?: string | undefined;
   STRIPE_WEBHOOK_SIGNING_SECRET?: string | undefined;
-  STRIPE_ONE_PASS_PRICE_ID?: string | undefined;
-  STRIPE_FIVE_PASS_PRICE_ID?: string | undefined;
+  STRIPE_ONE_PASS_LOOKUP_KEY?: string | undefined;
+  STRIPE_FIVE_PASS_LOOKUP_KEY?: string | undefined;
   STRIPE_CHECKOUT_SUCCESS_URL?: string | undefined;
   STRIPE_CHECKOUT_CANCEL_URL?: string | undefined;
 }>;
@@ -70,21 +82,17 @@ export const readStripeConfiguration = (
   if (!webhookSigningSecret.startsWith("whsec_")) {
     throw new Error("Stripe webhook signing secret is invalid.");
   }
-  const onePassPriceId = required(source, "STRIPE_ONE_PASS_PRICE_ID");
-  const fivePassPriceId = required(source, "STRIPE_FIVE_PASS_PRICE_ID");
-  if (
-    !onePassPriceId.startsWith("price_") ||
-    !fivePassPriceId.startsWith("price_") ||
-    onePassPriceId === fivePassPriceId
-  ) {
-    throw new Error("Stripe Price IDs must be two distinct price IDs.");
+  const onePassLookupKey = required(source, "STRIPE_ONE_PASS_LOOKUP_KEY");
+  const fivePassesLookupKey = required(source, "STRIPE_FIVE_PASS_LOOKUP_KEY");
+  if (onePassLookupKey === fivePassesLookupKey) {
+    throw new Error("Stripe lookup keys must be two distinct catalog keys.");
   }
   return {
     mode: modeValue,
     secretKey,
     webhookSigningSecret,
-    onePassPriceId,
-    fivePassPriceId,
+    onePassLookupKey,
+    fivePassesLookupKey,
     checkoutSuccessUrl: urlValue(source, "STRIPE_CHECKOUT_SUCCESS_URL"),
     checkoutCancelUrl: urlValue(source, "STRIPE_CHECKOUT_CANCEL_URL"),
     apiVersion: "2025-03-31.basil",
@@ -95,23 +103,21 @@ export const readStripeConfiguration = (
 export const packsFor = (
   configuration: Pick<
     StripeConfiguration,
-    "onePassPriceId" | "fivePassPriceId"
+    "onePassLookupKey" | "fivePassesLookupKey"
   >,
-): readonly InterviewPassPack[] => [
+): readonly InterviewPassPackDefinition[] => [
   {
     id: "one_pass",
     label: "1 Interview Pass",
-    priceId: configuration.onePassPriceId,
+    lookupKey: configuration.onePassLookupKey,
     passCount: 1,
-    amountMinor: 2900,
     currency: "eur",
   },
   {
     id: "five_passes",
     label: "5 Interview Passes",
-    priceId: configuration.fivePassPriceId,
+    lookupKey: configuration.fivePassesLookupKey,
     passCount: 5,
-    amountMinor: 9900,
     currency: "eur",
   },
 ];
@@ -119,7 +125,7 @@ export const packsFor = (
 export const packForId = (
   configuration: Pick<
     StripeConfiguration,
-    "onePassPriceId" | "fivePassPriceId"
+    "onePassLookupKey" | "fivePassesLookupKey"
   >,
   packId: string,
 ) => {
@@ -128,17 +134,17 @@ export const packForId = (
   return pack;
 };
 
-export const packForPriceId = (
+export const packForLookupKey = (
   configuration: Pick<
     StripeConfiguration,
-    "onePassPriceId" | "fivePassPriceId"
+    "onePassLookupKey" | "fivePassesLookupKey"
   >,
-  priceId: string,
+  lookupKey: string,
 ) => {
   const pack = packsFor(configuration).find(
-    (candidate) => candidate.priceId === priceId,
+    (candidate) => candidate.lookupKey === lookupKey,
   );
-  if (!pack) throw new Error("Stripe Price ID is not allowlisted.");
+  if (!pack) throw new Error("Stripe lookup key is not allowlisted.");
   return pack;
 };
 
@@ -179,6 +185,7 @@ export type StripePriceSnapshot = {
   id: string;
   active: boolean;
   livemode: boolean;
+  lookup_key?: string | null;
   currency: string;
   unit_amount: number | null;
   type?: string;
@@ -187,21 +194,42 @@ export type StripePriceSnapshot = {
 };
 
 export const assertApprovedPrice = (
-  configuration: Pick<StripeConfiguration, "mode" | "taxCode">,
-  pack: InterviewPassPack,
+  configuration: Pick<StripeConfiguration, "mode">,
+  pack: InterviewPassPackDefinition,
   price: StripePriceSnapshot,
 ) => {
-  if (price.id !== pack.priceId) throw new Error("Stripe Price ID mismatch.");
+  if (price.lookup_key !== pack.lookupKey) {
+    throw new Error("Stripe Price lookup key mismatch.");
+  }
   if (price.livemode !== (configuration.mode === "live")) {
     throw new Error("Stripe Price mode does not match deployment mode.");
   }
   if (
     !price.active ||
     price.currency !== pack.currency ||
-    price.unit_amount !== pack.amountMinor ||
+    price.unit_amount === null ||
+    !Number.isInteger(price.unit_amount) ||
+    price.unit_amount < 0 ||
     (price.recurring !== undefined && price.recurring !== null) ||
     (price.type !== undefined && price.type !== "one_time")
   ) {
     throw new Error("Stripe Price does not match the approved Interview Pass pack.");
   }
+};
+
+export const resolvedPackFromPrice = (
+  configuration: Pick<StripeConfiguration, "mode">,
+  pack: InterviewPassPackDefinition,
+  price: StripePriceSnapshot,
+) => {
+  const productId =
+    typeof price.product === "string" ? price.product : price.product.id;
+  if (!productId) throw new Error("Stripe Product is unavailable.");
+  assertApprovedPrice(configuration, pack, price);
+  return {
+    ...pack,
+    priceId: price.id,
+    productId,
+    amountMinor: price.unit_amount!,
+  } satisfies InterviewPassPack;
 };

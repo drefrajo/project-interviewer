@@ -73,11 +73,11 @@ Complete this section in sandbox before any live-mode action:
   per-model catalog;
 - obtain owner/Stripe confirmation that `txcd_10105002` is the correct
   business-use cloud AIaaS classification before live setup;
-- set the sandbox-only secret, webhook signing secret, two sandbox Price IDs,
-  and success/cancellation URLs in the Convex environment, then run
+- set the sandbox-only secret, webhook signing secret, two stable sandbox
+  lookup keys, and success/cancellation URLs in the Convex environment, then run
   `bun run validate:convex-deploy`;
 - register the public Convex `/stripe/webhook` endpoint for the documented
-  Checkout, delayed-payment, refund, and dispute events;
+  Price, Checkout, delayed-payment, refund, and dispute events;
 - complete a sandbox purchase for each pack, including a delayed-payment
   result where available, and verify webhook-only fulfillment, exactly-once
   retries, unpaid completion, cancellation, refund, partial-refund flagging,

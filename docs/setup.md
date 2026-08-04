@@ -72,8 +72,25 @@ never put these values in `VITE_` variables or source control:
 - `STRIPE_MODE`: `sandbox` for `sk_test_...`, or `live` for `sk_live_...`;
 - `STRIPE_SECRET_KEY`: preferably a restricted key;
 - `STRIPE_WEBHOOK_SIGNING_SECRET`;
-- `STRIPE_ONE_PASS_PRICE_ID` and `STRIPE_FIVE_PASS_PRICE_ID`;
+- `STRIPE_ONE_PASS_LOOKUP_KEY` and `STRIPE_FIVE_PASS_LOOKUP_KEY` (stable
+  values such as `interview_pass_one` and `interview_pass_five`);
 - `STRIPE_CHECKOUT_SUCCESS_URL` and `STRIPE_CHECKOUT_CANCEL_URL`.
+
+The lookup keys, not Stripe Price IDs or amounts, are the stable application
+catalog boundary. The server resolves the current active Price for each key at
+checkout, caches the public amount for the Creator UI, and stores the resolved
+Price ID on each purchase for reconciliation. Changing a pack price therefore
+means creating the replacement Stripe Price with the existing lookup key (and
+transferring that key if Stripe requires it); no backend or frontend code
+change is needed. Price webhooks refresh the cache immediately and a Convex
+hourly read-only sync repairs missed webhook deliveries.
+
+External marketing sites may use the unauthenticated public Convex query
+`api.billing.getPublicCatalog` to display the same cached prices. It returns
+only the pack identifier, pass count, amount, and currency; it never returns
+Stripe identifiers or calls Stripe. Use a Convex client against the same
+deployment and subscribe to the query for reactive updates. Checkout remains
+Creator-authenticated and must not be moved into the public interface.
 
 For sandbox setup, the owner must:
 
@@ -83,10 +100,11 @@ For sandbox setup, the owner must:
 2. Enable Managed Payments and accept its owner-controlled terms if Stripe
    requires the Creator to reserve a pass before sharing. Confirm that this product and the business-use AIaaS
    tax code are eligible.
-3. Create or reuse exactly the two sandbox Products/Prices above. Keep their
-   approved Price IDs only in the Convex environment configuration.
+3. Create or reuse exactly the two sandbox Products/Prices above. Assign the
+   stable lookup keys `interview_pass_one` and `interview_pass_five`; keep
+   resolved Price IDs out of application configuration.
 4. Register `POST https://<deployment>.convex.site/stripe/webhook` with these
-   events: `checkout.session.completed`,
+   events: `price.created`, `price.updated`, `checkout.session.completed`,
    `checkout.session.async_payment_succeeded`,
    `checkout.session.async_payment_failed`, `charge.refunded`,
    `refund.created`, `charge.dispute.created`, `charge.dispute.closed`,
@@ -94,8 +112,10 @@ For sandbox setup, the owner must:
    `charge.dispute.funds_withdrawn`. Store the signing secret in
    `STRIPE_WEBHOOK_SIGNING_SECRET`.
 5. Set the environment values with `bunx convex env set` and run
-   `bun run validate:convex-deploy`. The validator fails closed on incomplete
-   configuration or sandbox/live key mismatch.
+   `bun run validate:convex-deploy`. Then run the internal catalog sync once
+   after the first deployment (the scheduled sync and Price webhooks handle
+   subsequent changes). The validator fails closed on incomplete configuration
+   or sandbox/live key mismatch.
 6. Complete a sandbox Checkout using a Stripe test payment method. Confirm
    that only the signed webhook changes the Pass Balance, delayed payments are
    handled, the success page only reports server state, and duplicate events

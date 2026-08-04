@@ -21,6 +21,7 @@ import {
 } from "./lib/pass_accounting";
 import {
   packForId,
+  packsFor,
   readStripeConfiguration,
   type InterviewPassPack,
 } from "./lib/stripe_catalog";
@@ -39,6 +40,68 @@ const passBalanceFor = async (
     .query("passAccounts")
     .withIndex("by_creatorId", (q) => q.eq("creatorId", creatorId))
     .unique();
+
+const catalogRowFor = async (
+  ctx: QueryCtx | MutationCtx,
+  packId: "one_pass" | "five_passes",
+) =>
+  await ctx.db
+    .query("stripeCatalog")
+    .withIndex("by_packId", (q) => q.eq("packId", packId))
+    .unique();
+
+const resolvedPackFromCatalogRow = (
+  definition: ReturnType<typeof packForId>,
+  row: Doc<"stripeCatalog">,
+): InterviewPassPack => {
+  if (
+    row.lookupKey !== definition.lookupKey ||
+    row.passCount !== definition.passCount ||
+    row.currency !== definition.currency ||
+    !row.active
+  ) {
+    throw new Error("Stripe Interview Pass catalog is unavailable.");
+  }
+  return {
+    ...definition,
+    priceId: row.priceId,
+    productId: row.productId,
+    amountMinor: row.amountMinor,
+  };
+};
+
+const catalogUnavailable = () =>
+  new Error("Stripe Interview Pass catalog is unavailable.");
+
+const publicCatalogFor = async (ctx: QueryCtx) => {
+  const rows = await Promise.all(
+    (["one_pass", "five_passes"] as const).map((packId) =>
+      catalogRowFor(ctx, packId),
+    ),
+  );
+  if (rows.some((row) => !row)) return null;
+  const items = rows.map((row) => {
+    if (
+      !row ||
+      !row.active ||
+      (row.passCount !== 1 && row.passCount !== 5) ||
+      row.currency !== "eur"
+    ) {
+      return null;
+    }
+    return {
+      packId: row.packId,
+      passCount: row.passCount,
+      amountMinor: row.amountMinor,
+      currency: row.currency,
+    };
+  });
+  return items.every(
+    (item): item is NonNullable<typeof item> => item !== null,
+  )
+    ? items
+    : null;
+};
 
 const purchaseStatus = (purchase: Doc<"purchases">) => {
   if (purchase.state === "paid") return "confirmed" as const;
@@ -62,6 +125,56 @@ export const getBalance = query({
       introductoryPasses: account.introductoryBalance,
       purchasedPasses: account.purchasedBalance,
     };
+  },
+});
+
+/**
+ * Public, read-only catalog for marketing sites. It reads only the
+ * server-synchronized catalog snapshot and never contacts Stripe.
+ */
+export const getPublicCatalog = query({
+  args: {},
+  handler: async (ctx) => await publicCatalogFor(ctx),
+});
+
+export const getCatalog = query({
+  args: {},
+  handler: async (ctx) => {
+    await requireCreatorProfile(ctx);
+    let configuration;
+    try {
+      configuration = readStripeConfiguration(env);
+    } catch {
+      return null;
+    }
+    const definitions = packsFor(configuration);
+    const rows = await Promise.all(
+      definitions.map((definition) => catalogRowFor(ctx, definition.id)),
+    );
+    if (rows.some((row) => !row)) return null;
+    const items = rows.map((row, index) => {
+      const definition = definitions[index]!;
+      const catalogRow = row!;
+      if (
+        catalogRow.lookupKey !== definition.lookupKey ||
+        catalogRow.passCount !== definition.passCount ||
+        catalogRow.currency !== definition.currency ||
+        !catalogRow.active
+      ) {
+        return null;
+      }
+      return {
+        packId: definition.id,
+        passCount: definition.passCount,
+        amountMinor: catalogRow.amountMinor,
+        currency: catalogRow.currency,
+      };
+    });
+    return items.every(
+      (item): item is NonNullable<typeof item> => item !== null,
+    )
+      ? items
+      : null;
   },
 });
 
@@ -96,6 +209,64 @@ type PreparedPurchase = {
   checkoutUrl?: string;
 };
 
+export const replaceCatalog = internalMutation({
+  args: {
+    items: v.array(
+      v.object({
+        packId: purchasePackId,
+        lookupKey: v.string(),
+        priceId: v.string(),
+        productId: v.string(),
+        passCount: v.union(v.literal(1), v.literal(5)),
+        amountMinor: v.number(),
+        currency: v.literal("eur"),
+        active: v.boolean(),
+        syncedAt: v.number(),
+      }),
+    ),
+  },
+  handler: async (ctx, args) => {
+    for (const item of args.items) {
+      const existing = await catalogRowFor(ctx, item.packId);
+      if (existing) {
+        await ctx.db.patch("stripeCatalog", existing._id, item);
+      } else {
+        await ctx.db.insert("stripeCatalog", item);
+      }
+    }
+    return null;
+  },
+});
+
+export const syncCatalog = internalAction({
+  args: {},
+  handler: async (ctx) => {
+    const configuration = readStripeConfiguration(env);
+    const gateway = createStripeGateway(configuration);
+    await gateway.getAccount();
+    const items = await Promise.all(
+      packsFor(configuration).map((definition) =>
+        gateway.resolveApprovedCatalogItem(definition),
+      ),
+    );
+    const syncedAt = Date.now();
+    await ctx.runMutation(internalRefs.billing.replaceCatalog, {
+      items: items.map((item) => ({
+        packId: item.id,
+        lookupKey: item.lookupKey,
+        priceId: item.priceId,
+        productId: item.productId,
+        passCount: item.passCount,
+        amountMinor: item.amountMinor,
+        currency: item.currency,
+        active: true,
+        syncedAt,
+      })),
+    });
+    return { syncedAt, packCount: items.length };
+  },
+});
+
 const prepared = (
   purchase: Doc<"purchases">,
   creator: Doc<"creatorProfiles">,
@@ -119,7 +290,10 @@ export const preparePurchase = internalMutation({
     const creator = await requireCreatorProfile(ctx);
     await ensureIntroductoryPass(ctx, creator._id);
     const configuration = readStripeConfiguration(env);
-    const pack = packForId(configuration, args.packId);
+    const definition = packForId(configuration, args.packId);
+    const catalogRow = await catalogRowFor(ctx, definition.id);
+    if (!catalogRow) throw catalogUnavailable();
+    const pack = resolvedPackFromCatalogRow(definition, catalogRow);
     const now = Date.now();
     const candidates = await ctx.db
       .query("purchases")
@@ -131,6 +305,7 @@ export const preparePurchase = internalMutation({
     const reusable = candidates.find(
       (candidate) =>
         candidate.packId === pack.id &&
+        candidate.lookupKey === pack.lookupKey &&
         candidate.priceId === pack.priceId &&
         candidate.amountMinor === pack.amountMinor &&
         !candidate.checkoutSessionId &&
@@ -143,6 +318,7 @@ export const preparePurchase = internalMutation({
       creatorId: creator._id,
       packId: pack.id,
       priceId: pack.priceId,
+      lookupKey: pack.lookupKey,
       quantity: 1,
       passCount: pack.passCount,
       amountMinor: pack.amountMinor,
@@ -156,6 +332,32 @@ export const preparePurchase = internalMutation({
     const purchase = await ctx.db.get("purchases", purchaseDocId);
     if (!purchase) throw new Error("Purchase could not be initialized.");
     return prepared(purchase, creator, pack);
+  },
+});
+
+export const refreshPendingPurchaseCatalog = internalMutation({
+  args: {
+    purchaseId: v.id("purchases"),
+    lookupKey: v.string(),
+    priceId: v.string(),
+    amountMinor: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const purchase = await ctx.db.get("purchases", args.purchaseId);
+    if (
+      !purchase ||
+      purchase.state !== "pending" ||
+      purchase.checkoutSessionId
+    ) {
+      return null;
+    }
+    await ctx.db.patch("purchases", purchase._id, {
+      lookupKey: args.lookupKey,
+      priceId: args.priceId,
+      amountMinor: args.amountMinor,
+      updatedAt: Date.now(),
+    });
+    return null;
   },
 });
 
@@ -238,9 +440,24 @@ export const createCheckoutSession = action({
       const configuration = readStripeConfiguration(env);
       const gateway = createStripeGateway(configuration);
       await gateway.getAccount();
-      await gateway.assertApprovedCatalogItem(purchase.pack);
       if (purchase.checkoutUrl) {
         return { purchaseId: purchase.purchaseId, url: purchase.checkoutUrl };
+      }
+      const currentPack = await gateway.resolveApprovedCatalogItem(
+        packForId(configuration, args.packId),
+      );
+      if (
+        purchase.pack.lookupKey !== currentPack.lookupKey ||
+        purchase.pack.priceId !== currentPack.priceId ||
+        purchase.pack.amountMinor !== currentPack.amountMinor
+      ) {
+        await ctx.runMutation(internalRefs.billing.refreshPendingPurchaseCatalog, {
+          purchaseId: purchase.purchaseDocId,
+          lookupKey: currentPack.lookupKey,
+          priceId: currentPack.priceId,
+          amountMinor: currentPack.amountMinor,
+        });
+        purchase = { ...purchase, pack: currentPack };
       }
       let customerId = purchase.stripeCustomerId;
       if (customerId) {
@@ -564,6 +781,14 @@ export const handleWebhook = internalMutation({
         existingEvent.processingState === "ignored")
     ) {
       return { state: existingEvent.processingState } as const;
+    }
+    if (
+      event.eventType === "price.created" ||
+      event.eventType === "price.updated"
+    ) {
+      await ctx.scheduler.runAfter(0, internalRefs.billing.syncCatalog, {});
+      await markEvent(ctx, event, "processed");
+      return { state: "processed" as const };
     }
     const purchase = await purchaseForEvent(ctx, event);
     if (!purchase) {

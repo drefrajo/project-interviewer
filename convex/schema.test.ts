@@ -13,6 +13,7 @@ describe("application schema", () => {
       "passAccounts",
       "passLedger",
       "purchases",
+      "stripeCatalog",
       "stripeEvents",
     ]);
   });

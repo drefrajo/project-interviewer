@@ -2,6 +2,7 @@ import {
   assertApprovedPrice,
   checkoutParametersFor,
   type InterviewPassPack,
+  type InterviewPassPackDefinition,
   type StripeConfiguration,
   type StripePriceSnapshot,
 } from "./stripe_catalog";
@@ -71,7 +72,9 @@ const jsonBody = async (response: Response): Promise<JsonRecord> => {
 export type StripeGateway = {
   getAccount(): Promise<{ livemode: boolean }>;
   getPrice(priceId: string): Promise<StripePriceSnapshot>;
-  assertApprovedCatalogItem(pack: InterviewPassPack): Promise<void>;
+  resolveApprovedCatalogItem(
+    pack: InterviewPassPackDefinition,
+  ): Promise<InterviewPassPack>;
   retrieveCustomer(customerId: string): Promise<{ id: string }>;
   createCustomer(input: {
     email: string;
@@ -154,8 +157,24 @@ export const createStripeGateway = (
       undefined,
     );
 
-  const assertApprovedCatalogItem = async (pack: InterviewPassPack) => {
-    const price = await getPrice(pack.priceId);
+  const getPriceByLookupKey = async (lookupKey: string) => {
+    const prices = await request<{
+      data?: unknown;
+    }>(
+      "GET",
+      `/v1/prices?lookup_keys[]=${encodeURIComponent(lookupKey)}&active=true`,
+      undefined,
+    );
+    if (!Array.isArray(prices.data) || prices.data.length !== 1) {
+      throw new StripeProviderError(200, "STRIPE_PRICE_LOOKUP_UNAVAILABLE");
+    }
+    return prices.data[0] as StripePriceSnapshot;
+  };
+
+  const resolveApprovedCatalogItem = async (
+    pack: InterviewPassPackDefinition,
+  ): Promise<InterviewPassPack> => {
+    const price = await getPriceByLookupKey(pack.lookupKey);
     assertApprovedPrice(configuration, pack, price);
     const productId = idFrom(price.product);
     if (!productId) {
@@ -173,6 +192,12 @@ export const createStripeGateway = (
     ) {
       throw new StripeProviderError(200, "STRIPE_CATALOG_MISMATCH");
     }
+    return {
+      ...pack,
+      priceId: price.id,
+      productId,
+      amountMinor: price.unit_amount!,
+    };
   };
 
   const retrieveCustomer = async (customerId: string) => {
@@ -243,7 +268,7 @@ export const createStripeGateway = (
   return {
     getAccount,
     getPrice,
-    assertApprovedCatalogItem,
+    resolveApprovedCatalogItem,
     retrieveCustomer,
     createCustomer,
     createCheckoutSession,

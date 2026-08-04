@@ -41,9 +41,11 @@ prepaid entitlement with no per-message or model-metering surprises.
 - Refunds and dispute losses revoke a purchase grant once. If the pass was
   already consumed, the balance may become negative; Interview history is not
   rewritten. Partial refunds are explicitly flagged for reconciliation.
-- Stripe Price IDs are allowlisted in server configuration and map to a
-  server-owned pass count. Amounts, names, browser input, and arbitrary Stripe
-  metadata never authorize fulfillment.
+- Stable Stripe lookup keys are allowlisted in server configuration and map to
+  a server-owned pass count. The current Price ID and amount are resolved from
+  Stripe at checkout and stored on the purchase for reconciliation. Amounts,
+  names, browser input, and arbitrary Stripe metadata never authorize
+  fulfillment.
 
 ## Verification
 
@@ -58,10 +60,12 @@ are used; `bun run verify` never contacts Stripe.
 ## Operations
 
 The sandbox catalog is created or reused separately from application code. The
-owner must set the sandbox Price IDs, secret, webhook signing secret, and
-return URLs on the matching Convex deployment, enable Managed Payments, confirm
-the provisional business-use cloud AIaaS tax code, and register the sandbox
-webhook before testing. Live catalog and webhook setup is a separately approved
+owner must set the stable sandbox lookup keys, secret, webhook signing secret,
+and return URLs on the matching Convex deployment, enable Managed Payments,
+confirm the provisional business-use cloud AIaaS tax code, register Price and
+payment events on the sandbox webhook, and run the initial catalog sync before
+testing. Later Price replacements reuse the lookup keys and update the Creator
+UI automatically. Live catalog and webhook setup is a separately approved
 go-live action.
 
 ## Comments

@@ -1,7 +1,7 @@
 import { useAction, useQuery } from "convex/react";
 import { CreditCard } from "lucide-react";
 import { useState } from "react";
-import { interviewApi } from "../../infrastructure/interview-api";
+import { interviewApi, type PassCatalogItem } from "../../infrastructure/interview-api";
 import { primaryButton } from "../shared/form-controls";
 import { creatorCopy } from "./creator-copy";
 import { useCreatorLanguage } from "./creator-language";
@@ -10,6 +10,7 @@ export const PassesSection = () => {
   const language = useCreatorLanguage();
   const text = creatorCopy[language];
   const balance = useQuery(interviewApi.billing.getBalance, {});
+  const catalog = useQuery(interviewApi.billing.getCatalog, {});
   const createCheckout = useAction(interviewApi.billing.createCheckoutSession);
   const [busyPack, setBusyPack] = useState<"one_pass" | "five_passes" | "">("");
   const [error, setError] = useState("");
@@ -26,6 +27,26 @@ export const PassesSection = () => {
       setBusyPack("");
     }
   };
+
+  const itemFor = (packId: PassCatalogItem["packId"]) =>
+    Array.isArray(catalog)
+      ? catalog.find((item) => item.packId === packId)
+      : undefined;
+  const formatPrice = (item: PassCatalogItem | undefined) => {
+    if (!item) return catalog === undefined ? "…" : "—";
+    return new Intl.NumberFormat(language === "de" ? "de-DE" : "en-IE", {
+      style: "currency",
+      currency: item.currency.toUpperCase(),
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    }).format(item.amountMinor / 100);
+  };
+  const onePass = itemFor("one_pass");
+  const fivePasses = itemFor("five_passes");
+  const onePassPrice = formatPrice(onePass);
+  const fivePassesPrice = formatPrice(fivePasses);
+  const buyLabel = (item: PassCatalogItem | undefined, price: string) =>
+    item ? text.billing.buyFor(price) : text.billing.unavailable;
 
   return (
     <section id="passes">
@@ -51,22 +72,24 @@ export const PassesSection = () => {
           description={text.billing.buyOneDescription}
           disabled={Boolean(busyPack)}
           onBuy={() => void buy("one_pass")}
-          price="€29"
+          price={onePassPrice}
           title={text.billing.buyOneTitle}
-          button={text.billing.buyOne}
+          button={buyLabel(onePass, onePassPrice)}
           busyLabel={text.billing.redirecting}
           taxes={text.billing.taxes}
+          unavailable={!onePass}
         />
         <PackCard
           busy={busyPack === "five_passes"}
           description={text.billing.buyFiveDescription}
           disabled={Boolean(busyPack)}
           onBuy={() => void buy("five_passes")}
-          price="€99"
+          price={fivePassesPrice}
           title={text.billing.buyFiveTitle}
-          button={text.billing.buyFive}
+          button={buyLabel(fivePasses, fivePassesPrice)}
           busyLabel={text.billing.redirecting}
           taxes={text.billing.taxes}
+          unavailable={!fivePasses}
         />
       </div>
     </section>
@@ -89,6 +112,7 @@ const PackCard = ({
   taxes,
   busy,
   disabled,
+  unavailable,
   onBuy,
 }: {
   title: string;
@@ -99,6 +123,7 @@ const PackCard = ({
   taxes: string;
   busy: boolean;
   disabled: boolean;
+  unavailable: boolean;
   onBuy(): void;
 }) => (
   <article className="flex flex-col rounded-box border border-line bg-panel p-6 shadow-sm">
@@ -113,7 +138,7 @@ const PackCard = ({
     <p className="mt-1 text-sm text-muted">{taxes}</p>
     <button
       className={`${primaryButton} mt-7 w-full`}
-      disabled={disabled}
+      disabled={disabled || unavailable}
       onClick={onBuy}
       type="button"
     >

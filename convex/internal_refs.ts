@@ -117,6 +117,28 @@ export const internalRefs = {
     >("downloads_data:get"),
   },
   billing: {
+    syncCatalog: makeFunctionReference<
+      "action",
+      Record<string, never>,
+      { syncedAt: number; packCount: number }
+    >("billing:syncCatalog"),
+    replaceCatalog: makeFunctionReference<
+      "mutation",
+      {
+        items: Array<{
+          packId: "one_pass" | "five_passes";
+          lookupKey: string;
+          priceId: string;
+          productId: string;
+          passCount: 1 | 5;
+          amountMinor: number;
+          currency: "eur";
+          active: boolean;
+          syncedAt: number;
+        }>;
+      },
+      null
+    >("billing:replaceCatalog"),
     preparePurchase: makeFunctionReference<
       "mutation",
       { packId: "one_pass" | "five_passes" },
@@ -129,15 +151,27 @@ export const internalRefs = {
         pack: {
           id: "one_pass" | "five_passes";
           label: string;
+          lookupKey: string;
           priceId: string;
+          productId: string;
           passCount: 1 | 5;
-          amountMinor: 2900 | 9900;
+          amountMinor: number;
           currency: "eur";
         };
         stripeCustomerId?: string;
         checkoutUrl?: string;
       }
     >("billing:preparePurchase"),
+    refreshPendingPurchaseCatalog: makeFunctionReference<
+      "mutation",
+      {
+        purchaseId: Id<"purchases">;
+        lookupKey: string;
+        priceId: string;
+        amountMinor: number;
+      },
+      null
+    >("billing:refreshPendingPurchaseCatalog"),
     attachCustomer: makeFunctionReference<
       "mutation",
       { purchaseId: Id<"purchases">; customerId: string },
@@ -165,6 +199,8 @@ export const internalRefs = {
         event: {
           eventId: string;
           eventType:
+            | "price.created"
+            | "price.updated"
             | "checkout.session.completed"
             | "checkout.session.async_payment_succeeded"
             | "checkout.session.async_payment_failed"
@@ -184,6 +220,12 @@ export const internalRefs = {
           amount?: number;
           amountRefunded?: number;
           disputeStatus?: string;
+          lookupKey?: string;
+          priceId?: string;
+          productId?: string;
+          priceActive?: boolean;
+          priceCurrency?: string;
+          priceUnitAmount?: number;
         };
       },
       { state: "processed" | "ignored" | "deferred" }

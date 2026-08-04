@@ -73,6 +73,8 @@ export const passLedgerKind = v.union(
   v.literal("manual_adjustment"),
 );
 export const stripeWebhookEventType = v.union(
+  v.literal("price.created"),
+  v.literal("price.updated"),
   v.literal("checkout.session.completed"),
   v.literal("checkout.session.async_payment_succeeded"),
   v.literal("checkout.session.async_payment_failed"),
@@ -97,6 +99,12 @@ export const sanitizedStripeWebhookEvent = v.object({
   amount: v.optional(v.number()),
   amountRefunded: v.optional(v.number()),
   disputeStatus: v.optional(v.string()),
+  lookupKey: v.optional(v.string()),
+  priceId: v.optional(v.string()),
+  productId: v.optional(v.string()),
+  priceActive: v.optional(v.boolean()),
+  priceCurrency: v.optional(v.string()),
+  priceUnitAmount: v.optional(v.number()),
 });
 export const visualConcept = v.object({
   id: v.string(),
@@ -289,6 +297,7 @@ export default defineSchema({
     creatorId: v.id("creatorProfiles"),
     packId: purchasePackId,
     priceId: v.string(),
+    lookupKey: v.optional(v.string()),
     quantity: v.number(),
     passCount: v.number(),
     amountMinor: v.number(),
@@ -311,6 +320,20 @@ export default defineSchema({
     .index("by_checkoutSessionId", ["checkoutSessionId"])
     .index("by_paymentIntentId", ["paymentIntentId"])
     .index("by_chargeId", ["chargeId"]),
+
+  stripeCatalog: defineTable({
+    packId: purchasePackId,
+    lookupKey: v.string(),
+    priceId: v.string(),
+    productId: v.string(),
+    passCount: v.union(v.literal(1), v.literal(5)),
+    amountMinor: v.number(),
+    currency: v.literal("eur"),
+    active: v.boolean(),
+    syncedAt: v.number(),
+  })
+    .index("by_packId", ["packId"])
+    .index("by_lookupKey", ["lookupKey"]),
 
   stripeEvents: defineTable({
     eventId: v.string(),

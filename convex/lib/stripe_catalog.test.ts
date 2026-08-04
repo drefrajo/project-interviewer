@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   assertApprovedPrice,
   packForId,
-  packForPriceId,
+  packForLookupKey,
   packsFor,
   readStripeConfiguration,
   type StripeConfiguration,
@@ -12,62 +12,63 @@ const configuration = readStripeConfiguration({
   STRIPE_MODE: "sandbox",
   STRIPE_SECRET_KEY: "sk_test_sandbox-key",
   STRIPE_WEBHOOK_SIGNING_SECRET: "whsec_sandbox-secret",
-  STRIPE_ONE_PASS_PRICE_ID: "price_one_sandbox",
-  STRIPE_FIVE_PASS_PRICE_ID: "price_five_sandbox",
+  STRIPE_ONE_PASS_LOOKUP_KEY: "interview_pass_one",
+  STRIPE_FIVE_PASS_LOOKUP_KEY: "interview_pass_five",
   STRIPE_CHECKOUT_SUCCESS_URL: "https://example.test/billing/success",
   STRIPE_CHECKOUT_CANCEL_URL: "https://example.test/billing/cancel",
 });
 
 describe("Stripe Managed Payments catalog boundary", () => {
-  it("defines exactly the two server-owned one-time EUR packs", () => {
+  it("defines exactly two server-owned one-time EUR pack identities", () => {
     expect(packsFor(configuration)).toEqual([
       expect.objectContaining({
         id: "one_pass",
-        priceId: "price_one_sandbox",
+        lookupKey: "interview_pass_one",
         passCount: 1,
-        amountMinor: 2900,
         currency: "eur",
       }),
       expect.objectContaining({
         id: "five_passes",
-        priceId: "price_five_sandbox",
+        lookupKey: "interview_pass_five",
         passCount: 5,
-        amountMinor: 9900,
         currency: "eur",
       }),
     ]);
+    expect(packsFor(configuration)).toHaveLength(2);
   });
 
-  it("rejects arbitrary pack IDs and Price IDs", () => {
+  it("rejects arbitrary pack IDs and lookup keys", () => {
     expect(() => packForId(configuration, "twenty_passes")).toThrow(
       "Unknown Interview Pass pack",
     );
-    expect(() => packForPriceId(configuration, "price_client_supplied")).toThrow(
+    expect(() => packForLookupKey(configuration, "client_supplied")).toThrow(
       "not allowlisted",
     );
   });
 
-  it("rejects mode, amount, currency, and recurring-price mismatches", () => {
+  it("accepts a current Stripe Price regardless of its replacement amount", () => {
     const pack = packForId(configuration, "one_pass");
     const valid = {
-      id: pack.priceId,
+      id: "price_replacement_sandbox",
+      lookup_key: pack.lookupKey,
       active: true,
       livemode: false,
       currency: "eur",
-      unit_amount: 2900,
+      unit_amount: 3100,
       type: "one_time",
       recurring: null,
       product: "prod_one_sandbox",
     } as const;
-    expect(() =>
-      assertApprovedPrice(configuration, pack, valid),
-    ).not.toThrow();
+    expect(() => assertApprovedPrice(configuration, pack, valid)).not.toThrow();
     expect(() =>
       assertApprovedPrice(configuration, pack, { ...valid, livemode: true }),
     ).toThrow("mode");
     expect(() =>
-      assertApprovedPrice(configuration, pack, { ...valid, unit_amount: 2901 }),
-    ).toThrow("approved Interview Pass pack");
+      assertApprovedPrice(configuration, pack, {
+        ...valid,
+        lookup_key: "unapproved",
+      }),
+    ).toThrow("lookup key");
     expect(() =>
       assertApprovedPrice(configuration, pack, {
         ...valid,
@@ -82,8 +83,8 @@ describe("Stripe Managed Payments catalog boundary", () => {
         STRIPE_MODE: "live",
         STRIPE_SECRET_KEY: configuration.secretKey,
         STRIPE_WEBHOOK_SIGNING_SECRET: configuration.webhookSigningSecret,
-        STRIPE_ONE_PASS_PRICE_ID: configuration.onePassPriceId,
-        STRIPE_FIVE_PASS_PRICE_ID: configuration.fivePassPriceId,
+        STRIPE_ONE_PASS_LOOKUP_KEY: configuration.onePassLookupKey,
+        STRIPE_FIVE_PASS_LOOKUP_KEY: configuration.fivePassesLookupKey,
         STRIPE_CHECKOUT_SUCCESS_URL: configuration.checkoutSuccessUrl,
         STRIPE_CHECKOUT_CANCEL_URL: configuration.checkoutCancelUrl,
       }),

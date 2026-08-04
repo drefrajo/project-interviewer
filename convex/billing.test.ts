@@ -97,6 +97,32 @@ const seedPurchase = async (
     }),
   );
 
+const seedCatalog = async (t: Harness) =>
+  await t.run(async (ctx) => {
+    await ctx.db.insert("stripeCatalog", {
+      packId: "one_pass",
+      lookupKey: "interview_pass_one",
+      priceId: "price_one_sandbox",
+      productId: "prod_one_sandbox",
+      passCount: 1,
+      amountMinor: 2900,
+      currency: "eur",
+      active: true,
+      syncedAt: 1,
+    });
+    await ctx.db.insert("stripeCatalog", {
+      packId: "five_passes",
+      lookupKey: "interview_pass_five",
+      priceId: "price_five_sandbox",
+      productId: "prod_five_sandbox",
+      passCount: 5,
+      amountMinor: 9900,
+      currency: "eur",
+      active: true,
+      syncedAt: 1,
+    });
+  });
+
 const checkoutEvent = (input: {
   eventId: string;
   purchaseId: string;
@@ -130,6 +156,28 @@ const readPassState = async (t: Harness, creatorId: Id<"creatorProfiles">) =>
   }));
 
 describe("pass accounting and Interview reservation", () => {
+  it("exposes only the cached public catalog without Creator authentication", async () => {
+    const t = convexTest(schema, modules);
+    await seedCatalog(t);
+
+    await expect(
+      t.query(api.billing.getPublicCatalog, {}),
+    ).resolves.toEqual([
+      {
+        packId: "one_pass",
+        passCount: 1,
+        amountMinor: 2900,
+        currency: "eur",
+      },
+      {
+        packId: "five_passes",
+        passCount: 5,
+        amountMinor: 9900,
+        currency: "eur",
+      },
+    ]);
+  });
+
   it("grants exactly one introductory pass to new and existing Creators", async () => {
     const t = convexTest(schema, modules);
     const existingCreatorId = await seedCreator(t, "test|existing");

@@ -40,8 +40,8 @@ describe("Creator monetization copy", () => {
     "includes prices, tax disclosure, and reservation language in %s",
     (language) => {
       const text = creatorCopy[language];
-      expect(text.billing.buyOne).toMatch(/29/);
-      expect(text.billing.buyFive).toMatch(/99/);
+      expect(text.billing.buyFor("€29")).toMatch(/29/);
+      expect(text.billing.buyFor("€99")).toMatch(/99/);
       expect(text.billing.taxes).toMatch(/tax|Steuer/i);
       expect(text.detail.reservationDescription).toMatch(
         /pass|Pass/i,
