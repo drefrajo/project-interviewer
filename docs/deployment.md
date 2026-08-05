@@ -34,9 +34,11 @@ The intended promotion flow is:
 5. Open a pull request from `development` into `master` and merge it after the
    hosted development check passes.
 
-Protect both `development` and `master`. Require a pull request and the `Verify`
-status check for both branches. Branch protection can enforce the PR and CI
-gates; the hosted development check remains a human release decision.
+Protect both `development` and `master`, but use different rules. Allow direct
+pushes to `development` while preventing force pushes and deletion. Require a
+pull request and the `Verify` status check for `master`. Branch protection can
+enforce the production PR and CI gates; the hosted development check remains a
+human release decision.
 
 The production deployment is intentionally a normal merge to `master`, not a
 separate release system. Configure a required GitHub production reviewer only
