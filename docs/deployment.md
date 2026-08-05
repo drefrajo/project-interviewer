@@ -25,7 +25,18 @@ feature branch -> development -> master
 Pull requests run `bun run verify` without deploying. A push to `development`
 deploys the development Convex deployment first and then the development
 Cloudflare Worker. A push to `master` performs the same sequence for production.
-Protect `master` and require pull requests before enabling production use.
+The intended promotion flow is:
+
+1. Create a feature branch from `development`.
+2. Run `bun run convex:dev` and test against the local Convex deployment.
+3. Open a pull request into `development` and merge it after CI passes.
+4. Test the hosted development Worker and shared Convex deployment.
+5. Open a pull request from `development` into `master` and merge it after the
+   hosted development check passes.
+
+Protect both `development` and `master`. Require a pull request and the `Verify`
+status check for both branches. Branch protection can enforce the PR and CI
+gates; the hosted development check remains a human release decision.
 
 The production deployment is intentionally a normal merge to `master`, not a
 separate release system. Configure a required GitHub production reviewer only

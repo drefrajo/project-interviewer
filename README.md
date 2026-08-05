@@ -22,10 +22,14 @@ The application is a React/Vite SPA backed by Convex. Better Auth provides Googl
 
 ```sh
 bun install
-bunx convex dev --once
+bun run convex:dev
 ```
 
-Configure the selected Convex deployment, then run Convex and Vite in separate terminals:
+`bun run convex:dev` starts a local Convex deployment and watches the backend
+without pushing code to a Convex Cloud development deployment. Configure the
+local server-only values from [setup](docs/setup.md) before the first run.
+
+Run Convex and Vite in separate terminals:
 
 ```sh
 bun run convex:dev
