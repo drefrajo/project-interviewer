@@ -18,9 +18,37 @@ export const oauthProviderFromCallbackPath = (
 type EnvironmentSource = Readonly<{
   GOOGLE_CLIENT_ID?: string | undefined;
   GOOGLE_CLIENT_SECRET?: string | undefined;
+  GOOGLE_REDIRECT_URI?: string | undefined;
   GITHUB_CLIENT_ID?: string | undefined;
   GITHUB_CLIENT_SECRET?: string | undefined;
 }>;
+
+const readGoogleRedirectUri = (source: EnvironmentSource) => {
+  const raw = source.GOOGLE_REDIRECT_URI?.trim();
+  if (!raw) return null;
+
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    throw new Error(
+      "GOOGLE_REDIRECT_URI must be an absolute HTTPS callback URL.",
+    );
+  }
+  if (
+    url.protocol !== "https:" ||
+    url.username ||
+    url.password ||
+    url.search ||
+    url.hash ||
+    url.pathname !== "/api/auth/callback/google"
+  ) {
+    throw new Error(
+      "GOOGLE_REDIRECT_URI must be an absolute HTTPS callback URL at /api/auth/callback/google.",
+    );
+  }
+  return url.toString();
+};
 
 const credentialPair = (
   source: EnvironmentSource,
@@ -56,10 +84,20 @@ export const readOAuthConfiguration = (source: EnvironmentSource) => {
       "Configure at least one OAuth provider (Google or GitHub).",
     );
   }
+  const googleRedirectUri = readGoogleRedirectUri(source);
   return {
     availability: { google: Boolean(google), github: Boolean(github) },
     socialProviders: {
-      ...(google ? { google } : {}),
+      ...(google
+        ? {
+            google: {
+              ...google,
+              ...(googleRedirectUri
+                ? { redirectURI: googleRedirectUri }
+                : {}),
+            },
+          }
+        : {}),
       ...(github ? { github } : {}),
     },
   };

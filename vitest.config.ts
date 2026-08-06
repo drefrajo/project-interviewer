@@ -24,6 +24,15 @@ export default defineConfig({
           setupFiles: ["./src/test/setup.ts"],
         },
       },
+      {
+        extends: true,
+        test: {
+          name: "worker",
+          include: ["worker.test.ts"],
+          environment: "edge-runtime",
+          setupFiles: [],
+        },
+      },
     ],
   },
 });

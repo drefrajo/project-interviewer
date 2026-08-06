@@ -23,7 +23,7 @@
     "validate:convex-deploy": "bun scripts/validate-convex-deploy.ts",
     "deploy:convex": "bun run validate:convex-deploy && bunx convex deploy",
     "deploy:convex:ci": "bun run validate:deploy-machine && bunx convex deploy",
-    "deploy:cloudflare": "bun run build:production && bunx wrangler deploy --env production",
+    "deploy:cloudflare": "bun run build:production && bunx wrangler deploy --env production --var OAUTH_PROXY_CONVEX_SITE_URL:$VITE_CONVEX_SITE_URL",
     "deploy:cloudflare:development": "bun run build:production && bunx wrangler deploy --env development"
   },
   "dependencies": {

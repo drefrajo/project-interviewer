@@ -26,6 +26,7 @@ type EnvironmentSource = Readonly<{
   CREATOR_ALLOWLIST?: string | undefined;
   GOOGLE_CLIENT_ID?: string | undefined;
   GOOGLE_CLIENT_SECRET?: string | undefined;
+  GOOGLE_REDIRECT_URI?: string | undefined;
   GITHUB_CLIENT_ID?: string | undefined;
   GITHUB_CLIENT_SECRET?: string | undefined;
 }>;

@@ -114,7 +114,7 @@ describe("Stripe provider boundary", () => {
     );
   });
 
-  it("fails closed for live mode when the account response omits livemode", async () => {
+  it("uses the validated live key prefix when the account response omits livemode", async () => {
     const liveConfiguration = readStripeConfiguration({
       STRIPE_MODE: "live",
       STRIPE_SECRET_KEY: "sk_live_sandbox-key",
@@ -131,6 +131,6 @@ describe("Stripe provider boundary", () => {
       });
     await expect(
       createStripeGateway(liveConfiguration, fakeFetch).getAccount(),
-    ).rejects.toMatchObject({ code: "STRIPE_MODE_UNAVAILABLE" });
+    ).resolves.toEqual({ livemode: true });
   });
 });

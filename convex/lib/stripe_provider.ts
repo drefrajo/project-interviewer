@@ -134,15 +134,12 @@ export const createStripeGateway = (
     );
     if (typeof account.livemode !== "boolean") {
       // Some Managed Payments account responses on Basil omit livemode. The
-      // sandbox key prefix is a safe fallback here; the allowlisted Price and
-      // Product checks run immediately afterward before any Stripe mutation.
-      if (
-        configuration.mode === "sandbox" &&
-        configuration.secretKey.startsWith("sk_test_")
-      ) {
-        return { livemode: false };
-      }
-      throw new StripeProviderError(200, "STRIPE_MODE_UNAVAILABLE");
+      // validated Stripe key prefix is a safe fallback here; the allowlisted
+      // Price and Product checks run immediately afterward before any Stripe
+      // mutation.
+      return {
+        livemode: configuration.secretKey.startsWith("sk_live_"),
+      };
     }
     if (account.livemode !== (configuration.mode === "live")) {
       throw new StripeProviderError(200, "STRIPE_MODE_MISMATCH");

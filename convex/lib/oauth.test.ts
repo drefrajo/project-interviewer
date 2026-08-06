@@ -31,8 +31,36 @@ describe("OAuth provider ownership", () => {
     expect(configuration.socialProviders.google).not.toHaveProperty(
       "mapProfileToUser",
     );
+    expect(configuration.socialProviders.google).not.toHaveProperty(
+      "redirectURI",
+    );
     expect(configuration.socialProviders.github).not.toHaveProperty(
       "mapProfileToUser",
+    );
+  });
+
+  it("uses the production Google callback only when explicitly configured", () => {
+    const configuration = readOAuthConfiguration({
+      GOOGLE_CLIENT_ID: "google-id",
+      GOOGLE_CLIENT_SECRET: "google-secret",
+      GOOGLE_REDIRECT_URI:
+        "https://interview.drefrajo.dev/api/auth/callback/google",
+    });
+
+    expect(configuration.socialProviders.google).toMatchObject({
+      redirectURI: "https://interview.drefrajo.dev/api/auth/callback/google",
+    });
+  });
+
+  it("rejects a Google callback outside the expected HTTPS route", () => {
+    expect(() =>
+      readOAuthConfiguration({
+        GOOGLE_CLIENT_ID: "google-id",
+        GOOGLE_CLIENT_SECRET: "google-secret",
+        GOOGLE_REDIRECT_URI: "https://interview.drefrajo.dev/auth/callback",
+      }),
+    ).toThrow(
+      "GOOGLE_REDIRECT_URI must be an absolute HTTPS callback URL at /api/auth/callback/google.",
     );
   });
 });

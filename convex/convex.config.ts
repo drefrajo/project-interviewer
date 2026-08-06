@@ -12,6 +12,7 @@ const app = defineApp({
     CREATOR_ALLOWLIST: v.string(),
     GOOGLE_CLIENT_ID: v.optional(v.string()),
     GOOGLE_CLIENT_SECRET: v.optional(v.string()),
+    GOOGLE_REDIRECT_URI: v.optional(v.string()),
     GITHUB_CLIENT_ID: v.optional(v.string()),
     GITHUB_CLIENT_SECRET: v.optional(v.string()),
     OPENROUTER_API_KEY: v.optional(v.string()),

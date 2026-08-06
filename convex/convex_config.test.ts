@@ -24,6 +24,7 @@ describe("Convex deployment environment", () => {
     const names = definition.envVars.map(([name]) => name);
 
     expect(names).toContain("SITE_URL");
+    expect(names).toContain("GOOGLE_REDIRECT_URI");
     expect(names).not.toContain("CONVEX_SITE_URL");
     expect(names).not.toContain("CONVEX_CLOUD_URL");
   });

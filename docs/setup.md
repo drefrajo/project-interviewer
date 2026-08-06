@@ -34,7 +34,7 @@ To deliberately work against the shared development deployment instead, select
 it explicitly before running Convex:
 
 ```sh
-bunx convex deployment select drefrajo:project-interviewer:dev/shared
+bunx convex deployment select drefrajo:project-interviewer:development
 bunx convex dev
 ```
 
@@ -172,12 +172,25 @@ Open `http://localhost:5173`. Application state lives in Convex; the browser doe
 
 ## OAuth
 
-Configure the Better Auth callback for each enabled provider using the Convex HTTP Actions site:
+For local and hosted development, configure the Better Auth callback for each
+enabled provider using the matching Convex HTTP Actions site:
 
 ```text
 https://your-deployment.convex.site/api/auth/callback/google
 https://your-deployment.convex.site/api/auth/callback/github
 ```
+
+Production keeps the Convex callback for GitHub. Google uses the custom
+callback proxy only after `GOOGLE_REDIRECT_URI` is set on the production
+Convex deployment:
+
+```text
+https://interview.drefrajo.dev/api/auth/callback/google
+https://your-production-deployment.convex.site/api/auth/callback/github
+```
+
+Register the exact URLs in the corresponding Google and GitHub OAuth client
+settings.
 
 Allow the exact frontend site URL. Passwords, passkeys, implicit email linking, and explicit provider linking are not supported.
 

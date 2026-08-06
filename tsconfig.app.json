@@ -20,5 +20,5 @@
     "exactOptionalPropertyTypes": true,
     "types": ["vitest/globals", "@testing-library/jest-dom"]
   },
-  "include": ["src", "convex"]
+  "include": ["src", "convex", "worker.ts", "worker.test.ts"]
 }

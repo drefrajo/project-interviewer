@@ -2,6 +2,19 @@ import { describe, expect, it } from "vitest";
 import { creatorCopy } from "./creator-copy";
 
 describe("Creator monetization copy", () => {
+  it("explains account creation and privacy consent on sign-in", () => {
+    expect(creatorCopy.en.auth.accountCreation).toBe(
+      "If you don't have an account yet, we'll create one for you.",
+    );
+    expect(creatorCopy.en.auth.privacyConsentBefore).toBe(
+      "By logging in, you agree to our",
+    );
+    expect(creatorCopy.en.auth.privacyPolicy).toBe("privacy policy");
+    expect(creatorCopy.de.auth.accountCreation).toBe(
+      "Wenn Sie noch kein Konto haben, erstellen wir automatisch eines für Sie.",
+    );
+  });
+
   it("localizes the pass balance badge in singular and plural forms", () => {
     expect(creatorCopy.en.shell.passBalance(1)).toBe("1 Interview Pass");
     expect(creatorCopy.en.shell.passBalance(2)).toBe("2 Interview Passes");

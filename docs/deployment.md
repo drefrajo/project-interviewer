@@ -7,7 +7,7 @@ Interview has one local environment and two hosted environments:
 | Environment | Frontend | Convex | Provider mode |
 | --- | --- | --- | --- |
 | Local | `http://localhost:5173` | Individual development deployment | Test credentials |
-| Development | Shared development Worker | Dedicated development deployment | Stripe sandbox and development credentials |
+| Development | Shared development Worker | `development` (`scrupulous-spoonbill-921`) | Stripe sandbox and development credentials |
 | Production | Production Worker | Dedicated production deployment | Live credentials after approval |
 
 Do not share Convex deployments, storage, OAuth applications, provider keys,
@@ -58,6 +58,13 @@ Add these secrets to each environment:
 - `CONVEX_DEPLOY_KEY`
 - `CLOUDFLARE_API_TOKEN`
 
+For the `development` environment, `VITE_CONVEX_URL` must be
+`https://scrupulous-spoonbill-921.convex.cloud` and `VITE_CONVEX_SITE_URL` must
+be `https://scrupulous-spoonbill-921.convex.site`. Its `CONVEX_DEPLOY_KEY` must
+be a new deployment-scoped key for `development`. The production environment
+continues to use its existing values and key for the default production
+deployment.
+
 The Cloudflare token should be scoped to the account and Worker deployment
 permissions only. `VITE_` values are public browser configuration; all other
 application secrets remain on the matching Convex deployment.
@@ -70,18 +77,17 @@ across later CI deployments.
 
 ## Convex configuration
 
-The project already has a default production deployment and one or more
-development deployments. Use the default production deployment for production.
-For the shared development environment, use a dedicated persistent development
-deployment rather than a developer's personal deployment. If the current
-development deployment is already the shared one, do not create another.
+The project uses the default production deployment for production. The shared
+development environment uses the persistent `development` deployment
+(`scrupulous-spoonbill-921`); do not create another development deployment for
+CI or hosted development.
 
-From an authenticated machine, a new shared development deployment and scoped
-CI keys can be created with:
+From an authenticated machine, select the shared development deployment and
+create scoped CI keys with:
 
 ```sh
-bunx convex deployment create dev/shared --type dev
-bunx convex deployment token create ci-development --deployment dev/shared
+bunx convex deployment select drefrajo:project-interviewer:development
+bunx convex deployment token create ci-development --deployment development
 bunx convex deployment token create ci-production --deployment prod
 ```
 
@@ -98,8 +104,13 @@ after the launch checks are approved.
 
 Set the final Cloudflare custom domain in `SITE_URL`, Stripe success/cancel
 URLs, and the appropriate OAuth allowed-origin settings after the Worker
-domains exist. OAuth callback URLs continue to use the matching Convex
-`.convex.site` URL.
+domains exist. Hosted development keeps using the matching Convex `.convex.site`
+OAuth callback. Production uses the custom callback proxy only when the
+production Convex deployment has `GOOGLE_REDIRECT_URI` set to
+`https://interview.drefrajo.dev/api/auth/callback/google`; add that exact URL to
+the production Google OAuth client. The production Wrangler deploy passes the
+production `VITE_CONVEX_SITE_URL` to the Worker as its proxy origin, while the
+development deploy does not configure that variable.
 
 `bun run validate:convex-deploy` is a secure provisioning preflight. It checks
 the complete Stripe configuration supplied to the local command. It is not part
