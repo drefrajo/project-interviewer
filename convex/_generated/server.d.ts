@@ -36,6 +36,7 @@ type Env = {
   readonly GITHUB_CLIENT_SECRET: string | undefined;
   readonly GOOGLE_CLIENT_ID: string | undefined;
   readonly GOOGLE_CLIENT_SECRET: string | undefined;
+  readonly GOOGLE_REDIRECT_URI: string | undefined;
   readonly OPENROUTER_API_KEY: string | undefined;
   readonly SITE_URL: string;
   readonly STRIPE_CHECKOUT_CANCEL_URL: string | undefined;
