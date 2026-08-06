@@ -34,7 +34,7 @@ To deliberately work against the shared development deployment instead, select
 it explicitly before running Convex:
 
 ```sh
-bunx convex deployment select drefrajo:project-interviewer:dev/shared
+bunx convex deployment select drefrajo:project-interviewer:development
 bunx convex dev
 ```
 
