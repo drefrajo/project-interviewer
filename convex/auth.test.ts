@@ -21,8 +21,8 @@ const verifiedCreator = {
   updatedAt: new Date(0),
 };
 
-const getCreateUserHook = () => {
-  const options = createAuthOptions({} as never, environment);
+const getCreateUserHook = (source = environment) => {
+  const options = createAuthOptions({} as never, source);
   const hook = options.databaseHooks.user.create.before;
   return { hook, options };
 };
@@ -70,6 +70,45 @@ describe("Better Auth provider ownership", () => {
     await expect(
       hook(
         { ...verifiedCreator, email: "not-allowed@example.com" },
+        {
+          path: "/callback/:id",
+          params: { id: "google" },
+        } as never,
+      ),
+    ).rejects.toThrow("Creator registration is not allowed for this email.");
+  });
+
+  it("allows any verified OAuth email when the allowlist is set to all", async () => {
+    const { hook } = getCreateUserHook({
+      ...environment,
+      CREATOR_ALLOWLIST: "all",
+    });
+
+    const result = await hook(
+      { ...verifiedCreator, email: "new-creator@example.com" },
+      {
+        path: "/callback/:id",
+        params: { id: "github" },
+      } as never,
+    );
+
+    expect(result).toEqual({
+      data: expect.objectContaining({
+        email: "new-creator@example.com",
+        provider: "github",
+      }),
+    });
+  });
+
+  it("still requires a verified email in public registration mode", async () => {
+    const { hook } = getCreateUserHook({
+      ...environment,
+      CREATOR_ALLOWLIST: "all",
+    });
+
+    await expect(
+      hook(
+        { ...verifiedCreator, emailVerified: false },
         {
           path: "/callback/:id",
           params: { id: "google" },

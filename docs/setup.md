@@ -47,7 +47,9 @@ Set server-only values directly on the Convex deployment:
 - a Better Auth secret;
 - at least one complete Google or GitHub OAuth credential pair;
 - `CAPABILITY_ENCRYPTION_SECRET`, as a separate high-entropy secret for recoverable Interview Links;
-- `CREATOR_ALLOWLIST`, as a comma-separated list of verified Creator email addresses;
+- `CREATOR_ALLOWLIST`, as a comma-separated list of verified Creator email
+  addresses; set it to exactly `all` to allow any verified Google/GitHub email
+  to register;
 - the OpenRouter API key, with the desired account-level spend limit configured in OpenRouter; and
 - the full Cloudflare Email Service sending endpoint, API token, and sender.
 
