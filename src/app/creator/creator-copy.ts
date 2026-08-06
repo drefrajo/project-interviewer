@@ -17,7 +17,7 @@ export const creatorCopy = {
       accountCreation:
         "If you don't have an account yet, we'll create one for you.",
       continueWith: "Continue with",
-      lastUsed: "Last used",
+      lastUsedProvider: (provider: string) => `Last used: ${provider}`,
       privacyConsentBefore: "By logging in, you agree to our",
       privacyPolicy: "privacy policy",
       privacyConsentAfter: ".",
@@ -259,7 +259,7 @@ export const creatorCopy = {
       accountCreation:
         "Wenn Sie noch kein Konto haben, erstellen wir automatisch eines für Sie.",
       continueWith: "Weiter mit",
-      lastUsed: "Zuletzt verwendet",
+      lastUsedProvider: (provider: string) => `Zuletzt verwendet: ${provider}`,
       privacyConsentBefore: "Mit der Anmeldung stimmen Sie unserer",
       privacyPolicy: "Datenschutzerklärung",
       privacyConsentAfter: " zu.",

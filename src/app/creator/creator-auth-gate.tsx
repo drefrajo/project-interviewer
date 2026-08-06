@@ -5,7 +5,7 @@ import {
   type CreatorProfile,
 } from "../../infrastructure/interview-api";
 import type { ProductionAuthClient } from "../../infrastructure/auth-client";
-import { primaryButton, secondaryButton } from "../shared/form-controls";
+import { secondaryButton } from "../shared/form-controls";
 import { BrandMark } from "../shared/brand-mark";
 import { LegalFooter, privacyPolicyHrefs } from "../shared/legal-footer";
 import { ThemeToggle } from "../shared/theme-toggle";
@@ -19,6 +19,7 @@ import {
 
 type OAuthProviderId = "google" | "github";
 type OAuthPreferenceStorage = Pick<Storage, "getItem" | "setItem">;
+const oauthProviders: OAuthProviderId[] = ["github", "google"];
 
 const lastUsedOAuthProviderStorageKey = "interview:last-used-oauth-provider";
 
@@ -56,14 +57,6 @@ export const rememberLastUsedOAuthProvider = (
   } catch {
     // Login still works when browser storage is unavailable or disabled.
   }
-};
-
-export const orderOAuthProviders = (
-  lastUsedProvider?: OAuthProviderId,
-): OAuthProviderId[] => {
-  const preferredProvider = lastUsedProvider ?? "github";
-  const otherProvider = preferredProvider === "github" ? "google" : "github";
-  return [preferredProvider, otherProvider];
 };
 
 export const CreatorAuthGate = ({
@@ -179,30 +172,36 @@ export const CreatorAuthGate = ({
                 {friendlyAuthError(error, attemptedProvider, language)}
               </p>
             ) : null}
-            <div className="mt-7 grid gap-3 sm:grid-cols-2">
-              {orderOAuthProviders(lastUsedProvider)
-                .filter((provider) => providers?.[provider] !== false)
-                .map((provider, index) => {
-                  const providerName =
-                    provider === "github" ? "GitHub" : "Google";
-                  return (
-                    <button
-                      className={index === 0 ? primaryButton : secondaryButton}
-                      key={provider}
-                      onClick={() => void signIn(provider)}
-                      type="button"
-                    >
-                      <span>
+            <div className="mt-7">
+              {lastUsedProvider ? (
+                <p className="mb-3 flex items-center gap-2 text-xs font-semibold text-muted">
+                  <span
+                    aria-hidden="true"
+                    className="size-1.5 shrink-0 rounded-full bg-action"
+                  />
+                  {text.auth.lastUsedProvider(
+                    lastUsedProvider === "github" ? "GitHub" : "Google",
+                  )}
+                </p>
+              ) : null}
+              <div className="grid gap-3 sm:grid-cols-2">
+                {oauthProviders
+                  .filter((provider) => providers?.[provider] !== false)
+                  .map((provider) => {
+                    const providerName =
+                      provider === "github" ? "GitHub" : "Google";
+                    return (
+                      <button
+                        className={secondaryButton}
+                        key={provider}
+                        onClick={() => void signIn(provider)}
+                        type="button"
+                      >
                         {text.auth.continueWith} {providerName}
-                      </span>
-                      {lastUsedProvider === provider ? (
-                        <span className="rounded-full bg-black/10 px-2 py-0.5 text-[0.68rem] font-extrabold tracking-[0.08em] uppercase">
-                          {text.auth.lastUsed}
-                        </span>
-                      ) : null}
-                    </button>
-                  );
-                })}
+                      </button>
+                    );
+                  })}
+              </div>
             </div>
             <p className="mt-5 text-sm leading-6 text-muted">
               {text.auth.privacyConsentBefore}{" "}

@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   friendlyAuthError,
-  orderOAuthProviders,
   readLastUsedOAuthProvider,
   rememberLastUsedOAuthProvider,
 } from "./creator-auth-gate";
@@ -23,11 +22,6 @@ describe("Creator OAuth errors", () => {
     expect(friendlyAuthError("oauth_provider_not_found", "google")).toBe(
       "oauth_provider_not_found",
     );
-  });
-
-  it("prefers GitHub until a creator has used another provider", () => {
-    expect(orderOAuthProviders()).toEqual(["github", "google"]);
-    expect(orderOAuthProviders("google")).toEqual(["google", "github"]);
   });
 
   it("persists and validates the most recently used provider", () => {
