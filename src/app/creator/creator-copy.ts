@@ -17,6 +17,7 @@ export const creatorCopy = {
       signInIntro:
         "Use the provider that owns your account. Google and GitHub identities are never silently linked, even when they share an email address.",
       continueWith: "Continue with",
+      lastUsed: "Last used",
       registration: "Registration is restricted to the deployment allowlist.",
       openingWorkspace: "Opening your Creator workspace…",
       preparingProfile: "Preparing your Creator profile…",
@@ -256,6 +257,7 @@ export const creatorCopy = {
       signInIntro:
         "Verwenden Sie den Anbieter, mit dem Ihr Konto erstellt wurde. Google- und GitHub-Identitäten werden niemals stillschweigend verknüpft, auch nicht bei gleicher E-Mail-Adresse.",
       continueWith: "Weiter mit",
+      lastUsed: "Zuletzt verwendet",
       registration:
         "Die Registrierung ist auf die Allowlist dieser Bereitstellung beschränkt.",
       openingWorkspace: "Creator-Arbeitsbereich wird geöffnet…",

@@ -18,6 +18,53 @@ import {
 } from "./creator-language";
 
 type OAuthProviderId = "google" | "github";
+type OAuthPreferenceStorage = Pick<Storage, "getItem" | "setItem">;
+
+const lastUsedOAuthProviderStorageKey = "interview:last-used-oauth-provider";
+
+const browserStorage = (): OAuthPreferenceStorage | undefined => {
+  if (typeof window === "undefined") return undefined;
+  try {
+    return window.localStorage;
+  } catch {
+    return undefined;
+  }
+};
+
+export const readLastUsedOAuthProvider = (
+  storage?: OAuthPreferenceStorage,
+): OAuthProviderId | undefined => {
+  try {
+    const value = (storage ?? browserStorage())?.getItem(
+      lastUsedOAuthProviderStorageKey,
+    );
+    return value === "google" || value === "github" ? value : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+export const rememberLastUsedOAuthProvider = (
+  provider: OAuthProviderId,
+  storage?: OAuthPreferenceStorage,
+) => {
+  try {
+    (storage ?? browserStorage())?.setItem(
+      lastUsedOAuthProviderStorageKey,
+      provider,
+    );
+  } catch {
+    // Login still works when browser storage is unavailable or disabled.
+  }
+};
+
+export const orderOAuthProviders = (
+  lastUsedProvider?: OAuthProviderId,
+): OAuthProviderId[] => {
+  const preferredProvider = lastUsedProvider ?? "github";
+  const otherProvider = preferredProvider === "github" ? "google" : "github";
+  return [preferredProvider, otherProvider];
+};
 
 export const CreatorAuthGate = ({
   authClient,
@@ -42,6 +89,9 @@ export const CreatorAuthGate = ({
     interviewApi.creator_profiles.upsertCurrent,
   );
   const attempted = useRef(false);
+  const [lastUsedProvider, setLastUsedProvider] = useState<
+    OAuthProviderId | undefined
+  >(() => readLastUsedOAuthProvider());
   const [error, setError] = useState(
     new URLSearchParams(window.location.search).get("error") ?? "",
   );
@@ -89,6 +139,13 @@ export const CreatorAuthGate = ({
     }
   }, [profile, session.data, setCreatorLanguage]);
 
+  useEffect(() => {
+    const provider = profile?.provider;
+    if (!provider) return;
+    rememberLastUsedOAuthProvider(provider);
+    setLastUsedProvider(provider);
+  }, [profile?.provider]);
+
   if (session.isPending || (session.data && profile === undefined)) {
     return (
       <AuthenticationLoading
@@ -123,24 +180,29 @@ export const CreatorAuthGate = ({
               </p>
             ) : null}
             <div className="mt-7 grid gap-3 sm:grid-cols-2">
-              {providers?.google !== false ? (
-                <button
-                  className={primaryButton}
-                  onClick={() => void signIn("google")}
-                  type="button"
-                >
-                  {text.auth.continueWith} Google
-                </button>
-              ) : null}
-              {providers?.github !== false ? (
-                <button
-                  className={secondaryButton}
-                  onClick={() => void signIn("github")}
-                  type="button"
-                >
-                  {text.auth.continueWith} GitHub
-                </button>
-              ) : null}
+              {orderOAuthProviders(lastUsedProvider)
+                .filter((provider) => providers?.[provider] !== false)
+                .map((provider, index) => {
+                  const providerName =
+                    provider === "github" ? "GitHub" : "Google";
+                  return (
+                    <button
+                      className={index === 0 ? primaryButton : secondaryButton}
+                      key={provider}
+                      onClick={() => void signIn(provider)}
+                      type="button"
+                    >
+                      <span>
+                        {text.auth.continueWith} {providerName}
+                      </span>
+                      {lastUsedProvider === provider ? (
+                        <span className="rounded-full bg-black/10 px-2 py-0.5 text-[0.68rem] font-extrabold tracking-[0.08em] uppercase">
+                          {text.auth.lastUsed}
+                        </span>
+                      ) : null}
+                    </button>
+                  );
+                })}
             </div>
             <p className="mt-5 text-sm leading-6 text-muted">
               {text.auth.registration}
