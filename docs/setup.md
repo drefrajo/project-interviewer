@@ -14,14 +14,31 @@ Use separate Convex deployments, OAuth applications, provider budgets, and crede
 
 ## Local development
 
-Install dependencies and select or create a Convex development deployment:
+Install dependencies and start a local Convex deployment:
 
 ```sh
 bun install
-bunx convex dev --once
+bun run convex:dev
 ```
 
-Convex writes the public deployment URLs to `.env.local`. If the initial push stops because server configuration is missing, configure the selected deployment and run the command again.
+`bun run convex:dev` runs `bunx convex deployment select local` before starting
+`bunx convex dev`. The local backend stores its state under `.convex` and does
+not push code to Convex Cloud. Convex writes the local public deployment URLs
+to `.env.local`.
+
+Local deployments are suitable for feature work, but they do not have public
+URLs. Use the shared development deployment for OAuth, Stripe webhooks, email,
+public Interview Links, and other integration flows that require a hosted URL.
+
+To deliberately work against the shared development deployment instead, select
+it explicitly before running Convex:
+
+```sh
+bunx convex deployment select drefrajo:project-interviewer:dev/shared
+bunx convex dev
+```
+
+Do not use that command as the normal local workflow.
 
 Set server-only values directly on the Convex deployment:
 
