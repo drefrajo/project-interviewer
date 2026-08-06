@@ -29,6 +29,7 @@ type EnvironmentSource = Readonly<{
   GOOGLE_REDIRECT_URI?: string | undefined;
   GITHUB_CLIENT_ID?: string | undefined;
   GITHUB_CLIENT_SECRET?: string | undefined;
+  GITHUB_REDIRECT_URI?: string | undefined;
 }>;
 
 const required = (source: EnvironmentSource, name: keyof EnvironmentSource) => {

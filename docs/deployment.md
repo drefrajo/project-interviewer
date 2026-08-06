@@ -106,11 +106,17 @@ Set the final Cloudflare custom domain in `SITE_URL`, Stripe success/cancel
 URLs, and the appropriate OAuth allowed-origin settings after the Worker
 domains exist. Hosted development keeps using the matching Convex `.convex.site`
 OAuth callback. Production uses the custom callback proxy only when the
-production Convex deployment has `GOOGLE_REDIRECT_URI` set to
-`https://interview.drefrajo.dev/api/auth/callback/google`; add that exact URL to
-the production Google OAuth client. The production Wrangler deploy passes the
-production `VITE_CONVEX_SITE_URL` to the Worker as its proxy origin, while the
-development deploy does not configure that variable.
+production Convex deployment has these variables set:
+
+```text
+GOOGLE_REDIRECT_URI=https://interview.drefrajo.dev/api/auth/callback/google
+GITHUB_REDIRECT_URI=https://interview.drefrajo.dev/api/auth/callback/github
+```
+
+Add the exact URLs to the corresponding production OAuth clients. The
+production Wrangler deploy passes the production `VITE_CONVEX_SITE_URL` to the
+Worker as its proxy origin, while the development deploy does not configure
+that variable.
 
 `bun run validate:convex-deploy` is a secure provisioning preflight. It checks
 the complete Stripe configuration supplied to the local command. It is not part

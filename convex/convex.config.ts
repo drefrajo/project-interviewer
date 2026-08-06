@@ -15,6 +15,7 @@ const app = defineApp({
     GOOGLE_REDIRECT_URI: v.optional(v.string()),
     GITHUB_CLIENT_ID: v.optional(v.string()),
     GITHUB_CLIENT_SECRET: v.optional(v.string()),
+    GITHUB_REDIRECT_URI: v.optional(v.string()),
     OPENROUTER_API_KEY: v.optional(v.string()),
     CLOUDFLARE_EMAIL_API_URL: v.optional(v.string()),
     CLOUDFLARE_EMAIL_API_TOKEN: v.optional(v.string()),
