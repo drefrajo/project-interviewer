@@ -7,7 +7,7 @@ import {
 import type { ProductionAuthClient } from "../../infrastructure/auth-client";
 import { primaryButton, secondaryButton } from "../shared/form-controls";
 import { BrandMark } from "../shared/brand-mark";
-import { LegalFooter } from "../shared/legal-footer";
+import { LegalFooter, privacyPolicyHrefs } from "../shared/legal-footer";
 import { ThemeToggle } from "../shared/theme-toggle";
 import { creatorCopy } from "./creator-copy";
 import {
@@ -172,7 +172,7 @@ export const CreatorAuthGate = ({
               {text.auth.signInTitle}
             </h1>
             <p className="mt-4 leading-7 text-muted">
-              {text.auth.signInIntro}
+              {text.auth.accountCreation}
             </p>
             {error ? (
               <p className="mt-5 rounded-lg border border-error-border bg-error-surface p-4 font-bold text-error-text" role="alert">
@@ -205,7 +205,16 @@ export const CreatorAuthGate = ({
                 })}
             </div>
             <p className="mt-5 text-sm leading-6 text-muted">
-              {text.auth.registration}
+              {text.auth.privacyConsentBefore}{" "}
+              <a
+                className="font-semibold text-primary underline decoration-primary/40 underline-offset-2 hover:decoration-primary"
+                href={privacyPolicyHrefs[language]}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                {text.auth.privacyPolicy}
+              </a>
+              {text.auth.privacyConsentAfter}
             </p>
           </section>
         </main>

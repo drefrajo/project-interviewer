@@ -14,11 +14,13 @@ export const creatorCopy = {
     auth: {
       workspaceLabel: "Creator workspace",
       signInTitle: "Sign in to Interview",
-      signInIntro:
-        "Use the provider that owns your account. Google and GitHub identities are never silently linked, even when they share an email address.",
+      accountCreation:
+        "If you don't have an account yet, we'll create one for you.",
       continueWith: "Continue with",
       lastUsed: "Last used",
-      registration: "Registration is restricted to the deployment allowlist.",
+      privacyConsentBefore: "By logging in, you agree to our",
+      privacyPolicy: "privacy policy",
+      privacyConsentAfter: ".",
       openingWorkspace: "Opening your Creator workspace…",
       preparingProfile: "Preparing your Creator profile…",
       linkedAccount: (provider: string) =>
@@ -254,12 +256,13 @@ export const creatorCopy = {
     auth: {
       workspaceLabel: "Creator-Arbeitsbereich",
       signInTitle: "Bei Interview anmelden",
-      signInIntro:
-        "Verwenden Sie den Anbieter, mit dem Ihr Konto erstellt wurde. Google- und GitHub-Identitäten werden niemals stillschweigend verknüpft, auch nicht bei gleicher E-Mail-Adresse.",
+      accountCreation:
+        "Wenn Sie noch kein Konto haben, erstellen wir automatisch eines für Sie.",
       continueWith: "Weiter mit",
       lastUsed: "Zuletzt verwendet",
-      registration:
-        "Die Registrierung ist auf die Allowlist dieser Bereitstellung beschränkt.",
+      privacyConsentBefore: "Mit der Anmeldung stimmen Sie unserer",
+      privacyPolicy: "Datenschutzerklärung",
+      privacyConsentAfter: " zu.",
       openingWorkspace: "Creator-Arbeitsbereich wird geöffnet…",
       preparingProfile: "Creator-Profil wird vorbereitet…",
       linkedAccount: (provider: string) =>

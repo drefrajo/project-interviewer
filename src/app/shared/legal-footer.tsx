@@ -2,19 +2,24 @@ import { textLink } from "./form-controls";
 
 type LegalFooterLanguage = "de" | "en";
 
+export const privacyPolicyHrefs = {
+  en: "https://drefrajo.dev/en/privacy",
+  de: "https://drefrajo.dev/privacy",
+} as const;
+
 const copy = {
   en: {
     label: "Legal information",
     privacy: "Privacy policy",
     imprint: "Imprint",
-    privacyHref: "https://drefrajo.dev/en/privacy",
+    privacyHref: privacyPolicyHrefs.en,
     imprintHref: "https://drefrajo.dev/en/imprint",
   },
   de: {
     label: "Rechtliche Informationen",
     privacy: "Datenschutz",
     imprint: "Impressum",
-    privacyHref: "https://drefrajo.dev/privacy",
+    privacyHref: privacyPolicyHrefs.de,
     imprintHref: "https://drefrajo.dev/imprint",
   },
 } as const satisfies Record<
