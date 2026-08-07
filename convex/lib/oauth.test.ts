@@ -37,18 +37,28 @@ describe("OAuth provider ownership", () => {
     expect(configuration.socialProviders.github).not.toHaveProperty(
       "mapProfileToUser",
     );
+    expect(configuration.socialProviders.github).not.toHaveProperty(
+      "redirectURI",
+    );
   });
 
-  it("uses the production Google callback only when explicitly configured", () => {
+  it("uses production callbacks only when explicitly configured", () => {
     const configuration = readOAuthConfiguration({
       GOOGLE_CLIENT_ID: "google-id",
       GOOGLE_CLIENT_SECRET: "google-secret",
+      GITHUB_CLIENT_ID: "github-id",
+      GITHUB_CLIENT_SECRET: "github-secret",
       GOOGLE_REDIRECT_URI:
         "https://interview.drefrajo.dev/api/auth/callback/google",
+      GITHUB_REDIRECT_URI:
+        "https://interview.drefrajo.dev/api/auth/callback/github",
     });
 
     expect(configuration.socialProviders.google).toMatchObject({
       redirectURI: "https://interview.drefrajo.dev/api/auth/callback/google",
+    });
+    expect(configuration.socialProviders.github).toMatchObject({
+      redirectURI: "https://interview.drefrajo.dev/api/auth/callback/github",
     });
   });
 
@@ -61,6 +71,18 @@ describe("OAuth provider ownership", () => {
       }),
     ).toThrow(
       "GOOGLE_REDIRECT_URI must be an absolute HTTPS callback URL at /api/auth/callback/google.",
+    );
+  });
+
+  it("rejects a GitHub callback outside the expected HTTPS route", () => {
+    expect(() =>
+      readOAuthConfiguration({
+        GITHUB_CLIENT_ID: "github-id",
+        GITHUB_CLIENT_SECRET: "github-secret",
+        GITHUB_REDIRECT_URI: "https://interview.drefrajo.dev/auth/callback",
+      }),
+    ).toThrow(
+      "GITHUB_REDIRECT_URI must be an absolute HTTPS callback URL at /api/auth/callback/github.",
     );
   });
 });

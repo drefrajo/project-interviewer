@@ -1,4 +1,7 @@
-const googleCallbackPath = "/api/auth/callback/google";
+const oauthCallbackPaths = [
+  "/api/auth/callback/google",
+  "/api/auth/callback/github",
+] as const;
 
 type AssetsBinding = {
   fetch: (request: Request) => Promise<Response>;
@@ -9,9 +12,9 @@ export type WorkerEnvironment = {
   OAUTH_PROXY_CONVEX_SITE_URL?: string | undefined;
 };
 
-const isGoogleCallback = (request: Request) => {
+const isOAuthCallback = (request: Request) => {
   const url = new URL(request.url);
-  return url.pathname === googleCallbackPath;
+  return oauthCallbackPaths.some((path) => path === url.pathname);
 };
 
 const proxyTarget = (request: Request, convexSiteUrl: string) => {
@@ -34,13 +37,13 @@ const proxyTarget = (request: Request, convexSiteUrl: string) => {
   }
 
   const requestUrl = new URL(request.url);
-  return new URL(`${googleCallbackPath}${requestUrl.search}`, origin);
+  return new URL(`${requestUrl.pathname}${requestUrl.search}`, origin);
 };
 
 const worker = {
   async fetch(request: Request, env: WorkerEnvironment): Promise<Response> {
     const configuredConvexSiteUrl = env.OAUTH_PROXY_CONVEX_SITE_URL?.trim();
-    if (configuredConvexSiteUrl && isGoogleCallback(request)) {
+    if (configuredConvexSiteUrl && isOAuthCallback(request)) {
       const target = proxyTarget(request, configuredConvexSiteUrl);
       if (!target) {
         return new Response("OAuth proxy configuration is invalid.", {

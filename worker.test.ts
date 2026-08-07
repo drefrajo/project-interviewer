@@ -33,38 +33,41 @@ describe("production OAuth callback proxy", () => {
     expect(environment.assetFetch).toHaveBeenCalledOnce();
   });
 
-  it("proxies only the Google callback to the configured Convex site", async () => {
-    const environment = createEnvironment(
-      "https://production-deployment.convex.site",
-    );
-    const upstreamFetch = vi
-      .spyOn(globalThis, "fetch")
-      .mockResolvedValue(
-        Response.redirect(
-          "https://interview.drefrajo.dev/?ott=test-token",
-          302,
+  it.each(["google", "github"] as const)(
+    "proxies the %s callback to the configured Convex site",
+    async (provider) => {
+      const environment = createEnvironment(
+        "https://production-deployment.convex.site",
+      );
+      const upstreamFetch = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValue(
+          Response.redirect(
+            "https://interview.drefrajo.dev/?ott=test-token",
+            302,
+          ),
+        );
+
+      const response = await worker.fetch(
+        new Request(
+          `https://interview.drefrajo.dev/api/auth/callback/${provider}?code=test&state=test`,
         ),
+        environment,
       );
 
-    const response = await worker.fetch(
-      new Request(
-        "https://interview.drefrajo.dev/api/auth/callback/google?code=test&state=test",
-      ),
-      environment,
-    );
-
-    expect(response.status).toBe(302);
-    expect(response.headers.get("location")).toBe(
-      "https://interview.drefrajo.dev/?ott=test-token",
-    );
-    expect(upstreamFetch).toHaveBeenCalledOnce();
-    const [request] = upstreamFetch.mock.calls[0] ?? [];
-    expect(request).toBeInstanceOf(Request);
-    expect((request as Request).url).toBe(
-      "https://production-deployment.convex.site/api/auth/callback/google?code=test&state=test",
-    );
-    expect(environment.assetFetch).not.toHaveBeenCalled();
-  });
+      expect(response.status).toBe(302);
+      expect(response.headers.get("location")).toBe(
+        "https://interview.drefrajo.dev/?ott=test-token",
+      );
+      expect(upstreamFetch).toHaveBeenCalledOnce();
+      const [request] = upstreamFetch.mock.calls[0] ?? [];
+      expect(request).toBeInstanceOf(Request);
+      expect((request as Request).url).toBe(
+        `https://production-deployment.convex.site/api/auth/callback/${provider}?code=test&state=test`,
+      );
+      expect(environment.assetFetch).not.toHaveBeenCalled();
+    },
+  );
 
   it("does not proxy other auth routes", async () => {
     const environment = createEnvironment(

@@ -34,6 +34,7 @@ type Env = {
   readonly EMAIL_FROM_NAME: string | undefined;
   readonly GITHUB_CLIENT_ID: string | undefined;
   readonly GITHUB_CLIENT_SECRET: string | undefined;
+  readonly GITHUB_REDIRECT_URI: string | undefined;
   readonly GOOGLE_CLIENT_ID: string | undefined;
   readonly GOOGLE_CLIENT_SECRET: string | undefined;
   readonly GOOGLE_REDIRECT_URI: string | undefined;

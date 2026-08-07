@@ -29,6 +29,7 @@ type EnvironmentSource = Readonly<{
   GOOGLE_REDIRECT_URI?: string | undefined;
   GITHUB_CLIENT_ID?: string | undefined;
   GITHUB_CLIENT_SECRET?: string | undefined;
+  GITHUB_REDIRECT_URI?: string | undefined;
 }>;
 
 const required = (source: EnvironmentSource, name: keyof EnvironmentSource) => {
@@ -53,6 +54,8 @@ export const createAuthOptions = (
   const siteUrl = required(source, "SITE_URL");
   const oauth = readOAuthConfiguration(source);
   const allowlist = parseCreatorAllowlist(source.CREATOR_ALLOWLIST);
+  const publicRegistration =
+    source.CREATOR_ALLOWLIST?.trim().toLowerCase() === "all";
   return {
     appName: "Interview",
     secret: required(source, "BETTER_AUTH_SECRET"),
@@ -84,7 +87,8 @@ export const createAuthOptions = (
           before: async (user, hookContext) => {
             if (
               !user.emailVerified ||
-              !allowlist.has(user.email.trim().toLowerCase())
+              (!publicRegistration &&
+                !allowlist.has(user.email.trim().toLowerCase()))
             ) {
               throw new APIError("FORBIDDEN", {
                 message: "Creator registration is not allowed for this email.",

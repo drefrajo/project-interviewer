@@ -21,19 +21,24 @@ type EnvironmentSource = Readonly<{
   GOOGLE_REDIRECT_URI?: string | undefined;
   GITHUB_CLIENT_ID?: string | undefined;
   GITHUB_CLIENT_SECRET?: string | undefined;
+  GITHUB_REDIRECT_URI?: string | undefined;
 }>;
 
-const readGoogleRedirectUri = (source: EnvironmentSource) => {
-  const raw = source.GOOGLE_REDIRECT_URI?.trim();
+const readOAuthRedirectUri = (
+  source: EnvironmentSource,
+  provider: OAuthProviderId,
+) => {
+  const variableName =
+    provider === "google" ? "GOOGLE_REDIRECT_URI" : "GITHUB_REDIRECT_URI";
+  const callbackPath = `/api/auth/callback/${provider}`;
+  const raw = source[variableName]?.trim();
   if (!raw) return null;
 
   let url: URL;
   try {
     url = new URL(raw);
   } catch {
-    throw new Error(
-      "GOOGLE_REDIRECT_URI must be an absolute HTTPS callback URL.",
-    );
+    throw new Error(`${variableName} must be an absolute HTTPS callback URL.`);
   }
   if (
     url.protocol !== "https:" ||
@@ -41,10 +46,10 @@ const readGoogleRedirectUri = (source: EnvironmentSource) => {
     url.password ||
     url.search ||
     url.hash ||
-    url.pathname !== "/api/auth/callback/google"
+    url.pathname !== callbackPath
   ) {
     throw new Error(
-      "GOOGLE_REDIRECT_URI must be an absolute HTTPS callback URL at /api/auth/callback/google.",
+      `${variableName} must be an absolute HTTPS callback URL at ${callbackPath}.`,
     );
   }
   return url.toString();
@@ -84,7 +89,8 @@ export const readOAuthConfiguration = (source: EnvironmentSource) => {
       "Configure at least one OAuth provider (Google or GitHub).",
     );
   }
-  const googleRedirectUri = readGoogleRedirectUri(source);
+  const googleRedirectUri = readOAuthRedirectUri(source, "google");
+  const githubRedirectUri = readOAuthRedirectUri(source, "github");
   return {
     availability: { google: Boolean(google), github: Boolean(github) },
     socialProviders: {
@@ -98,7 +104,16 @@ export const readOAuthConfiguration = (source: EnvironmentSource) => {
             },
           }
         : {}),
-      ...(github ? { github } : {}),
+      ...(github
+        ? {
+            github: {
+              ...github,
+              ...(githubRedirectUri
+                ? { redirectURI: githubRedirectUri }
+                : {}),
+            },
+          }
+        : {}),
     },
   };
 };

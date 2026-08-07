@@ -36,7 +36,9 @@ Review whether each Interview reaches a useful Project Document efficiently, pre
 
 Confirm in the configured production environment that:
 
-- Creator registration is allowlisted;
+- Creator registration uses the intended production mode: an email allowlist
+  for private launch, or exactly `CREATOR_ALLOWLIST=all` only for a public
+  launch;
 - Google and GitHub sign-in work independently and matching emails cannot link or duplicate accounts;
 - Interview Links are unguessable, regeneration invalidates the prior link, and Client pages are not indexed;
 - every OpenRouter request denies data collection, disables ZDR routing, and disables fallback;

@@ -47,7 +47,9 @@ Set server-only values directly on the Convex deployment:
 - a Better Auth secret;
 - at least one complete Google or GitHub OAuth credential pair;
 - `CAPABILITY_ENCRYPTION_SECRET`, as a separate high-entropy secret for recoverable Interview Links;
-- `CREATOR_ALLOWLIST`, as a comma-separated list of verified Creator email addresses;
+- `CREATOR_ALLOWLIST`, as a comma-separated list of verified Creator email
+  addresses; set it to exactly `all` to allow any verified Google/GitHub email
+  to register;
 - the OpenRouter API key, with the desired account-level spend limit configured in OpenRouter; and
 - the full Cloudflare Email Service sending endpoint, API token, and sender.
 
@@ -180,17 +182,17 @@ https://your-deployment.convex.site/api/auth/callback/google
 https://your-deployment.convex.site/api/auth/callback/github
 ```
 
-Production keeps the Convex callback for GitHub. Google uses the custom
-callback proxy only after `GOOGLE_REDIRECT_URI` is set on the production
-Convex deployment:
+Production uses the custom callback proxy for each provider after the
+corresponding redirect variable is set on the production Convex deployment:
 
 ```text
 https://interview.drefrajo.dev/api/auth/callback/google
-https://your-production-deployment.convex.site/api/auth/callback/github
+https://interview.drefrajo.dev/api/auth/callback/github
 ```
 
 Register the exact URLs in the corresponding Google and GitHub OAuth client
-settings.
+settings. GitHub OAuth apps support one callback URL, so keep a separate
+development OAuth app with its Convex callback.
 
 Allow the exact frontend site URL. Passwords, passkeys, implicit email linking, and explicit provider linking are not supported.
 
