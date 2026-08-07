@@ -62,6 +62,23 @@ export const rememberLastUsedOAuthProvider = (
 export const CreatorAuthGate = ({
   authClient,
   children,
+  localDevelopment = false,
+}: {
+  authClient: ProductionAuthClient;
+  children: ReactNode;
+  localDevelopment?: boolean;
+}) =>
+  localDevelopment ? (
+    <LocalCreatorAuthGate>{children}</LocalCreatorAuthGate>
+  ) : (
+    <AuthenticatedCreatorAuthGate authClient={authClient}>
+      {children}
+    </AuthenticatedCreatorAuthGate>
+  );
+
+const AuthenticatedCreatorAuthGate = ({
+  authClient,
+  children,
 }: {
   authClient: ProductionAuthClient;
   children: ReactNode;
@@ -225,6 +242,60 @@ export const CreatorAuthGate = ({
     return (
       <AuthenticationLoading
         label={text.auth.preparingProfile}
+        language={language}
+      />
+    );
+  }
+  return children;
+};
+
+const LocalCreatorAuthGate = ({ children }: { children: ReactNode }) => {
+  const language = useCreatorLanguage();
+  const profile = useQuery(interviewApi.creator_profiles.getCurrent, {});
+  const upsertProfile = useMutation(
+    interviewApi.creator_profiles.upsertCurrent,
+  );
+  const seedSamples = useMutation(interviewApi.local_dev.seedSamples);
+  const attempted = useRef(false);
+  const seeded = useRef(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (profile !== null || attempted.current) return;
+    attempted.current = true;
+    void upsertProfile({ displayName: "Local Creator", language: "en" }).catch(
+      (cause: unknown) => {
+        attempted.current = false;
+        setError(cause instanceof Error ? cause.message : String(cause));
+      },
+    );
+  }, [profile, upsertProfile]);
+
+  useEffect(() => {
+    if (!profile || seeded.current) return;
+    seeded.current = true;
+    void seedSamples({}).catch((cause: unknown) => {
+      seeded.current = false;
+      setError(cause instanceof Error ? cause.message : String(cause));
+    });
+  }, [profile, seedSamples]);
+
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-canvas px-4">
+        <p
+          className="rounded-lg border border-error-border bg-error-surface p-4 font-bold text-error-text"
+          role="alert"
+        >
+          {error}
+        </p>
+      </div>
+    );
+  }
+  if (!profile) {
+    return (
+      <AuthenticationLoading
+        label={creatorCopy[language].auth.preparingProfile}
         language={language}
       />
     );

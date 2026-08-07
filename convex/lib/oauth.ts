@@ -71,7 +71,10 @@ const credentialPair = (
   return clientId && clientSecret ? { clientId, clientSecret } : null;
 };
 
-export const readOAuthConfiguration = (source: EnvironmentSource) => {
+export const readOAuthConfiguration = (
+  source: EnvironmentSource,
+  options: { allowEmpty?: boolean } = {},
+) => {
   const google = credentialPair(
     source,
     "Google",
@@ -85,6 +88,12 @@ export const readOAuthConfiguration = (source: EnvironmentSource) => {
     "GITHUB_CLIENT_SECRET",
   );
   if (!google && !github) {
+    if (options.allowEmpty) {
+      return {
+        availability: { google: false, github: false },
+        socialProviders: {},
+      };
+    }
     throw new Error(
       "Configure at least one OAuth provider (Google or GitHub).",
     );

@@ -1,5 +1,5 @@
 import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
-import { ConvexReactClient } from "convex/react";
+import { ConvexProvider, ConvexReactClient } from "convex/react";
 import { useMemo, type ComponentProps, type ReactNode } from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { createRoutes } from "../app/routes";
@@ -12,15 +12,18 @@ export interface HostedRuntime {
   kind: "hosted";
   convexClient: ConvexReactClient;
   authClient: ProductionAuthClient;
+  localDevelopment: boolean;
 }
 
 export const createHostedRuntime = (configuration: {
   convexUrl: string;
   convexSiteUrl: string;
+  localDevelopment?: boolean;
 }): HostedRuntime => ({
   kind: "hosted",
   convexClient: new ConvexReactClient(configuration.convexUrl),
   authClient: createProductionAuthClient(configuration.convexSiteUrl),
+  localDevelopment: configuration.localDevelopment ?? false,
 });
 
 export const HostedRuntimeBoundary = ({
@@ -29,18 +32,23 @@ export const HostedRuntimeBoundary = ({
 }: {
   runtime: HostedRuntime;
   children: ReactNode;
-}) => (
-  <ConvexBetterAuthProvider
-    authClient={
-      runtime.authClient as unknown as ComponentProps<
-        typeof ConvexBetterAuthProvider
-      >["authClient"]
-    }
-    client={runtime.convexClient}
-  >
-    {children}
-  </ConvexBetterAuthProvider>
-);
+}) => {
+  if (runtime.localDevelopment) {
+    return <ConvexProvider client={runtime.convexClient}>{children}</ConvexProvider>;
+  }
+  return (
+    <ConvexBetterAuthProvider
+      authClient={
+        runtime.authClient as unknown as ComponentProps<
+          typeof ConvexBetterAuthProvider
+        >["authClient"]
+      }
+      client={runtime.convexClient}
+    >
+      {children}
+    </ConvexBetterAuthProvider>
+  );
+};
 
 export const HostedApplicationRoot = ({
   runtime,
@@ -48,8 +56,8 @@ export const HostedApplicationRoot = ({
   runtime: HostedRuntime;
 }) => {
   const router = useMemo(
-    () => createBrowserRouter(createRoutes(runtime.authClient)),
-    [runtime.authClient],
+    () => createBrowserRouter(createRoutes(runtime.authClient, runtime.localDevelopment)),
+    [runtime.authClient, runtime.localDevelopment],
   );
   return <RouterProvider router={router} />;
 };

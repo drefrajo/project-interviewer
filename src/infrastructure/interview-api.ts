@@ -249,6 +249,9 @@ interface InterviewApi {
       { purchaseId: string; url: string }
     >;
   };
+  local_dev: {
+    seedSamples: Mutation<Record<string, never>, { created: number }>;
+  };
   client: {
     getByLink: Query<{ token: string }, ClientInterviewView | null>;
     start: Mutation<{ token: string }>;

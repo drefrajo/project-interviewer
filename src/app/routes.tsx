@@ -17,6 +17,7 @@ import {
 
 export const createRoutes = (
   authClient: ProductionAuthClient,
+  localDevelopment = false,
 ): RouteObject[] => [
   {
     path: "/i/:interviewToken",
@@ -25,8 +26,8 @@ export const createRoutes = (
   {
     element: (
       <CreatorLanguageProvider>
-        <CreatorAuthGate authClient={authClient}>
-          <CreatorShell authClient={authClient} />
+        <CreatorAuthGate authClient={authClient} localDevelopment={localDevelopment}>
+          <CreatorShell authClient={authClient} localDevelopment={localDevelopment} />
         </CreatorAuthGate>
       </CreatorLanguageProvider>
     ),

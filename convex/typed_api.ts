@@ -11,6 +11,7 @@ import type * as downloads from "./downloads";
 import type * as downloadsData from "./downloads_data";
 import type * as interviews from "./interviews";
 import type * as jobs from "./jobs";
+import type * as localDev from "./local_dev";
 import type * as templates from "./templates";
 import type * as transcripts from "./transcripts";
 
@@ -22,6 +23,7 @@ type FullApi = ApiFromModules<{
   "downloads_data": typeof downloadsData;
   interviews: typeof interviews;
   jobs: typeof jobs;
+  "local_dev": typeof localDev;
   templates: typeof templates;
   transcripts: typeof transcripts;
 }>;

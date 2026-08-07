@@ -12,8 +12,10 @@ import { useCreatorLanguage } from "./creator-language";
 
 export const CreatorShell = ({
   authClient,
+  localDevelopment = false,
 }: {
   authClient: ProductionAuthClient;
+  localDevelopment?: boolean;
 }) => {
   const language = useCreatorLanguage();
   const text = creatorCopy[language];
@@ -49,14 +51,16 @@ export const CreatorShell = ({
                 : text.shell.buyPasses}
             </Link>
             <ThemeToggle />
-            <button
-              aria-label={text.shell.signOut}
-              className="inline-grid size-12 place-items-center rounded-field transition hover:bg-soft"
-              onClick={() => void authClient.signOut()}
-              type="button"
-            >
-              <LogOut aria-hidden="true" size={18} />
-            </button>
+            {!localDevelopment ? (
+              <button
+                aria-label={text.shell.signOut}
+                className="inline-grid size-12 place-items-center rounded-field transition hover:bg-soft"
+                onClick={() => void authClient.signOut()}
+                type="button"
+              >
+                <LogOut aria-hidden="true" size={18} />
+              </button>
+            ) : null}
           </div>
         </div>
       </header>

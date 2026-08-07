@@ -22,9 +22,22 @@ bun run convex:dev
 ```
 
 `bun run convex:dev` runs `bunx convex deployment select local` before starting
-`bunx convex dev`. The local backend stores its state under `.convex` and does
-not push code to Convex Cloud. Convex writes the local public deployment URLs
-to `.env.local`.
+`bunx convex dev`. It also provisions local-only placeholder values for the
+required deployment settings. The local backend stores its state under
+`.convex` and does not push code to Convex Cloud. Convex writes the local public
+deployment URLs to `.env.local`.
+
+Local development automatically opens a single local Creator workspace without
+OAuth. The bypass requires both the `LOCAL_DEV_AUTH_BYPASS=true` marker and a
+local Convex site URL, so it cannot activate on shared development or
+production deployments. Local AI, image, email, and payment integrations still
+need their respective provider configuration if you want to exercise those
+flows.
+
+The first local Creator workspace load also seeds five idempotent sample
+Interviews covering new, ready, in-progress, submitted, and needs-attention
+states. They are created only by the guarded local development mutation and are
+not part of shared or production data.
 
 Local deployments are suitable for feature work, but they do not have public
 URLs. Use the shared development deployment for OAuth, Stripe webhooks, email,

@@ -6,6 +6,7 @@ import { betterAuth, type BetterAuthOptions } from "better-auth";
 import { componentsGeneric, queryGeneric } from "convex/server";
 import authConfig from "./auth.config";
 import authSchema from "./betterAuth/schema";
+import { isLocalDevelopmentAuthBypassEnabled } from "./lib/environment";
 import {
   oauthProviderFromCallbackPath,
   parseCreatorAllowlist,
@@ -24,6 +25,7 @@ type EnvironmentSource = Readonly<{
   CONVEX_SITE_URL?: string | undefined;
   BETTER_AUTH_SECRET?: string | undefined;
   CREATOR_ALLOWLIST?: string | undefined;
+  LOCAL_DEV_AUTH_BYPASS?: string | undefined;
   GOOGLE_CLIENT_ID?: string | undefined;
   GOOGLE_CLIENT_SECRET?: string | undefined;
   GOOGLE_REDIRECT_URI?: string | undefined;
@@ -52,7 +54,9 @@ export const createAuthOptions = (
   source: EnvironmentSource = schemaGenerationEnvironment,
 ) => {
   const siteUrl = required(source, "SITE_URL");
-  const oauth = readOAuthConfiguration(source);
+  const oauth = readOAuthConfiguration(source, {
+    allowEmpty: isLocalDevelopmentAuthBypassEnabled(source),
+  });
   const allowlist = parseCreatorAllowlist(source.CREATOR_ALLOWLIST);
   const publicRegistration =
     source.CREATOR_ALLOWLIST?.trim().toLowerCase() === "all";
@@ -127,7 +131,10 @@ export const createAuth = (
 
 export const getProviderAvailability = queryGeneric({
   args: {},
-  handler: () => readOAuthConfiguration(process.env).availability,
+  handler: () =>
+    readOAuthConfiguration(process.env, {
+      allowEmpty: isLocalDevelopmentAuthBypassEnabled(),
+    }).availability,
 });
 
 export const { getAuthUser } = authComponent.clientApi();

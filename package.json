@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite --mode local-development",
     "dev:development": "vite --mode development",
-    "convex:dev": "bunx convex deployment select local && bunx convex dev",
+    "convex:dev": "bun scripts/convex-dev.ts",
     "convex:codegen": "bunx convex codegen",
     "build": "tsc -b && vite build",
     "build:development": "vite build --mode development",
