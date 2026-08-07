@@ -28,6 +28,24 @@ describe("InterviewsPage status badges", () => {
         step: "interview",
         passState: "reserved",
       },
+      {
+        _id: "in-progress-interview",
+        projectName: "In progress interview",
+        clientLanguage: "en",
+        interviewModel: "gpt-5.6-terra",
+        status: "in_progress",
+        step: "review",
+        passState: "consumed",
+      },
+      {
+        _id: "submitted-interview",
+        projectName: "Submitted interview",
+        clientLanguage: "en",
+        interviewModel: "gpt-5.6-terra",
+        status: "submitted",
+        step: "submitted",
+        passState: "consumed",
+      },
     ]);
   });
 
@@ -39,7 +57,7 @@ describe("InterviewsPage status badges", () => {
     );
 
     expect(screen.getAllByText("Needs pass reservation")).toHaveLength(2);
-    expect(screen.getByText("Ready")).toHaveClass("bg-forest");
+    expect(screen.getByText("Ready")).toHaveClass("bg-soft", "text-muted");
     expect(screen.getByText("Ready")).not.toHaveClass("bg-lime");
     for (const openLink of screen.getAllByText("Open")) {
       expect(openLink).toHaveClass(
@@ -48,5 +66,20 @@ describe("InterviewsPage status badges", () => {
       );
     }
     expect(screen.queryByText("Not started")).not.toBeInTheDocument();
+  });
+
+  it("uses an incremental lifecycle palette", () => {
+    render(
+      <MemoryRouter>
+        <InterviewsPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("Ready")).toHaveClass("bg-soft", "text-muted");
+    expect(screen.getByText("In progress")).toHaveClass(
+      "bg-forest",
+      "text-white",
+    );
+    expect(screen.getByText("Submitted")).toHaveClass("bg-lime", "text-forest");
   });
 });
