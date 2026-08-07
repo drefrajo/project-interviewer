@@ -6,6 +6,7 @@ export class EnvironmentConfigurationError extends Error {
 }
 
 type EnvironmentSource = Readonly<Record<string, string | undefined>>;
+export type BrowserRuntimeMode = "local" | "development" | "production";
 
 const publicRuntimeVariables = [
   "VITE_CONVEX_URL",
@@ -13,6 +14,16 @@ const publicRuntimeVariables = [
 ] as const;
 
 const publicSecretPattern = /^VITE_.*(?:API_KEY|SECRET|TOKEN|DEPLOY_KEY)$/;
+const localConvexHosts = new Set(["127.0.0.1", "localhost", "[::1]"]);
+
+export const isLocalConvexSiteUrl = (value: string) => {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" && localConvexHosts.has(url.hostname);
+  } catch {
+    return false;
+  }
+};
 
 const requireValue = (source: EnvironmentSource, key: string): string => {
   const value = source[key]?.trim();
@@ -35,7 +46,7 @@ export const readApplicationEnvironment = (source: EnvironmentSource) => {
   }
 
   const viteMode = source.MODE;
-  const mode =
+  const mode: BrowserRuntimeMode | null =
     viteMode === "local-development"
       ? ("local" as const)
       : viteMode === "development" || viteMode === "production"

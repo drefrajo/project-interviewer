@@ -1,6 +1,9 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { readApplicationEnvironment } from "./infrastructure/environment";
+import {
+  isLocalConvexSiteUrl,
+  readApplicationEnvironment,
+} from "./infrastructure/environment";
 import {
   HostedApplicationRoot,
   createHostedRuntime,
@@ -11,7 +14,13 @@ import "./styles.css";
 
 const rootElement = document.getElementById("root");
 const environment = readApplicationEnvironment(import.meta.env);
-const runtime = createHostedRuntime(environment.public);
+const runtime = createHostedRuntime({
+  ...environment.public,
+  deploymentMode: environment.mode,
+  localDevelopment:
+    environment.mode === "local" &&
+    isLocalConvexSiteUrl(environment.public.convexSiteUrl),
+});
 
 if (!rootElement) throw new Error("Application root element is missing.");
 

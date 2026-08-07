@@ -2,6 +2,7 @@ import { useQuery } from "convex/react";
 import { FileText, LogOut, Settings, Shapes } from "lucide-react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import type { ProductionAuthClient } from "../../infrastructure/auth-client";
+import type { BrowserRuntimeMode } from "../../infrastructure/environment";
 import { interviewApi } from "../../infrastructure/interview-api";
 import { BrandMark } from "../shared/brand-mark";
 import { LegalFooter } from "../shared/legal-footer";
@@ -12,8 +13,12 @@ import { useCreatorLanguage } from "./creator-language";
 
 export const CreatorShell = ({
   authClient,
+  deploymentMode = "production",
+  localDevelopment = false,
 }: {
   authClient: ProductionAuthClient;
+  deploymentMode?: BrowserRuntimeMode;
+  localDevelopment?: boolean;
 }) => {
   const language = useCreatorLanguage();
   const text = creatorCopy[language];
@@ -36,7 +41,12 @@ export const CreatorShell = ({
             to="/interviews"
           >
             <BrandMark />
-            <span className="hidden sm:inline">Interview</span>
+            <span className="hidden sm:inline">
+              Interview
+              {deploymentMode !== "production"
+                ? ` | ${deploymentMode === "local" ? "local" : "dev"}`
+                : ""}
+            </span>
           </NavLink>
           <div className="flex items-center gap-3 text-sm text-muted">
             <span className="hidden sm:inline">{profile?.displayName}</span>
@@ -49,14 +59,16 @@ export const CreatorShell = ({
                 : text.shell.buyPasses}
             </Link>
             <ThemeToggle />
-            <button
-              aria-label={text.shell.signOut}
-              className="inline-grid size-12 place-items-center rounded-field transition hover:bg-soft"
-              onClick={() => void authClient.signOut()}
-              type="button"
-            >
-              <LogOut aria-hidden="true" size={18} />
-            </button>
+            {!localDevelopment ? (
+              <button
+                aria-label={text.shell.signOut}
+                className="inline-grid size-12 place-items-center rounded-field transition hover:bg-soft"
+                onClick={() => void authClient.signOut()}
+                type="button"
+              >
+                <LogOut aria-hidden="true" size={18} />
+              </button>
+            ) : null}
           </div>
         </div>
       </header>

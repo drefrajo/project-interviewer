@@ -1,6 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { authComponent } from "./auth";
+import { isLocalDevelopmentAuthBypassEnabled } from "./lib/environment";
 import { getCreatorProfile, requireIdentity } from "./lib/auth";
 import { assertLength } from "./lib/domain";
 import { isOAuthProviderId } from "./lib/oauth";
@@ -30,7 +31,6 @@ export const upsertCurrent = mutation({
   },
   handler: async (ctx, args) => {
     const identity = await requireIdentity(ctx);
-    const authUser = await authComponent.getAuthUser(ctx);
     if (!identity.email) {
       throw new Error("A verified email is required.");
     }
@@ -47,7 +47,10 @@ export const upsertCurrent = mutation({
         q.eq("tokenIdentifier", identity.tokenIdentifier),
       )
       .unique();
-    const provider = isOAuthProviderId(authUser.provider)
+    const authUser = isLocalDevelopmentAuthBypassEnabled()
+      ? null
+      : await authComponent.getAuthUser(ctx);
+    const provider = isOAuthProviderId(authUser?.provider)
       ? authUser.provider
       : current?.provider;
     const language =

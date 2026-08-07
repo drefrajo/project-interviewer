@@ -39,14 +39,19 @@ export const InterviewsPage = () => {
             const needsReservation =
               interview.status === "not_started" &&
               interview.passState === "unreserved";
-            const isReady =
-              interview.status === "not_started" &&
-              interview.passState === "reserved";
             const statusLabel = needsReservation
               ? text.interviews.reservationRequired
               : interview.status === "not_started"
                 ? text.interviews.ready
                 : text.interviews.status[interview.status];
+            const statusBadgeClass =
+              needsReservation || interview.status === "needs_attention"
+                ? "bg-error-surface text-error-text"
+                : interview.status === "not_started"
+                  ? "bg-soft text-muted"
+                  : interview.status === "in_progress"
+                    ? "bg-forest text-white dark:bg-forest-strong"
+                    : "bg-lime text-forest dark:text-forest-strong";
             return (
               <Link
                 className="group flex min-h-56 flex-col rounded-box border border-line bg-panel p-5 text-ink no-underline transition hover:-translate-y-0.5 hover:shadow-lg"
@@ -55,17 +60,7 @@ export const InterviewsPage = () => {
               >
                 <div className="flex items-start justify-between gap-3">
                   <span
-                    className={`rounded-full px-2.5 py-1 text-xs font-extrabold ${
-                      needsReservation
-                        ? "bg-error-surface text-error-text"
-                        : interview.status === "needs_attention"
-                          ? "bg-error-surface text-error-text"
-                          : interview.status === "submitted"
-                            ? "bg-lime text-forest dark:text-forest-strong"
-                            : isReady
-                              ? "bg-forest text-white dark:bg-forest-strong"
-                            : "bg-soft text-forest"
-                    }`}
+                    className={`rounded-full px-2.5 py-1 text-xs font-extrabold ${statusBadgeClass}`}
                   >
                     {statusLabel}
                   </span>

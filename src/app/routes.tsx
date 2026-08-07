@@ -1,5 +1,6 @@
 import { Navigate, type RouteObject } from "react-router-dom";
 import type { ProductionAuthClient } from "../infrastructure/auth-client";
+import type { BrowserRuntimeMode } from "../infrastructure/environment";
 import { ClientInterviewPage } from "./client/client-interview-page";
 import { CreatorAuthGate } from "./creator/creator-auth-gate";
 import { CreatorShell } from "./creator/creator-shell";
@@ -17,6 +18,8 @@ import {
 
 export const createRoutes = (
   authClient: ProductionAuthClient,
+  localDevelopment = false,
+  deploymentMode: BrowserRuntimeMode = "production",
 ): RouteObject[] => [
   {
     path: "/i/:interviewToken",
@@ -25,8 +28,15 @@ export const createRoutes = (
   {
     element: (
       <CreatorLanguageProvider>
-        <CreatorAuthGate authClient={authClient}>
-          <CreatorShell authClient={authClient} />
+        <CreatorAuthGate
+          authClient={authClient}
+          localDevelopment={localDevelopment}
+        >
+          <CreatorShell
+            authClient={authClient}
+            deploymentMode={deploymentMode}
+            localDevelopment={localDevelopment}
+          />
         </CreatorAuthGate>
       </CreatorLanguageProvider>
     ),

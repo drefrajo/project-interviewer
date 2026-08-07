@@ -10,6 +10,7 @@ const app = defineApp({
     BETTER_AUTH_SECRET: v.string(),
     CAPABILITY_ENCRYPTION_SECRET: v.string(),
     CREATOR_ALLOWLIST: v.string(),
+    LOCAL_DEV_AUTH_BYPASS: v.optional(v.string()),
     GOOGLE_CLIENT_ID: v.optional(v.string()),
     GOOGLE_CLIENT_SECRET: v.optional(v.string()),
     GOOGLE_REDIRECT_URI: v.optional(v.string()),

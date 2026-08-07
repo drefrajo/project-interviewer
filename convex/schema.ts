@@ -216,6 +216,7 @@ export default defineSchema({
     linkTokenIv: v.string(),
     linkVersion: v.number(),
     projectName: v.string(),
+    localDevSampleKey: v.optional(v.string()),
     clientLanguage,
     model: storedInterviewModel,
     instructions: v.string(),
