@@ -16,6 +16,7 @@ const rootElement = document.getElementById("root");
 const environment = readApplicationEnvironment(import.meta.env);
 const runtime = createHostedRuntime({
   ...environment.public,
+  deploymentMode: environment.mode,
   localDevelopment:
     environment.mode === "local" &&
     isLocalConvexSiteUrl(environment.public.convexSiteUrl),

@@ -6,6 +6,7 @@ export class EnvironmentConfigurationError extends Error {
 }
 
 type EnvironmentSource = Readonly<Record<string, string | undefined>>;
+export type BrowserRuntimeMode = "local" | "development" | "production";
 
 const publicRuntimeVariables = [
   "VITE_CONVEX_URL",
@@ -45,7 +46,7 @@ export const readApplicationEnvironment = (source: EnvironmentSource) => {
   }
 
   const viteMode = source.MODE;
-  const mode =
+  const mode: BrowserRuntimeMode | null =
     viteMode === "local-development"
       ? ("local" as const)
       : viteMode === "development" || viteMode === "production"
