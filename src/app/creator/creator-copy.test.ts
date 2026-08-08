@@ -61,4 +61,9 @@ describe("Creator monetization copy", () => {
       );
     },
   );
+
+  it("states that prices include tax", () => {
+    expect(creatorCopy.en.billing.taxes).toBe("including tax");
+    expect(creatorCopy.de.billing.taxes).toBe("inkl. Steuern");
+  });
 });
