@@ -166,7 +166,6 @@ export const creatorCopy = {
       retentionDescription: (date: string) =>
         `This Interview is scheduled for permanent deletion on ${date}. Export everything you need before then; automatic deletion cannot be undone or restored.`,
       projectDocument: "Project Document",
-      downloadMarkdown: "Markdown",
       documentPending: "The Project Document will appear after the Interview is complete.",
       visualConcepts: "Visual Concepts",
       generationFailed: "Generation failed",
@@ -192,7 +191,6 @@ export const creatorCopy = {
       reservationDescription:
         "Preparation is free. The first time you copy or share this link, one Interview Pass is reserved. The Client only consumes it by deliberately starting the Interview.",
       reservationReady: "This Interview has a reserved pass and its link is ready.",
-      passConsumed: "The Interview Pass was consumed when the Client deliberately started and is now permanent.",
       reserveAndCopyLink: "Reserve 1 pass and copy link",
       reservationConfirmTitle: "Reserve a pass and copy this link?",
       reservationConfirmDescription: (balance: number) =>
@@ -426,7 +424,6 @@ export const creatorCopy = {
       retentionDescription: (date: string) =>
         `Dieses Interview wird planmäßig am ${date} endgültig gelöscht. Exportieren Sie vorher alles, was Sie benötigen; die automatische Löschung kann weder rückgängig gemacht noch wiederhergestellt werden.`,
       projectDocument: "Projektdokument",
-      downloadMarkdown: "Markdown",
       documentPending: "Das Projektdokument erscheint nach Abschluss des Interviews.",
       visualConcepts: "Visuelle Konzepte",
       generationFailed: "Erstellung fehlgeschlagen",
@@ -452,7 +449,6 @@ export const creatorCopy = {
       reservationDescription:
         "Die Vorbereitung ist kostenlos. Beim ersten Kopieren oder Teilen wird ein Interview-Pass reserviert. Erst der bewusste Start durch den Client verbraucht ihn.",
       reservationReady: "Für dieses Interview ist ein Pass reserviert; der Link ist bereit.",
-      passConsumed: "Der Interview-Pass wurde beim bewussten Start durch den Client verbraucht und ist dauerhaft gebunden.",
       reserveAndCopyLink: "1 Pass reservieren und Link kopieren",
       reservationConfirmTitle: "Einen Pass reservieren und diesen Link kopieren?",
       reservationConfirmDescription: (balance: number) =>
