@@ -57,9 +57,9 @@ describe("Creator settings layout", () => {
     expect(screen.getByRole("textbox", { name: /Creator contact email/ })).toHaveValue(
       "hello@studio.example",
     );
-    expect(screen.getByRole("textbox", { name: /Creator privacy-policy URL/ })).toHaveValue(
-      "https://studio.example/privacy",
-    );
+    const privacyPolicy = screen.getByRole("textbox", { name: /Creator privacy-policy URL/ });
+    expect(privacyPolicy).toHaveValue("https://studio.example/privacy");
+    expect(privacyPolicy).not.toBeRequired();
     expect(screen.getByRole("textbox", { name: /Private OAuth sign-in email/ })).toHaveValue(
       "creator@example.com",
     );

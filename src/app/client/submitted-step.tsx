@@ -69,17 +69,21 @@ export const SubmittedStep = ({
             <a className="text-primary underline" href={`mailto:${interview.creator.contactEmail}`}>
               {interview.creator.contactEmail}
             </a>
-            <span aria-hidden="true"> · </span>
-            <a
-              className="text-primary underline"
-              href={interview.creator.privacyPolicyUrl}
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              {interview.clientLanguage === "de"
-                ? "Datenschutzerklärung des Creators"
-                : "Creator privacy policy"}
-            </a>
+            {interview.creator.privacyPolicyUrl ? (
+              <>
+                <span aria-hidden="true"> · </span>
+                <a
+                  className="text-primary underline"
+                  href={interview.creator.privacyPolicyUrl}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  {interview.clientLanguage === "de"
+                    ? "Datenschutzerklärung des Creators"
+                    : "Creator privacy policy"}
+                </a>
+              </>
+            ) : null}
           </>
         ) : null}
       </footer>

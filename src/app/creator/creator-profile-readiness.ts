@@ -5,6 +5,5 @@ export const hasCompletePublicCreatorIdentity = (
 ) =>
   Boolean(
     profile?.displayName?.trim() &&
-      profile.contactEmail?.trim() &&
-      profile.privacyPolicyUrl?.trim(),
+      profile.contactEmail?.trim(),
   );

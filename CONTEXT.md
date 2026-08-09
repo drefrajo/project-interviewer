@@ -5,7 +5,7 @@ Interview helps a service provider turn a focused AI conversation with a Client 
 ## Language
 
 **Creator**:
-The signed-in service provider who creates Interviews and receives their Project Submissions. Each Creator owns their Interviews and private Interview Templates, signs in through either Google or GitHub without linking the two providers, and is identified to Clients by a chosen business/display name, a Creator-selected contact email address, and the Creator's privacy-policy URL. The OAuth email address remains private account data and is never exposed to Clients automatically.
+The signed-in service provider who creates Interviews and receives their Project Submissions. Each Creator owns their Interviews and private Interview Templates, signs in through either Google or GitHub without linking the two providers, and is identified to Clients by a chosen business/display name and Creator-selected contact email address; an optional Creator privacy-policy URL may also be shown. The OAuth email address remains private account data and is never exposed to Clients automatically.
 _Avoid_: Freelancer, owner, administrator
 
 **Interview Policy**:

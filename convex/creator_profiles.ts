@@ -28,7 +28,7 @@ const profileView = (profile: {
   displayName: string;
   email: string;
   contactEmail?: string;
-  privacyPolicyUrl?: string;
+  privacyPolicyUrl?: string | undefined;
   language?: "en" | "de";
   emailLanguage?: "en" | "de";
   provider?: "google" | "github";
@@ -133,7 +133,7 @@ export const updateSettings = mutation({
   args: {
     displayName: v.string(),
     contactEmail: v.string(),
-    privacyPolicyUrl: v.string(),
+    privacyPolicyUrl: v.optional(v.string()),
     language: creatorLanguage,
   },
   returns: creatorProfileView,
@@ -145,11 +145,15 @@ export const updateSettings = mutation({
       "Contact email",
       args.contactEmail,
     );
-    const privacyPolicyUrl = assertPrivacyPolicyUrl(args.privacyPolicyUrl);
+    const privacyPolicyUrl = args.privacyPolicyUrl?.trim()
+      ? assertPrivacyPolicyUrl(args.privacyPolicyUrl)
+      : undefined;
     await ctx.db.patch("creatorProfiles", profile._id, {
       displayName,
       contactEmail,
-      privacyPolicyUrl,
+      ...(privacyPolicyUrl
+        ? { privacyPolicyUrl }
+        : { privacyPolicyUrl: undefined }),
       language: args.language,
       updatedAt: Date.now(),
     });
@@ -157,8 +161,10 @@ export const updateSettings = mutation({
       ...profile,
       displayName,
       contactEmail,
-      privacyPolicyUrl,
       language: args.language,
+      ...(privacyPolicyUrl
+        ? { privacyPolicyUrl }
+        : { privacyPolicyUrl: undefined }),
     });
   },
 });

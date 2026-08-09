@@ -8,7 +8,7 @@ import { hashCapability } from "./lib/capability_crypto";
 
 const modules = import.meta.glob("./**/*.ts");
 
-const seed = async (withPublicIdentity: boolean) => {
+const seed = async (identityKind: "none" | "contact" | "full") => {
   const t = convexTest(schema, modules);
   const tokenIdentifier = "test|privacy-creator";
   const token = "privacy-interview-token";
@@ -19,10 +19,12 @@ const seed = async (withPublicIdentity: boolean) => {
       tokenIdentifier,
       email: "private-oauth@example.test",
       displayName: "Studio Privacy",
-      ...(withPublicIdentity
+      ...(identityKind !== "none"
         ? {
             contactEmail: "hello@studio.example",
-            privacyPolicyUrl: "https://studio.example/privacy",
+            ...(identityKind === "full"
+              ? { privacyPolicyUrl: "https://studio.example/privacy" }
+              : {}),
           }
         : {}),
       createdAt: 1,
@@ -57,7 +59,7 @@ const seed = async (withPublicIdentity: boolean) => {
 
 describe("Creator public privacy identity", () => {
   it("returns only Creator-selected public identity to a Client", async () => {
-    const { t, token } = await seed(true);
+    const { t, token } = await seed("full");
 
     const view = await t.query(api.client.getByLink, { token });
 
@@ -71,7 +73,7 @@ describe("Creator public privacy identity", () => {
   });
 
   it("never falls back to OAuth email when public identity is incomplete", async () => {
-    const { t, token } = await seed(false);
+    const { t, token } = await seed("none");
 
     const view = await t.query(api.client.getByLink, { token });
 
@@ -84,7 +86,7 @@ describe("Creator public privacy identity", () => {
   });
 
   it("blocks Interview creation before any data is created when public identity is incomplete", async () => {
-    const { t, tokenIdentifier } = await seed(false);
+    const { t, tokenIdentifier } = await seed("none");
     const before = await t.run(async (ctx) =>
       await ctx.db.query("interviews").collect(),
     );
@@ -104,7 +106,7 @@ describe("Creator public privacy identity", () => {
   });
 
   it("validates and persists the Creator-selected contact and policy", async () => {
-    const { t, tokenIdentifier } = await seed(false);
+    const { t, token, tokenIdentifier } = await seed("none");
     const identity = { tokenIdentifier };
 
     await expect(
@@ -118,6 +120,19 @@ describe("Creator public privacy identity", () => {
       displayName: "Studio Privacy",
       contactEmail: "hello@studio.example",
       privacyPolicyUrl: "https://studio.example/privacy",
+    });
+
+    const cleared = await t
+      .withIdentity(identity)
+      .mutation(api.creator_profiles.updateSettings, {
+        displayName: "Studio Privacy",
+        contactEmail: "hello@studio.example",
+        language: "en",
+      });
+    expect(cleared).not.toHaveProperty("privacyPolicyUrl");
+    expect((await t.query(api.client.getByLink, { token }))?.creator).toEqual({
+      displayName: "Studio Privacy",
+      contactEmail: "hello@studio.example",
     });
 
     await expect(
@@ -136,5 +151,27 @@ describe("Creator public privacy identity", () => {
         language: "en",
       }),
     ).rejects.toThrow("valid HTTPS URL");
+  });
+
+  it("allows a Creator to publish a contact email without a privacy policy", async () => {
+    const { t, token, tokenIdentifier } = await seed("contact");
+
+    const view = await t.query(api.client.getByLink, { token });
+    expect(view?.creator).toEqual({
+      displayName: "Studio Privacy",
+      contactEmail: "hello@studio.example",
+    });
+    expect(view?.creatorIdentityReady).toBe(true);
+
+    await expect(
+      t.withIdentity({ tokenIdentifier }).mutation(api.creator_profiles.updateSettings, {
+        displayName: "Studio Privacy",
+        contactEmail: "hello@studio.example",
+        language: "en",
+      }),
+    ).resolves.toMatchObject({
+      displayName: "Studio Privacy",
+      contactEmail: "hello@studio.example",
+    });
   });
 });

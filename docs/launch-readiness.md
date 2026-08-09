@@ -58,7 +58,7 @@ Confirm that:
 - email delivery failure never blocks Project Submission;
 - an ambiguous email timeout is reported as delivery unknown rather than retried blindly;
 - the Creator can export a complete ZIP for any Interview and download each available individual artifact; and
-- the Client start and submitted pages show only the Creator's chosen display name, selected contact email, and privacy-policy link, never the OAuth email.
+- the Client start and submitted pages show only the Creator's chosen display name and selected contact email, plus an optional privacy-policy link when provided, never the OAuth email.
 
 ## Monetization and Stripe gate
 

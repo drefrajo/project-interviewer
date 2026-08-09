@@ -10,6 +10,30 @@ export const PassesSection = () => {
   const language = useCreatorLanguage();
   const text = creatorCopy[language];
   const balance = useQuery(interviewApi.billing.getBalance, {});
+
+  return (
+    <section id="passes">
+      <header className="max-w-3xl">
+        <h2 className="font-display text-3xl font-extrabold">{text.billing.title}</h2>
+        <p className="mt-3 leading-7 text-muted">{text.billing.intro}</p>
+      </header>
+      <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <BalanceCard label={text.billing.available} value={balance?.availablePasses ?? 0} />
+        <BalanceCard label={text.billing.reserved} value={balance?.reservedPasses ?? 0} />
+        <BalanceCard label={text.billing.introductory} value={balance?.introductoryPasses ?? 0} />
+        <BalanceCard label={text.billing.purchased} value={balance?.purchasedPasses ?? 0} />
+      </div>
+      <p className="mt-4 text-sm font-bold text-muted">{text.billing.nonExpiring}</p>
+      <div className="mt-8">
+        <PassPackages />
+      </div>
+    </section>
+  );
+};
+
+export const PassPackages = () => {
+  const language = useCreatorLanguage();
+  const text = creatorCopy[language];
   const catalog = useQuery(interviewApi.billing.getCatalog, {});
   const createCheckout = useAction(interviewApi.billing.createCheckoutSession);
   const [busyPack, setBusyPack] = useState<"one_pass" | "five_passes" | "">("");
@@ -49,24 +73,13 @@ export const PassesSection = () => {
     item ? text.billing.buyFor(price) : text.billing.unavailable;
 
   return (
-    <section id="passes">
-      <header className="max-w-3xl">
-        <h2 className="font-display text-3xl font-extrabold">{text.billing.title}</h2>
-        <p className="mt-3 leading-7 text-muted">{text.billing.intro}</p>
-      </header>
-      <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <BalanceCard label={text.billing.available} value={balance?.availablePasses ?? 0} />
-        <BalanceCard label={text.billing.reserved} value={balance?.reservedPasses ?? 0} />
-        <BalanceCard label={text.billing.introductory} value={balance?.introductoryPasses ?? 0} />
-        <BalanceCard label={text.billing.purchased} value={balance?.purchasedPasses ?? 0} />
-      </div>
-      <p className="mt-4 text-sm font-bold text-muted">{text.billing.nonExpiring}</p>
+    <>
       {error ? (
-        <p className="mt-5 rounded-lg border border-error-border bg-error-surface p-4 font-bold text-error-text" role="alert">
+        <p className="mb-5 rounded-lg border border-error-border bg-error-surface p-4 font-bold text-error-text" role="alert">
           {error}
         </p>
       ) : null}
-      <div className="mt-8 grid gap-5 md:grid-cols-2">
+      <div className="grid gap-5 md:grid-cols-2">
         <PackCard
           busy={busyPack === "one_pass"}
           description={text.billing.buyOneDescription}
@@ -92,7 +105,7 @@ export const PassesSection = () => {
           unavailable={!fivePasses}
         />
       </div>
-    </section>
+    </>
   );
 };
 
