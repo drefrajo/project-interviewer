@@ -41,9 +41,9 @@ export const creatorCopy = {
         "If you don't have an account yet, we'll create one for you.",
       continueWith: "Continue with",
       lastUsedProvider: (provider: string) => `Last used: ${provider}`,
-      privacyConsentBefore: "By logging in, you agree to our",
+      privacyAcknowledgementBefore: "By logging in, you acknowledge our",
       privacyPolicy: "privacy policy",
-      privacyConsentAfter: ".",
+      privacyAcknowledgementAfter: ".",
       openingWorkspace: "Opening your Creator workspace…",
       preparingProfile: "Preparing your Creator profile…",
       linkedAccount: (provider: string) =>
@@ -318,9 +318,9 @@ export const creatorCopy = {
         "Wenn Sie noch kein Konto haben, erstellen wir automatisch eines für Sie.",
       continueWith: "Weiter mit",
       lastUsedProvider: (provider: string) => `Zuletzt verwendet: ${provider}`,
-      privacyConsentBefore: "Mit der Anmeldung stimmen Sie unserer",
+      privacyAcknowledgementBefore: "Mit der Anmeldung nehmen Sie unsere",
       privacyPolicy: "Datenschutzerklärung",
-      privacyConsentAfter: " zu.",
+      privacyAcknowledgementAfter: " zur Kenntnis.",
       openingWorkspace: "Creator-Arbeitsbereich wird geöffnet…",
       preparingProfile: "Creator-Profil wird vorbereitet…",
       linkedAccount: (provider: string) =>

@@ -227,7 +227,7 @@ const AuthenticatedCreatorAuthGate = ({
               </div>
             </div>
             <p className="mt-5 text-sm leading-6 text-muted">
-              {text.auth.privacyConsentBefore}{" "}
+              {text.auth.privacyAcknowledgementBefore}{" "}
               <a
                 className="font-semibold text-primary underline decoration-primary/40 underline-offset-2 hover:decoration-primary"
                 href={privacyPolicyHrefs[language]}
@@ -236,7 +236,7 @@ const AuthenticatedCreatorAuthGate = ({
               >
                 {text.auth.privacyPolicy}
               </a>
-              {text.auth.privacyConsentAfter}
+              {text.auth.privacyAcknowledgementAfter}
             </p>
           </section>
         </main>

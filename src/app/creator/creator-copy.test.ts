@@ -2,16 +2,22 @@ import { describe, expect, it } from "vitest";
 import { creatorCopy } from "./creator-copy";
 
 describe("Creator monetization copy", () => {
-  it("explains account creation and privacy consent on sign-in", () => {
+  it("explains account creation and privacy acknowledgement on sign-in", () => {
     expect(creatorCopy.en.auth.accountCreation).toBe(
       "If you don't have an account yet, we'll create one for you.",
     );
-    expect(creatorCopy.en.auth.privacyConsentBefore).toBe(
-      "By logging in, you agree to our",
+    expect(creatorCopy.en.auth.privacyAcknowledgementBefore).toBe(
+      "By logging in, you acknowledge our",
     );
     expect(creatorCopy.en.auth.privacyPolicy).toBe("privacy policy");
     expect(creatorCopy.de.auth.accountCreation).toBe(
       "Wenn Sie noch kein Konto haben, erstellen wir automatisch eines für Sie.",
+    );
+    expect(creatorCopy.de.auth.privacyAcknowledgementBefore).toBe(
+      "Mit der Anmeldung nehmen Sie unsere",
+    );
+    expect(creatorCopy.de.auth.privacyAcknowledgementAfter).toBe(
+      " zur Kenntnis.",
     );
   });
 
