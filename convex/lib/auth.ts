@@ -1,8 +1,9 @@
 import type { Doc } from "../_generated/dataModel";
-import type { MutationCtx, QueryCtx } from "../_generated/server";
+import type { ActionCtx, MutationCtx, QueryCtx } from "../_generated/server";
 import { isLocalDevelopmentAuthBypassEnabled } from "./environment";
 
 type ReadCtx = QueryCtx | MutationCtx;
+type IdentityCtx = ReadCtx | ActionCtx;
 
 type AuthIdentity = NonNullable<
   Awaited<ReturnType<QueryCtx["auth"]["getUserIdentity"]>>
@@ -17,7 +18,7 @@ const localDevelopmentIdentity = {
   emailVerified: true,
 } satisfies AuthIdentity;
 
-export const requireIdentity = async (ctx: ReadCtx) => {
+export const requireIdentity = async (ctx: IdentityCtx) => {
   const identity = await ctx.auth.getUserIdentity();
   if (identity) return identity;
   if (isLocalDevelopmentAuthBypassEnabled()) return localDevelopmentIdentity;

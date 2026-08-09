@@ -7,6 +7,17 @@ export const privacyPolicyHrefs = {
   de: "https://drefrajo.dev/privacy",
 } as const;
 
+export const legalDocumentHrefs = {
+  en: {
+    terms: "https://drefrajo.dev/en/terms",
+    dpa: "https://drefrajo.dev/en/dpa",
+  },
+  de: {
+    terms: "https://drefrajo.dev/terms",
+    dpa: "https://drefrajo.dev/dpa",
+  },
+} as const;
+
 const copy = {
   en: {
     label: "Legal information",

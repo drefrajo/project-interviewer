@@ -38,6 +38,17 @@ export type PassCatalogItem = {
   currency: "eur";
 };
 
+export type LegalDocumentVersion = {
+  version: number;
+  sha256: string;
+};
+
+export type LegalAcceptanceStatus = {
+  accepted: boolean;
+  terms: LegalDocumentVersion;
+  dpa: LegalDocumentVersion;
+};
+
 export interface CreatorProfile {
   displayName: string;
   email: string;
@@ -264,6 +275,10 @@ interface InterviewApi {
       { packId: "one_pass" | "five_passes" },
       { purchaseId: string; url: string }
     >;
+  };
+  legal: {
+    getStatus: Action<Record<string, never>, LegalAcceptanceStatus>;
+    acceptCurrent: Action<Record<string, never>, LegalAcceptanceStatus>;
   };
   local_dev: {
     seedSamples: Mutation<Record<string, never>, { created: number }>;

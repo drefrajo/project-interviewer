@@ -15,6 +15,25 @@ export const creatorCopy = {
         "Add your public display name, contact email, and privacy-policy URL. These details are shown to Clients and are required before you can create an Interview.",
       completeSettings: "Complete Settings",
     },
+    legal: {
+      label: "Legal information",
+      loading: "Checking the current legal documents…",
+      errorTitle: "Legal documents unavailable",
+      errorDescription:
+        "We couldn't check the current legal documents. Please try again.",
+      retry: "Try again",
+      title: "Updated legal documents",
+      description:
+        "Some parts of the terms have changed. Please review them carefully and agree to them to continue using this service.",
+      terms: "Terms",
+      termsDescription: "Review the current Terms before continuing.",
+      dpa: "Data Processing Agreement",
+      dpaDescription: "Review the current Data Processing Agreement before continuing.",
+      checkbox:
+        "I have reviewed and agree to the current Terms and Data Processing Agreement.",
+      continue: "Agree and continue",
+      accepting: "Saving…",
+    },
     auth: {
       workspaceLabel: "Creator workspace",
       signInTitle: "Sign in to Interview",
@@ -271,6 +290,26 @@ export const creatorCopy = {
       profileIncompleteDescription:
         "Ergänzen Sie Ihren öffentlichen Anzeigenamen, Ihre Kontakt-E-Mail und die URL Ihrer Datenschutzerklärung. Diese Angaben werden Clients angezeigt und sind erforderlich, bevor Sie ein Interview erstellen können.",
       completeSettings: "Einstellungen vervollständigen",
+    },
+    legal: {
+      label: "Rechtliche Informationen",
+      loading: "Aktuelle rechtliche Dokumente werden geprüft…",
+      errorTitle: "Rechtliche Dokumente nicht verfügbar",
+      errorDescription:
+        "Die aktuellen rechtlichen Dokumente konnten nicht geprüft werden. Bitte versuchen Sie es erneut.",
+      retry: "Erneut versuchen",
+      title: "Aktualisierte rechtliche Dokumente",
+      description:
+        "Einige Teile der Bedingungen haben sich geändert. Bitte prüfen Sie sie sorgfältig und stimmen Sie ihnen zu, um diesen Dienst weiter nutzen zu können.",
+      terms: "Bedingungen",
+      termsDescription: "Prüfen Sie die aktuellen Bedingungen, bevor Sie fortfahren.",
+      dpa: "Auftragsverarbeitungsvertrag (DPA)",
+      dpaDescription:
+        "Prüfen Sie den aktuellen Auftragsverarbeitungsvertrag, bevor Sie fortfahren.",
+      checkbox:
+        "Ich habe die aktuellen Bedingungen und den Auftragsverarbeitungsvertrag geprüft und stimme ihnen zu.",
+      continue: "Zustimmen und fortfahren",
+      accepting: "Wird gespeichert…",
     },
     auth: {
       workspaceLabel: "Creator-Arbeitsbereich",

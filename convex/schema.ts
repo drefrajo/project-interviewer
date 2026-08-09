@@ -195,6 +195,15 @@ export default defineSchema({
     .index("by_tokenIdentifier", ["tokenIdentifier"])
     .index("by_email", ["email"]),
 
+  legalAcceptances: defineTable({
+    account_id: v.id("creatorProfiles"),
+    accepted_at: v.number(),
+    terms_version: v.number(),
+    dpa_version: v.number(),
+    terms_hash: v.string(),
+    dpa_hash: v.string(),
+  }).index("by_account_id", ["account_id"]),
+
   interviewTemplates: defineTable({
     kind: v.union(v.literal("built_in"), v.literal("private")),
     ownerId: v.optional(v.id("creatorProfiles")),

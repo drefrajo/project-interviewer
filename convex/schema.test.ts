@@ -11,6 +11,7 @@ describe("application schema", () => {
       "exportArchives",
       "interviewTemplates",
       "interviews",
+      "legalAcceptances",
       "passAccounts",
       "passLedger",
       "purchases",

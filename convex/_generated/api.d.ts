@@ -19,6 +19,7 @@ import type * as http from "../http.js";
 import type * as internal_refs from "../internal_refs.js";
 import type * as interviews from "../interviews.js";
 import type * as jobs from "../jobs.js";
+import type * as legal from "../legal.js";
 import type * as lib_agent_message from "../lib/agent_message.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_capability_crypto from "../lib/capability_crypto.js";
@@ -65,6 +66,7 @@ declare const fullApi: ApiFromModules<{
   internal_refs: typeof internal_refs;
   interviews: typeof interviews;
   jobs: typeof jobs;
+  legal: typeof legal;
   "lib/agent_message": typeof lib_agent_message;
   "lib/auth": typeof lib_auth;
   "lib/capability_crypto": typeof lib_capability_crypto;

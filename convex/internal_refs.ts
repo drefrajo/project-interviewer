@@ -340,4 +340,26 @@ export const internalRefs = {
       }
     >("billing:purchaseReconciliationPage"),
   },
+  legal: {
+    latestAcceptance: makeFunctionReference<
+      "query",
+      Record<string, never>,
+      {
+        termsVersion: number;
+        dpaVersion: number;
+        termsHash: string;
+        dpaHash: string;
+      } | null
+    >("legal:latestAcceptance"),
+    recordAcceptance: makeFunctionReference<
+      "mutation",
+      {
+        termsVersion: number;
+        dpaVersion: number;
+        termsHash: string;
+        dpaHash: string;
+      },
+      null
+    >("legal:recordAcceptance"),
+  },
 };
