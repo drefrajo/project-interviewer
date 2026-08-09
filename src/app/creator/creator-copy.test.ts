@@ -66,4 +66,32 @@ describe("Creator monetization copy", () => {
     expect(creatorCopy.en.billing.taxes).toBe("including tax");
     expect(creatorCopy.de.billing.taxes).toBe("inkl. Steuern");
   });
+
+  it.each(["en", "de"] as const)(
+    "states that Settings must be complete before Interview creation in %s",
+    (language) => {
+      const text = creatorCopy[language];
+      expect(text.shell.profileIncompleteTitle).toMatch(
+        /Settings|Einstellungen/,
+      );
+      expect(text.shell.profileIncompleteDescription).toMatch(
+        /before you can create|bevor Sie ein Interview erstellen können/i,
+      );
+      expect(text.settings.intro).toMatch(
+        /before you can create|bevor Sie ein Interview erstellen können/i,
+      );
+    },
+  );
+
+  it.each(["en", "de"] as const)(
+    "states that scheduled and manual deletion cannot be restored in %s",
+    (language) => {
+      const text = creatorCopy[language].detail;
+      expect(text.deleteDescription).toMatch(/restored|wiederhergestellt/i);
+      expect(text.retentionDescription("9 August 2027")).toMatch(
+        /restored|wiederhergestellt/i,
+      );
+      expect(text.exportEverything).toMatch(/export|exportieren/i);
+    },
+  );
 });

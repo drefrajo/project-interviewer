@@ -5,7 +5,7 @@ Interview helps a service provider turn a focused AI conversation with a Client 
 ## Language
 
 **Creator**:
-The signed-in service provider who creates Interviews and receives their Project Submissions. Each Creator owns their Interviews and private Interview Templates, signs in through either Google or GitHub without linking the two providers, and is identified to Clients by a chosen business/display name together with the verified email address from their account.
+The signed-in service provider who creates Interviews and receives their Project Submissions. Each Creator owns their Interviews and private Interview Templates, signs in through either Google or GitHub without linking the two providers, and is identified to Clients by a chosen business/display name, a Creator-selected contact email address, and the Creator's privacy-policy URL. The OAuth email address remains private account data and is never exposed to Clients automatically.
 _Avoid_: Freelancer, owner, administrator
 
 **Interview Policy**:
@@ -88,10 +88,14 @@ _Avoid_: Approval, final design
 The single immutable completed handoff produced by an Interview, containing the Project Document, all generated Visual Concepts, the Client's Visual Direction, and the Interview Transcript. After submission the Client may only view it.
 _Avoid_: Project approval, final requirements
 
+**Interview Retention Deadline**:
+The scheduled permanent deletion time for an Interview and all of its content. A completed Interview is deleted 24 calendar months after Project Submission; an incomplete Interview is deleted 24 calendar months after the most recent Creator or Client activity. Background AI work, notifications, reads, and exports do not extend it.
+_Avoid_: Archive date, recovery window
+
 ## Monetization
 
 **Interview Pass**:
-A non-expiring entitlement that pays for one complete Interview after the Client deliberately starts it, including its conversation, Project Document, revisions, Visual Concepts, Project Submission, storage, and downloads.
+A non-expiring entitlement that pays for one complete Interview after the Client deliberately starts it, including its conversation, Project Document, revisions, Visual Concepts, Project Submission, and storage/downloads until the Interview Retention Deadline.
 _Avoid_: Token, credit, message allowance
 
 **Pass Balance**:

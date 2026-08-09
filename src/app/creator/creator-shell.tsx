@@ -1,5 +1,5 @@
 import { useQuery } from "convex/react";
-import { FileText, LogOut, Settings, Shapes } from "lucide-react";
+import { FileText, LogOut, Settings, Shapes, ShieldAlert } from "lucide-react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import type { ProductionAuthClient } from "../../infrastructure/auth-client";
 import type { BrowserRuntimeMode } from "../../infrastructure/environment";
@@ -10,6 +10,7 @@ import { softButton } from "../shared/form-controls";
 import { ThemeToggle } from "../shared/theme-toggle";
 import { creatorCopy } from "./creator-copy";
 import { useCreatorLanguage } from "./creator-language";
+import { hasCompletePublicCreatorIdentity } from "./creator-profile-readiness";
 
 export const CreatorShell = ({
   authClient,
@@ -92,6 +93,27 @@ export const CreatorShell = ({
           ))}
         </div>
       </nav>
+      {profile && !hasCompletePublicCreatorIdentity(profile) ? (
+        <aside
+          className="border-b border-amber-300 bg-amber-50 px-4 py-4 text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100 sm:px-8"
+          role="alert"
+        >
+          <div className="mx-auto flex max-w-7xl flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex gap-3">
+              <ShieldAlert aria-hidden="true" className="mt-0.5 shrink-0" size={20} />
+              <div>
+                <p className="font-extrabold">{text.shell.profileIncompleteTitle}</p>
+                <p className="mt-1 text-sm leading-6">
+                  {text.shell.profileIncompleteDescription}
+                </p>
+              </div>
+            </div>
+            <Link className={softButton} to="/settings#settings-profile">
+              {text.shell.completeSettings}
+            </Link>
+          </div>
+        </aside>
+      ) : null}
       <div className="flex-1">
         <Outlet />
       </div>

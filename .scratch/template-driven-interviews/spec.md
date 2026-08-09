@@ -30,7 +30,7 @@ The application uses React, Convex, Better Auth, the Convex Agent component, the
 3. As a Creator, I want a clear message when I try the wrong provider, so that I know whether to continue with Google or GitHub.
 4. As a Creator, I want registration restricted by a deployment allowlist at launch, so that I can operate the product privately before opening it to others.
 5. As a Creator, I want to set a business or display name, so that Clients know who invited them.
-6. As a Client, I want to see the Creator's business or display name and verified email address, so that impersonation is harder.
+6. As a Client, I want to see the Creator's chosen business/display name, selected contact email, and privacy-policy link, so that I can identify and contact the data controller without exposing OAuth account data.
 7. As a Creator, I want Interviews, Templates, and Settings in separate top-level tabs, so that account settings do not dominate normal work.
 8. As a Creator, I want to create an Interview using only a project name, Client Language, optional template, and Interview Instructions, so that setup is fast.
 9. As a Creator, I want the project name shown to the Client, so that the invitation is recognizable.
@@ -41,7 +41,7 @@ The application uses React, Convex, Better Auth, the Convex Agent component, the
 14. As a Creator, I want to copy an Interview Link with one action, so that I can send it through email or another channel.
 15. As a Creator, I want to regenerate an Interview Link, so that I can invalidate a link that was exposed to the wrong person.
 16. As a Creator, I want the old link invalidated immediately after regeneration, so that access remains under my control.
-17. As a Creator, I want Interviews retained until I delete them, so that completed handoffs remain available without archive management.
+17. As a Creator, I want completed Interviews retained for 24 months after submission and incomplete Interviews for 24 months after last activity, with a warning before permanent automatic deletion and a whole-Interview export.
 18. As a Creator, I want deletion to require explicit confirmation, so that I understand it is immediate and irreversible.
 19. As a Creator, I want deletion to remove the Interview, Interview Link, transcript, Project Document, Visual Concepts, and Project Submission data, so that no orphaned Client data remains.
 20. As a Creator, I want to see Interviews as Not started, In progress, Submitted, or Needs attention, so that I can scan what requires action.
@@ -160,7 +160,7 @@ The application uses React, Convex, Better Auth, the Convex Agent component, the
 - Grant one Introductory Pass idempotently to every Creator, including existing Creators. The first Creator link copy/share reserves exactly one pass atomically; deliberate Client Start records the permanent consumption boundary before AI work; deletion or deactivation before Start releases the reservation once.
 - Use one-time packs only: 1 Interview Pass for €29 and 5 Interview Passes for €99. Do not add subscriptions, usage/token billing, per-model pricing, a 20-pass tier, or paid/custom Radar rules.
 - Use deployment configuration—not product UI—for registration allowlists, built-in templates, supported languages, model routing/privacy requirements, provider credentials, and spend ceilings.
-- Make the Creator application a simple tabbed interface with Interviews, Templates, and Settings. Settings contains only the editable business/display name and read-only verified email identity.
+- Make the Creator application a simple tabbed interface with Interviews, Templates, and Settings. Settings separates private OAuth account email from the required public display name, Creator-selected contact email, and privacy-policy URL.
 - Add a compact Creator Pass Balance and a focused purchase page with one-pass and five-pass actions, plus applicable taxes copy, pending/confirmed/failure/cancellation feedback, and English/German localization. Do not expose Stripe IDs or ledger details.
 - Limit Interview creation to project name, explicit Client Language, optional template, and non-empty Interview Instructions.
 - Make selecting a template copy its content into Interview Instructions. Replacing non-pristine instructions requires confirmation. Later template changes never affect an existing Interview.
@@ -170,7 +170,7 @@ The application uses React, Convex, Better Auth, the Convex Agent component, the
 - Freeze project name, Client Language, and Interview Instructions atomically with the first accepted Client message.
 - Present Not started, In progress with a secondary step, Submitted, and Needs attention as computed dashboard labels rather than an additional business state machine.
 - Use four linear Client steps: Interview, Review, Concepts, and Submitted. The server validates every transition; the UI does not permit step jumping.
-- Show a minimal welcome page with project name, Creator business/display name and verified email, approximate duration, flow explanation, model family, privacy link, sensitive-data warning, sharing disclosure, and the rough-concept disclaimer. Require no Client name, account, checkbox, or separate consent form.
+- Show a minimal welcome page with project name, explicit AI-interaction disclosure, Creator display name, selected contact email, Creator privacy-policy link, approximate duration, flow explanation, model family, sensitive-data warning, sharing disclosure, retention disclosure, and the rough-concept disclaimer. Require no Client name, account, checkbox, or separate consent form.
 - Use a mobile-first chronological text transcript and one ordinary composer. The model may offer at most four Suggested Replies; selecting one inserts editable text and never submits it.
 - Instruct the Interview Model to begin broadly and then ask at most three tightly related questions per message. Most ordinary website Interviews should finish in roughly five to eight batches, but sufficiency—not a count—determines completion.
 - Treat all Creator and Client text as untrusted content below the fixed Interview Policy. The model must not reveal hidden policy or accept instructions to leave the narrow Interview workflow.
@@ -225,7 +225,7 @@ The application uses React, Convex, Better Auth, the Convex Agent component, the
 - More Client Languages than English and German.
 - Additional Interview Models, model changes after start, automatic fallback, or Client-selected models.
 - PDF, Word, Google Docs, Google Drive, email-attachment, or live-document exports.
-- Interview expiry, reminders, abandonment automation, archive/trash/recovery, duplication/cloning, or multiple Project Submissions.
+- Archive/trash/recovery, duplication/cloning, or multiple Project Submissions. (The privacy retention policy supersedes the earlier exclusion of Interview expiry and reminders.)
 - Product branding customization, custom Creator domains, custom email domains, or white-label Client pages.
 - Public registration, subscriptions, quotas, Creator-supplied provider keys, or an administration UI.
 - Product analytics, third-party telemetry, activity feeds, audit logs, raw prompt logging, or diagnostic provider-response retention.

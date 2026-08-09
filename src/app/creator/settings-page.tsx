@@ -17,6 +17,8 @@ export const SettingsPage = () => {
   const profile = useQuery(interviewApi.creator_profiles.getCurrent, {});
   const update = useMutation(interviewApi.creator_profiles.updateSettings);
   const [displayName, setDisplayName] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [privacyPolicyUrl, setPrivacyPolicyUrl] = useState("");
   const [selectedLanguage, setSelectedLanguage] =
     useState<CreatorLanguage>(language);
   const [status, setStatus] = useState("");
@@ -24,6 +26,8 @@ export const SettingsPage = () => {
   useEffect(() => {
     if (profile) {
       setDisplayName(profile.displayName);
+      setContactEmail(profile.contactEmail ?? "");
+      setPrivacyPolicyUrl(profile.privacyPolicyUrl ?? "");
       const profileLanguage = profile.language ?? "en";
       setSelectedLanguage(profileLanguage);
       setCreatorLanguage(profileLanguage);
@@ -37,6 +41,8 @@ export const SettingsPage = () => {
     try {
       await update({
         displayName: displayName.trim(),
+        contactEmail: contactEmail.trim(),
+        privacyPolicyUrl: privacyPolicyUrl.trim(),
         language: selectedLanguage,
       });
       setCreatorLanguage(selectedLanguage);
@@ -59,7 +65,7 @@ export const SettingsPage = () => {
           {text.settings.intro}
         </p>
         <form className="mt-8 grid max-w-3xl gap-5 rounded-box border border-line bg-panel p-6" onSubmit={submit}>
-          <Field label={text.settings.displayName}>
+          <Field hint={text.settings.displayNameHint} label={text.settings.displayName}>
             <TextInput
               maxLength={120}
               onChange={(event) => setDisplayName(event.target.value)}
@@ -79,6 +85,28 @@ export const SettingsPage = () => {
             />
           </Field>
           <Field
+            hint={text.settings.contactEmailHint}
+            label={text.settings.contactEmail}
+          >
+            <TextInput
+              onChange={(event) => setContactEmail(event.target.value)}
+              required
+              type="email"
+              value={contactEmail}
+            />
+          </Field>
+          <Field
+            hint={text.settings.privacyPolicyUrlHint}
+            label={text.settings.privacyPolicyUrl}
+          >
+            <TextInput
+              onChange={(event) => setPrivacyPolicyUrl(event.target.value)}
+              required
+              type="url"
+              value={privacyPolicyUrl}
+            />
+          </Field>
+          <Field
             hint={text.settings.languageHint}
             label={text.settings.language}
           >
@@ -95,7 +123,12 @@ export const SettingsPage = () => {
           <div className="flex items-center gap-4">
             <button
               className={primaryButton}
-              disabled={busy || !displayName.trim()}
+              disabled={
+                busy ||
+                !displayName.trim() ||
+                !contactEmail.trim() ||
+                !privacyPolicyUrl.trim()
+              }
               type="submit"
             >
               {text.settings.save}

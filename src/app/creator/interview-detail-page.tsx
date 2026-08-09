@@ -158,6 +158,21 @@ export const InterviewDetailPage = () => {
           {error}
         </p>
       ) : null}
+      {interview.retentionExpiresAt ? (
+        <section className="mt-7 rounded-box border border-line bg-panel p-5">
+          <h2 className="font-display text-2xl font-extrabold">
+            {text.detail.retentionTitle}
+          </h2>
+          <p className="mt-2 max-w-3xl leading-7 text-muted">
+            {text.detail.retentionDescription(
+              new Intl.DateTimeFormat(
+                language === "de" ? "de-DE" : "en-GB",
+                { dateStyle: "long" },
+              ).format(interview.retentionExpiresAt),
+            )}
+          </p>
+        </section>
+      ) : null}
       <section className="mt-7 rounded-box border border-forest/30 bg-soft p-5">
         <h2 className="font-display text-2xl font-extrabold">
           {passState === "unreserved"
@@ -332,24 +347,22 @@ export const InterviewDetailPage = () => {
               {text.detail.handoffDescription}
             </p>
           </div>
-          {interview.status === "submitted" ? (
-            <button
-              className={primaryButton}
-              disabled={busy}
-              onClick={() =>
-                void perform(async () => {
-                  const manifest = await getDownload({ interviewId });
-                  const anchor = document.createElement("a");
-                  anchor.href = manifest.url;
-                  anchor.download = manifest.filename;
-                  anchor.click();
-                })
-              }
-              type="button"
-            >
-              <Download aria-hidden="true" size={17} /> {text.detail.downloadZip}
-            </button>
-          ) : null}
+          <button
+            className={primaryButton}
+            disabled={busy}
+            onClick={() =>
+              void perform(async () => {
+                const manifest = await getDownload({ interviewId });
+                const anchor = document.createElement("a");
+                anchor.href = manifest.url;
+                anchor.download = manifest.filename;
+                anchor.click();
+              })
+            }
+            type="button"
+          >
+            <Download aria-hidden="true" size={17} /> {text.detail.exportEverything}
+          </button>
         </div>
         {interview.projectDocument ? (
           <div className="mt-6">

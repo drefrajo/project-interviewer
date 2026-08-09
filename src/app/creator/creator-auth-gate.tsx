@@ -126,11 +126,17 @@ const AuthenticatedCreatorAuthGate = ({
   };
 
   useEffect(() => {
-    if (!session.data || profile === undefined || attempted.current) return;
+    if (
+      !session.data ||
+      profile === undefined ||
+      profile !== null ||
+      attempted.current
+    ) {
+      return;
+    }
     attempted.current = true;
     const suggestedName =
       session.data.user.name?.trim() ||
-      session.data.user.email?.split("@")[0] ||
       "Creator";
     void upsertProfile({
       displayName: suggestedName,

@@ -5,11 +5,14 @@ import { interviewApi } from "../../infrastructure/interview-api";
 import { primaryButton, textLink } from "../shared/form-controls";
 import { creatorCopy } from "./creator-copy";
 import { useCreatorLanguage } from "./creator-language";
+import { hasCompletePublicCreatorIdentity } from "./creator-profile-readiness";
 
 export const InterviewsPage = () => {
   const language = useCreatorLanguage();
   const text = creatorCopy[language];
   const interviews = useQuery(interviewApi.interviews.list, {});
+  const profile = useQuery(interviewApi.creator_profiles.getCurrent, {});
+  const profileReady = hasCompletePublicCreatorIdentity(profile);
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 sm:px-8 lg:py-12" id="main-content">
       <header className="flex flex-col items-start justify-between gap-5 sm:flex-row sm:items-end">
@@ -24,10 +27,17 @@ export const InterviewsPage = () => {
             {text.interviews.intro}
           </p>
         </div>
-        <Link className={primaryButton} to="/interviews/new">
-          <Plus aria-hidden="true" size={18} />
-          {text.interviews.newInterview}
-        </Link>
+        {profile === undefined ? null : (
+          <Link
+            className={primaryButton}
+            to={profileReady ? "/interviews/new" : "/settings#settings-profile"}
+          >
+            <Plus aria-hidden="true" size={18} />
+            {profileReady
+              ? text.interviews.newInterview
+              : text.interviews.completeSettings}
+          </Link>
+        )}
       </header>
       {interviews === undefined ? (
         <p className="mt-10 font-bold text-muted" role="status">

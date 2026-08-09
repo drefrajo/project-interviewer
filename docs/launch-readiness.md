@@ -46,7 +46,8 @@ Confirm in the configured production environment that:
 - the OpenRouter account-level spend limit and application per-Interview-Link rate limits are active;
 - Markdown disables raw HTML and accepts only safe HTTP(S) links;
 - the Content Security Policy has exact origins where possible and contains no `unsafe-inline`; and
-- confirmed Interview deletion removes the transcript, Project Document, Visual Concepts, Project Submission, and link capability.
+- confirmed manual and automatic Interview deletion revoke exports and remove the transcript, Project Document, Visual Concepts, Project Submission, and link capability;
+- completed Interviews expire 24 months after submission, incomplete Interviews expire 24 months after last Creator/Client activity, and warning-email failure never postpones deletion.
 
 ## Operational gate
 
@@ -56,8 +57,8 @@ Confirm that:
 - successful Visual Concepts survive retry of a failed concept;
 - email delivery failure never blocks Project Submission;
 - an ambiguous email timeout is reported as delivery unknown rather than retried blindly;
-- the Creator can download a complete ZIP and each individual artifact; and
-- the submitted Client page is read-only and shows the Creator's business/display name and verified email.
+- the Creator can export a complete ZIP for any Interview and download each available individual artifact; and
+- the Client start and submitted pages show only the Creator's chosen display name, selected contact email, and privacy-policy link, never the OAuth email.
 
 ## Monetization and Stripe gate
 

@@ -177,8 +177,12 @@ export default defineSchema({
   creatorProfiles: defineTable({
     authUserId: v.string(),
     tokenIdentifier: v.string(),
+    // The OAuth address is private account data used for authentication,
+    // billing, and Creator notifications. It is never returned to Clients.
     email: v.string(),
     displayName: v.string(),
+    contactEmail: v.optional(v.string()),
+    privacyPolicyUrl: v.optional(v.string()),
     language: v.optional(creatorLanguage),
     // Kept so profiles created by the previous email-only setting remain valid.
     emailLanguage: v.optional(creatorLanguage),
@@ -228,6 +232,12 @@ export default defineSchema({
     additionalConceptsUsed: v.optional(v.boolean()),
     createdAt: v.number(),
     updatedAt: v.number(),
+    lastActivityAt: v.optional(v.number()),
+    retentionPolicyVersion: v.optional(v.number()),
+    retentionExpiresAt: v.optional(v.number()),
+    retentionWarningAt: v.optional(v.number()),
+    retentionWarningAttemptedAt: v.optional(v.number()),
+    retentionWarningSentAt: v.optional(v.number()),
     startedAt: v.optional(v.number()),
     frozenAt: v.optional(v.number()),
     step: interviewStep,
@@ -249,7 +259,27 @@ export default defineSchema({
   })
     .index("by_creatorId", ["creatorId"])
     .index("by_creatorId_and_updatedAt", ["creatorId", "updatedAt"])
-    .index("by_linkHash", ["linkHash"]),
+    .index("by_linkHash", ["linkHash"])
+    .index("by_retentionPolicyVersion", ["retentionPolicyVersion"])
+    .index("by_retentionPolicyVersion_and_retentionExpiresAt", [
+      "retentionPolicyVersion",
+      "retentionExpiresAt",
+    ])
+    .index("by_retentionExpiresAt", ["retentionExpiresAt"])
+    .index("by_retentionWarningAttemptedAt_and_retentionWarningAt", [
+      "retentionWarningAttemptedAt",
+      "retentionWarningAt",
+    ]),
+
+  exportArchives: defineTable({
+    interviewId: v.id("interviews"),
+    creatorId: v.id("creatorProfiles"),
+    storageId: v.id("_storage"),
+    expiresAt: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_interviewId", ["interviewId"])
+    .index("by_expiresAt", ["expiresAt"]),
 
   passAccounts: defineTable({
     creatorId: v.id("creatorProfiles"),

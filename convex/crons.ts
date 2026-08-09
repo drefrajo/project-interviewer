@@ -12,4 +12,11 @@ crons.interval(
   {},
 );
 
+crons.cron(
+  "delete Interviews past their retention deadline",
+  "15 2 * * *",
+  internal.retention.runSweep,
+  {},
+);
+
 export default crons;

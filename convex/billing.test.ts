@@ -27,6 +27,8 @@ const seedCreator = async (t: Harness, tokenIdentifier: string) =>
       tokenIdentifier,
       email: `${tokenIdentifier.replaceAll("|", "-")}@example.test`,
       displayName: tokenIdentifier,
+      contactEmail: "public-contact@example.test",
+      privacyPolicyUrl: "https://creator.example.test/privacy",
       createdAt: 1,
       updatedAt: 1,
     }),

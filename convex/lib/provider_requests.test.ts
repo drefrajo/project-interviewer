@@ -3,6 +3,7 @@ import {
   buildCloudflareEmailRequest,
   buildOpenRouterImageRequest,
   buildOpenRouterTextRequest,
+  buildRetentionWarningEmailRequest,
 } from "./provider_requests";
 
 describe("provider request privacy contract", () => {
@@ -171,6 +172,31 @@ describe("provider request privacy contract", () => {
       },
       subject: "Ihre Projektübergabe ist bereit: Website",
       text: "Hallo Alex,\n\nder Client hat das Interview für „Website“ abgeschlossen und die Projektübergabe übermittelt.\n\nSie enthält das Projektdokument, die generierten visuellen Konzepte, die ausgewählte visuelle Richtung und das Interview-Transkript.\n\nIn Ihrem authentifizierten Creator-Workspace öffnen:\nhttps://app.example.test/interviews/123\n\nDie Projektübergabe ist abgeschlossen und für den Client schreibgeschützt.\n\nViele Grüße\nInterview",
+    });
+  });
+
+  it("builds an idempotent warning with export and non-recovery wording", () => {
+    const expiresAt = Date.UTC(2027, 7, 9);
+    const request = buildRetentionWarningEmailRequest({
+      apiUrl: "https://api.example.test/send",
+      apiToken: "secret",
+      from: "product@example.test",
+      fromName: undefined,
+      to: "private-oauth@example.test",
+      creatorName: "Alex",
+      language: "en",
+      projectName: "Website",
+      dashboardUrl: "https://app.example.test/interviews/interview_123",
+      interviewId: "interview_123",
+      retentionExpiresAt: expiresAt,
+    });
+    const body = JSON.parse(String(request.init.body));
+
+    expect(body.to).toEqual(["private-oauth@example.test"]);
+    expect(body.text).toContain("export everything");
+    expect(body.text).toContain("cannot be restored");
+    expect(request.init.headers).toMatchObject({
+      "idempotency-key": `retention-warning:interview_123:${expiresAt}`,
     });
   });
 
