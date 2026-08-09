@@ -61,7 +61,7 @@ export interface CreatorProfile {
 export interface PublicCreatorIdentity {
   displayName: string;
   contactEmail: string;
-  privacyPolicyUrl: string;
+  privacyPolicyUrl?: string;
 }
 
 export interface VisualConcept {
@@ -199,7 +199,7 @@ interface InterviewApi {
       {
         displayName: string;
         contactEmail: string;
-        privacyPolicyUrl: string;
+        privacyPolicyUrl?: string;
         language: "en" | "de";
       },
       CreatorProfile

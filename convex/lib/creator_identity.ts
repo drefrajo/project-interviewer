@@ -3,17 +3,19 @@ import type { Doc } from "../_generated/dataModel";
 export type PublicCreatorIdentity = {
   displayName: string;
   contactEmail: string;
-  privacyPolicyUrl: string;
+  privacyPolicyUrl?: string;
 };
 
 export const publicCreatorIdentity = (
   creator: Doc<"creatorProfiles">,
 ): PublicCreatorIdentity | null =>
-  creator.contactEmail && creator.privacyPolicyUrl
+  creator.contactEmail
     ? {
         displayName: creator.displayName,
         contactEmail: creator.contactEmail,
-        privacyPolicyUrl: creator.privacyPolicyUrl,
+        ...(creator.privacyPolicyUrl
+          ? { privacyPolicyUrl: creator.privacyPolicyUrl }
+          : {}),
       }
     : null;
 
@@ -23,7 +25,7 @@ export const requirePublicCreatorIdentity = (
   const identity = publicCreatorIdentity(creator);
   if (!identity) {
     throw new Error(
-      "Complete your public display name, contact email, and privacy policy URL in Settings before creating or sharing Interviews.",
+      "Complete your public display name and contact email in Settings before creating or sharing Interviews.",
     );
   }
   return identity;

@@ -35,4 +35,30 @@ describe("SubmittedStep", () => {
       "https://creator.example/privacy",
     );
   });
+
+  it("keeps the Creator contact available when no privacy policy was provided", () => {
+    render(
+      <SubmittedStep
+        interview={{
+          interviewId: "interview_1",
+          projectName: "Website",
+          creator: {
+            displayName: "Creator",
+            contactEmail: "creator@example.test",
+          },
+          creatorIdentityReady: true,
+          clientLanguage: "en",
+          modelFamily: "GPT-5.6 Terra",
+          temporaryConceptBatchRetriesEnabled: false,
+          step: "submitted",
+          started: true,
+          reservationRequired: false,
+          passState: "consumed",
+        }}
+      />,
+    );
+
+    expect(screen.getByRole("link", { name: "creator@example.test" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Creator privacy policy" })).not.toBeInTheDocument();
+  });
 });

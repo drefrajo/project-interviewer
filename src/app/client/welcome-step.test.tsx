@@ -75,4 +75,32 @@ describe("WelcomeStep", () => {
     expect(screen.getByRole("button", { name: /start|starten/i })).toBeDisabled();
     expect(screen.getByRole("alert")).toBeInTheDocument();
   });
+
+  it("allows a ready Creator without a privacy-policy link", () => {
+    render(
+      <WelcomeStep
+        interview={{
+          interviewId: "interview_1",
+          projectName: "Website",
+          creator: {
+            displayName: "Creator",
+            contactEmail: "creator@example.test",
+          },
+          creatorIdentityReady: true,
+          clientLanguage: "en",
+          modelFamily: "GPT-5.6 Terra",
+          temporaryConceptBatchRetriesEnabled: false,
+          step: "interview",
+          started: false,
+          reservationRequired: false,
+          passState: "reserved",
+        }}
+        onStart={() => undefined}
+        pending={false}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Start interview" })).toBeEnabled();
+    expect(screen.queryByRole("link", { name: "Creator privacy policy" })).not.toBeInTheDocument();
+  });
 });

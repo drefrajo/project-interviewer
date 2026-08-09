@@ -42,8 +42,10 @@ export const SettingsPage = () => {
       await update({
         displayName: displayName.trim(),
         contactEmail: contactEmail.trim(),
-        privacyPolicyUrl: privacyPolicyUrl.trim(),
         language: selectedLanguage,
+        ...(privacyPolicyUrl.trim()
+          ? { privacyPolicyUrl: privacyPolicyUrl.trim() }
+          : {}),
       });
       setCreatorLanguage(selectedLanguage);
       setStatus(creatorCopy[selectedLanguage].settings.saved);
@@ -101,7 +103,6 @@ export const SettingsPage = () => {
           >
             <TextInput
               onChange={(event) => setPrivacyPolicyUrl(event.target.value)}
-              required
               type="url"
               value={privacyPolicyUrl}
             />
@@ -126,8 +127,7 @@ export const SettingsPage = () => {
               disabled={
                 busy ||
                 !displayName.trim() ||
-                !contactEmail.trim() ||
-                !privacyPolicyUrl.trim()
+                !contactEmail.trim()
               }
               type="submit"
             >

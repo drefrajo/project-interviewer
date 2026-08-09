@@ -238,7 +238,7 @@ describe("Create Interview template language", () => {
     expect(instructions).toHaveValue("English private instructions");
   });
 
-  it("blocks the new Interview form until public identity is complete", () => {
+  it("allows the new Interview form without a privacy policy URL", () => {
     convex.useQuery.mockImplementation((reference, args) =>
       args === "skip"
         ? undefined
@@ -249,16 +249,7 @@ describe("Create Interview template language", () => {
 
     renderForm();
 
-    expect(
-      screen.getByRole("heading", {
-        name: "Complete Settings before creating an Interview",
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: "Complete Settings" }),
-    ).toHaveAttribute("href", "/settings#settings-profile");
-    expect(
-      screen.queryByRole("button", { name: "Create Interview" }),
-    ).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Prepare an Interview" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Create Interview" })).toBeInTheDocument();
   });
 });

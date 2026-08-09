@@ -27,7 +27,7 @@ const copy = {
     start: "Start interview",
     identityUnavailableTitle: "Creator identity is not ready",
     identityUnavailable:
-      "This Interview cannot be started until the Creator provides their public name, contact email, and privacy policy.",
+      "This Interview cannot be started until the Creator provides their public name and contact email.",
   },
   de: {
     invitedBy: "Sie wurden eingeladen von",
@@ -50,7 +50,7 @@ const copy = {
     start: "Interview starten",
     identityUnavailableTitle: "Creator-Identität ist noch nicht vollständig",
     identityUnavailable:
-      "Dieses Interview kann erst gestartet werden, wenn der Creator seinen öffentlichen Namen, seine Kontakt-E-Mail und seine Datenschutzerklärung angegeben hat.",
+      "Dieses Interview kann erst gestartet werden, wenn der Creator seinen öffentlichen Namen und seine Kontakt-E-Mail angegeben hat.",
   },
 } as const satisfies Record<ClientLanguage, object>;
 
@@ -85,14 +85,16 @@ export const WelcomeStep = ({
               {creator.contactEmail}
             </a>
           </address>
-          <a
-            className="mt-3 inline-block text-sm font-bold text-primary underline"
-            href={creator.privacyPolicyUrl}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            {text.privacyPolicy}
-          </a>
+          {creator.privacyPolicyUrl ? (
+            <a
+              className="mt-3 inline-block text-sm font-bold text-primary underline"
+              href={creator.privacyPolicyUrl}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              {text.privacyPolicy}
+            </a>
+          ) : null}
           <p className="mt-4 text-sm leading-6 text-muted">{text.inviterCheck}</p>
         </div>
       ) : (

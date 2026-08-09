@@ -84,7 +84,7 @@ describe("Creator monetization copy", () => {
         /before you can create|bevor Sie ein Interview erstellen können/i,
       );
       expect(text.settings.intro).toMatch(
-        /before you can create|bevor Sie ein Interview erstellen können/i,
+        /before you (can )?create|bevor Sie ein Interview erstellen/i,
       );
     },
   );

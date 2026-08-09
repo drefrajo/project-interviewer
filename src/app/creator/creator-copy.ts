@@ -12,7 +12,7 @@ export const creatorCopy = {
       buyPasses: "Buy passes",
       profileIncompleteTitle: "Complete Settings before creating Interviews",
       profileIncompleteDescription:
-        "Add your public display name, contact email, and privacy-policy URL. These details are shown to Clients and are required before you can create an Interview.",
+        "Add your public display name and contact email. These details are shown to Clients and are required before you can create an Interview.",
       completeSettings: "Complete Settings",
     },
     legal: {
@@ -33,6 +33,68 @@ export const creatorCopy = {
         "I have reviewed and agree to the current Terms and Data Processing Agreement.",
       continue: "Agree and continue",
       accepting: "Saving…",
+    },
+    onboarding: {
+      eyebrow: "A quick setup",
+      steps: {
+        welcome: "Welcome",
+        legal: "Terms",
+        profile: "Your profile",
+        passes: "Interview passes",
+      },
+      progress: (current: number, total: number) => `Step ${current} of ${total}`,
+      back: "Back",
+      welcome: {
+        eyebrow: "Welcome",
+        title: "Welcome to Interview",
+        description:
+          "Let's get your Creator workspace ready in a few calm steps. You'll set what Clients see, review the terms, and learn how Interview Passes work.",
+        highlights: {
+          legal: "Review the terms that guide your workspace.",
+          profile: "Choose the name and contact email Clients should see.",
+          firstPass: "Use your free Introductory Pass to start your first Interview.",
+        },
+        start: "Let's get started",
+      },
+      legal: {
+        eyebrow: "Terms and data",
+        title: "A quick look at the terms",
+        description:
+          "Please review the current Terms and Data Processing Agreement, then confirm that you agree.",
+        terms: "Terms",
+        termsDescription: "Review the current Terms before continuing.",
+        dpa: "Data Processing Agreement",
+        dpaDescription: "Review the current Data Processing Agreement before continuing.",
+        checkbox:
+          "I have reviewed and agree to the current Terms and Data Processing Agreement.",
+        continue: "Agree and continue",
+        accepting: "Saving…",
+      },
+      profile: {
+        eyebrow: "Your public profile",
+        title: "What should Clients see?",
+        description:
+          "Set the details that appear on the Interview welcome page and after submission.",
+        username: "Creator username",
+        usernameHint: "This is the name Clients will see.",
+        contactEmail: "Client-displayed email",
+        contactEmailHint: (email: string) =>
+          `Suggested from your OAuth sign-in email (${email}). Edit it if Clients should use a different address.`,
+        privacyPolicyUrl: "Privacy-policy URL (optional)",
+        privacyPolicyUrlHint:
+          "Optional. Add a public HTTPS link if you want Clients to have it handy. You can add this later in Settings.",
+        save: "Save and continue",
+        saving: "Saving…",
+      },
+      passes: {
+        eyebrow: "You're ready",
+        title: "Your first Interview is free",
+        description:
+          "Every Creator starts with one Introductory Pass. When you need more, buy another Interview Pass package below.",
+        packageIntro: "Choose one of these packages whenever you need more Interviews:",
+        getStarted: "Get started",
+      },
+      error: "We couldn't save that yet. Please check the details and try again.",
     },
     auth: {
       workspaceLabel: "Creator workspace",
@@ -150,7 +212,7 @@ export const creatorCopy = {
       formLoading: "Opening Interview…",
       settingsRequiredTitle: "Complete Settings before creating an Interview",
       settingsRequiredDescription:
-        "Add your public display name, contact email, and privacy-policy URL. Clients see these details before they start.",
+        "Add your public display name and contact email. Clients see these details before they start.",
     },
     detail: {
       unavailable: "Interview unavailable",
@@ -258,13 +320,13 @@ export const creatorCopy = {
     settings: {
       title: "Settings",
       intro:
-        "Complete these required public identity fields before you can create an Interview. Clients see them before starting and after submission.",
+        "Complete your public identity before you create an Interview. Clients see your name and contact email before starting and after submission.",
       displayName: "Public Creator display name",
       displayNameHint: "Shown to Clients on the Interview start screen and after submission.",
       contactEmail: "Creator contact email",
       contactEmailHint: "Shown to Clients as the contact address for this Interview.",
-      privacyPolicyUrl: "Creator privacy-policy URL",
-      privacyPolicyUrlHint: "Clients can open this policy before starting and after submission.",
+      privacyPolicyUrl: "Creator privacy-policy URL (optional)",
+      privacyPolicyUrlHint: "Optional. Clients can open this policy before starting and after submission when provided.",
       emailHint: "Your OAuth sign-in email is private and is never shown to Clients automatically.",
       email: "Private OAuth sign-in email",
       language: "Language",
@@ -288,7 +350,7 @@ export const creatorCopy = {
       profileIncompleteTitle:
         "Einstellungen vor dem Erstellen von Interviews vervollständigen",
       profileIncompleteDescription:
-        "Ergänzen Sie Ihren öffentlichen Anzeigenamen, Ihre Kontakt-E-Mail und die URL Ihrer Datenschutzerklärung. Diese Angaben werden Clients angezeigt und sind erforderlich, bevor Sie ein Interview erstellen können.",
+        "Ergänzen Sie Ihren öffentlichen Anzeigenamen und Ihre Kontakt-E-Mail. Diese Angaben werden Clients angezeigt und sind erforderlich, bevor Sie ein Interview erstellen können.",
       completeSettings: "Einstellungen vervollständigen",
     },
     legal: {
@@ -310,6 +372,69 @@ export const creatorCopy = {
         "Ich habe die aktuellen Bedingungen und den Auftragsverarbeitungsvertrag geprüft und stimme ihnen zu.",
       continue: "Zustimmen und fortfahren",
       accepting: "Wird gespeichert…",
+    },
+    onboarding: {
+      eyebrow: "Kurze Einrichtung",
+      steps: {
+        welcome: "Willkommen",
+        legal: "Bedingungen",
+        profile: "Ihr Profil",
+        passes: "Interview-Pässe",
+      },
+      progress: (current: number, total: number) => `Schritt ${current} von ${total}`,
+      back: "Zurück",
+      welcome: {
+        eyebrow: "Willkommen",
+        title: "Willkommen bei Interview",
+        description:
+          "Richten wir Ihren Creator-Arbeitsbereich in wenigen ruhigen Schritten ein. Sie legen fest, was Clients sehen, prüfen die Bedingungen und erfahren, wie Interview-Pässe funktionieren.",
+        highlights: {
+          legal: "Prüfen Sie die Bedingungen für Ihren Arbeitsbereich.",
+          profile: "Wählen Sie den Namen und die Kontakt-E-Mail für Clients.",
+          firstPass: "Starten Sie Ihr erstes Interview mit Ihrem kostenlosen Einführungspass.",
+        },
+        start: "Los geht's",
+      },
+      legal: {
+        eyebrow: "Bedingungen und Daten",
+        title: "Ein kurzer Blick auf die Bedingungen",
+        description:
+          "Bitte prüfen Sie die aktuellen Bedingungen und den Auftragsverarbeitungsvertrag und bestätigen Sie anschließend Ihre Zustimmung.",
+        terms: "Bedingungen",
+        termsDescription: "Prüfen Sie die aktuellen Bedingungen, bevor Sie fortfahren.",
+        dpa: "Auftragsverarbeitungsvertrag (DPA)",
+        dpaDescription:
+          "Prüfen Sie den aktuellen Auftragsverarbeitungsvertrag, bevor Sie fortfahren.",
+        checkbox:
+          "Ich habe die aktuellen Bedingungen und den Auftragsverarbeitungsvertrag geprüft und stimme ihnen zu.",
+        continue: "Zustimmen und fortfahren",
+        accepting: "Wird gespeichert…",
+      },
+      profile: {
+        eyebrow: "Ihr öffentliches Profil",
+        title: "Was sollen Clients sehen?",
+        description:
+          "Legen Sie die Angaben fest, die auf der Interview-Willkommensseite und nach der Übermittlung erscheinen.",
+        username: "Creator-Benutzername",
+        usernameHint: "Dieser Name wird Clients angezeigt.",
+        contactEmail: "Für Clients angezeigte E-Mail",
+        contactEmailHint: (email: string) =>
+          `Vorschlag aus Ihrer OAuth-Anmelde-E-Mail (${email}). Ändern Sie sie, wenn Clients eine andere Adresse verwenden sollen.`,
+        privacyPolicyUrl: "URL der Datenschutzerklärung (optional)",
+        privacyPolicyUrlHint:
+          "Optional. Hinterlegen Sie einen öffentlichen HTTPS-Link, wenn Clients ihn griffbereit haben sollen. Sie können ihn später in den Einstellungen ergänzen.",
+        save: "Speichern und fortfahren",
+        saving: "Wird gespeichert…",
+      },
+      passes: {
+        eyebrow: "Sie sind bereit",
+        title: "Ihr erstes Interview ist kostenlos",
+        description:
+          "Jeder Creator erhält einen Einführungspass. Wenn Sie mehr benötigen, können Sie unten ein weiteres Interview-Paket kaufen.",
+        packageIntro: "Wählen Sie eines dieser Pakete, sobald Sie weitere Interviews benötigen:",
+        getStarted: "Loslegen",
+      },
+      error: "Das konnte noch nicht gespeichert werden. Prüfen Sie die Angaben und versuchen Sie es erneut.",
     },
     auth: {
       workspaceLabel: "Creator-Arbeitsbereich",
@@ -428,7 +553,7 @@ export const creatorCopy = {
       settingsRequiredTitle:
         "Einstellungen vor dem Erstellen eines Interviews vervollständigen",
       settingsRequiredDescription:
-        "Ergänzen Sie Ihren öffentlichen Anzeigenamen, Ihre Kontakt-E-Mail und die URL Ihrer Datenschutzerklärung. Clients sehen diese Angaben vor dem Start.",
+        "Ergänzen Sie Ihren öffentlichen Anzeigenamen und Ihre Kontakt-E-Mail. Clients sehen diese Angaben vor dem Start.",
     },
     detail: {
       unavailable: "Interview nicht verfügbar",
@@ -536,13 +661,13 @@ export const creatorCopy = {
     settings: {
       title: "Einstellungen",
       intro:
-        "Vervollständigen Sie diese erforderlichen öffentlichen Identitätsangaben, bevor Sie ein Interview erstellen können. Clients sehen sie vor dem Start und nach der Übermittlung.",
+        "Vervollständigen Sie Ihre öffentliche Identität, bevor Sie ein Interview erstellen. Clients sehen Ihren Namen und Ihre Kontakt-E-Mail vor dem Start und nach der Übermittlung.",
       displayName: "Öffentlicher Anzeigename des Creators",
       displayNameHint: "Wird Clients auf dem Startbildschirm und nach der Übermittlung angezeigt.",
       contactEmail: "Kontakt-E-Mail des Creators",
       contactEmailHint: "Wird Clients als Kontaktadresse für dieses Interview angezeigt.",
-      privacyPolicyUrl: "URL der Datenschutzerklärung des Creators",
-      privacyPolicyUrlHint: "Clients können diese Erklärung vor dem Start und nach der Übermittlung öffnen.",
+      privacyPolicyUrl: "URL der Datenschutzerklärung des Creators (optional)",
+      privacyPolicyUrlHint: "Optional. Clients können diese Erklärung öffnen, wenn Sie eine URL hinterlegen.",
       emailHint: "Ihre OAuth-Anmelde-E-Mail bleibt privat und wird Clients nicht automatisch angezeigt.",
       email: "Private OAuth-Anmelde-E-Mail",
       language: "Sprache",
