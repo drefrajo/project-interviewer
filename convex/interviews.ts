@@ -37,16 +37,26 @@ const activityUpdatePatch = () => {
   return { updatedAt: now, ...activityRetentionPatch(now) };
 };
 
-const ownedInterview = async (
+const findOwnedInterview = async (
   ctx: QueryCtx | MutationCtx,
   interviewId: Id<"interviews">,
 ) => {
   const creator = await requireCreatorProfile(ctx);
   const interview = await ctx.db.get("interviews", interviewId);
-  if (!interview || interview.creatorId !== creator._id) {
+  return interview && interview.creatorId === creator._id
+    ? { creator, interview }
+    : null;
+};
+
+const ownedInterview = async (
+  ctx: QueryCtx | MutationCtx,
+  interviewId: Id<"interviews">,
+) => {
+  const result = await findOwnedInterview(ctx, interviewId);
+  if (!result) {
     throw new Error("Interview not found.");
   }
-  return { creator, interview };
+  return result;
 };
 
 export const list = query({
@@ -71,7 +81,9 @@ export const list = query({
 export const get = query({
   args: { interviewId: v.id("interviews") },
   handler: async (ctx, args) => {
-    const { interview } = await ownedInterview(ctx, args.interviewId);
+    const access = await findOwnedInterview(ctx, args.interviewId);
+    if (!access) return null;
+    const { interview } = access;
     const linkToken =
       interviewPassState(interview) === "unreserved"
         ? undefined

@@ -51,9 +51,10 @@ export const InterviewDetailPage = () => {
   const { interviewId = "" } = useParams();
   const navigate = useNavigate();
   const interview = useQuery(interviewApi.interviews.get, { interviewId });
-  const transcript = useQuery(interviewApi.transcripts.listForCreator, {
-    interviewId,
-  });
+  const transcript = useQuery(
+    interviewApi.transcripts.listForCreator,
+    interview ? { interviewId } : "skip",
+  );
   const getDownload = useAction(interviewApi.downloads.getManifest);
   const rotate = useMutation(interviewApi.interviews.rotateLink);
   const reserveLink = useMutation(interviewApi.interviews.reserveLink);
