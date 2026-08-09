@@ -1,5 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { getFunctionName } from "convex/server";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
@@ -32,6 +33,12 @@ const privateTemplates: PrivateInterviewTemplate[] = [
     instructions: "Deutsche private Anweisungen",
   },
 ];
+const completeProfile = {
+  displayName: "Ready Creator",
+  email: "private@example.test",
+  contactEmail: "hello@example.test",
+  privacyPolicyUrl: "https://example.test/privacy",
+};
 const singlePageEnglish = BUILT_IN_INTERVIEW_TEMPLATES.find(
   ({ _id }) => _id === "built-in:single-page-business:en",
 )!;
@@ -48,8 +55,12 @@ const renderForm = () =>
 
 describe("Create Interview template language", () => {
   beforeEach(() => {
-    convex.useQuery.mockImplementation((_reference, args) =>
-      args === "skip" ? undefined : privateTemplates,
+    convex.useQuery.mockImplementation((reference, args) =>
+      args === "skip"
+        ? undefined
+        : getFunctionName(reference) === "creator_profiles:getCurrent"
+          ? completeProfile
+          : privateTemplates,
     );
     convex.useMutation.mockReturnValue(vi.fn(async () => null));
     convex.useAction.mockReturnValue(vi.fn(async () => ""));
@@ -225,5 +236,29 @@ describe("Create Interview template language", () => {
 
     expect(templateSelect).toHaveValue("private-en");
     expect(instructions).toHaveValue("English private instructions");
+  });
+
+  it("blocks the new Interview form until public identity is complete", () => {
+    convex.useQuery.mockImplementation((reference, args) =>
+      args === "skip"
+        ? undefined
+        : getFunctionName(reference) === "creator_profiles:getCurrent"
+          ? { ...completeProfile, privacyPolicyUrl: undefined }
+          : privateTemplates,
+    );
+
+    renderForm();
+
+    expect(
+      screen.getByRole("heading", {
+        name: "Complete Settings before creating an Interview",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Complete Settings" }),
+    ).toHaveAttribute("href", "/settings#settings-profile");
+    expect(
+      screen.queryByRole("button", { name: "Create Interview" }),
+    ).not.toBeInTheDocument();
   });
 });

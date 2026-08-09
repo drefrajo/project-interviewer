@@ -88,8 +88,9 @@ export const ClientInterviewPage = () => {
               Interview unavailable
             </h1>
             <p className="mt-3 leading-7 text-muted">
-              This Interview Link is invalid or has been replaced. Ask the Creator
-              for the current link.
+              This link may be invalid or replaced, or the Interview may have
+              been permanently deleted. Permanently deleted Interviews cannot
+              be restored.
             </p>
           </section>
         </main>
@@ -117,7 +118,7 @@ export const ClientInterviewPage = () => {
             </div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted">
-                {interview.creator.displayName}
+                {interview.creator?.displayName}
               </span>
               <ThemeToggle />
             </div>
@@ -164,7 +165,7 @@ export const ClientInterviewPage = () => {
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-muted">{interview.creator.displayName}</span>
+            <span className="text-sm text-muted">{interview.creator?.displayName}</span>
             <ThemeToggle />
           </div>
         </div>

@@ -25,17 +25,38 @@ import {
 } from "./lib/pass_accounting";
 import { clientLanguage } from "./schema";
 import { internalRefs } from "./internal_refs";
+import { requirePublicCreatorIdentity } from "./lib/creator_identity";
+import { deleteInterviewData } from "./lib/delete_interview";
+import {
+  activityRetentionPatch,
+  initialActivityRetention,
+} from "./lib/retention";
 
-const ownedInterview = async (
+const activityUpdatePatch = () => {
+  const now = Date.now();
+  return { updatedAt: now, ...activityRetentionPatch(now) };
+};
+
+const findOwnedInterview = async (
   ctx: QueryCtx | MutationCtx,
   interviewId: Id<"interviews">,
 ) => {
   const creator = await requireCreatorProfile(ctx);
   const interview = await ctx.db.get("interviews", interviewId);
-  if (!interview || interview.creatorId !== creator._id) {
+  return interview && interview.creatorId === creator._id
+    ? { creator, interview }
+    : null;
+};
+
+const ownedInterview = async (
+  ctx: QueryCtx | MutationCtx,
+  interviewId: Id<"interviews">,
+) => {
+  const result = await findOwnedInterview(ctx, interviewId);
+  if (!result) {
     throw new Error("Interview not found.");
   }
-  return { creator, interview };
+  return result;
 };
 
 export const list = query({
@@ -60,7 +81,9 @@ export const list = query({
 export const get = query({
   args: { interviewId: v.id("interviews") },
   handler: async (ctx, args) => {
-    const { interview } = await ownedInterview(ctx, args.interviewId);
+    const access = await findOwnedInterview(ctx, args.interviewId);
+    if (!access) return null;
+    const { interview } = access;
     const linkToken =
       interviewPassState(interview) === "unreserved"
         ? undefined
@@ -85,8 +108,13 @@ export const create = mutation({
     clientLanguage,
     instructions: v.string(),
   },
+  returns: v.object({
+    interviewId: v.id("interviews"),
+    linkVersion: v.number(),
+  }),
   handler: async (ctx, args) => {
     const creator = await requireCreatorProfile(ctx);
+    requirePublicCreatorIdentity(creator);
     await ensureIntroductoryPass(ctx, creator._id);
     const projectName = assertLength("Project name", args.projectName, 160);
     const instructions = assertLength(
@@ -120,6 +148,7 @@ export const create = mutation({
       passState: "unreserved",
       createdAt: now,
       updatedAt: now,
+      ...initialActivityRetention(now),
       step: "interview",
       clientMessageCount: 0,
       documentRevisionCount: 0,
@@ -134,6 +163,7 @@ export const reserveLink = mutation({
   args: { interviewId: v.id("interviews") },
   handler: async (ctx, args) => {
     const { creator, interview } = await ownedInterview(ctx, args.interviewId);
+    requirePublicCreatorIdentity(creator);
     const state = interviewPassState(interview);
     const reservationKey = `reservation:${interview._id}:${
       (interview.passReservationVersion ?? 0) + 1
@@ -150,7 +180,7 @@ export const reserveLink = mutation({
         passState: "reserved",
         passReservationKey: reservationKey,
         passReservationVersion: (interview.passReservationVersion ?? 0) + 1,
-        updatedAt: Date.now(),
+        ...activityUpdatePatch(),
       });
     }
     const linkToken = await openCapabilityToken(
@@ -184,7 +214,7 @@ export const deactivate = mutation({
     });
     await ctx.db.patch("interviews", interview._id, {
       passState: "unreserved",
-      updatedAt: Date.now(),
+      ...activityUpdatePatch(),
     });
     return { released: true };
   },
@@ -211,7 +241,7 @@ export const updateBeforeStart = mutation({
         args.instructions,
         MAX_INSTRUCTIONS_LENGTH,
       ),
-      updatedAt: Date.now(),
+      ...activityUpdatePatch(),
     });
     return interview._id;
   },
@@ -220,7 +250,8 @@ export const updateBeforeStart = mutation({
 export const rotateLink = mutation({
   args: { interviewId: v.id("interviews") },
   handler: async (ctx, args) => {
-    const { interview } = await ownedInterview(ctx, args.interviewId);
+    const { creator, interview } = await ownedInterview(ctx, args.interviewId);
+    requirePublicCreatorIdentity(creator);
     if (interviewPassState(interview) === "unreserved") {
       throw new Error("Reserve a pass before rotating or sharing the link.");
     }
@@ -237,7 +268,7 @@ export const rotateLink = mutation({
       linkTokenCiphertext: sealedToken.ciphertext,
       linkTokenIv: sealedToken.iv,
       linkVersion,
-      updatedAt: Date.now(),
+      ...activityUpdatePatch(),
     });
     return { linkToken: token, linkVersion };
   },
@@ -253,23 +284,7 @@ export const remove = mutation({
     if (args.confirmation !== interview.projectName) {
       throw new Error("Deletion confirmation does not match the project name.");
     }
-    if (
-      interview.clientMessageCount === 0 &&
-      interviewPassState(interview) === "reserved"
-    ) {
-      await releaseInterviewReservation(ctx, {
-        creatorId: interview.creatorId,
-        interviewId: interview._id,
-        reservationKey: reservationKeyFor(interview),
-      });
-    }
-    for (const concept of interview.concepts) {
-      if (concept.imageId) await ctx.storage.delete(concept.imageId);
-    }
-    await ctx.runMutation(agentComponent.threads.deleteAllForThreadIdAsync, {
-      threadId: interview.agentThreadId,
-    });
-    await ctx.db.delete("interviews", interview._id);
+    await deleteInterviewData(ctx, interview);
     return null;
   },
 });
@@ -294,7 +309,7 @@ export const retry = mutation({
     };
     await ctx.db.patch("interviews", interview._id, {
       operation,
-      updatedAt: Date.now(),
+      ...activityUpdatePatch(),
     });
     await ctx.scheduler.runAfter(0, internalRefs.jobs.runPending, {
       interviewId: interview._id,

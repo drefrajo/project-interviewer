@@ -126,11 +126,17 @@ const AuthenticatedCreatorAuthGate = ({
   };
 
   useEffect(() => {
-    if (!session.data || profile === undefined || attempted.current) return;
+    if (
+      !session.data ||
+      profile === undefined ||
+      profile !== null ||
+      attempted.current
+    ) {
+      return;
+    }
     attempted.current = true;
     const suggestedName =
       session.data.user.name?.trim() ||
-      session.data.user.email?.split("@")[0] ||
       "Creator";
     void upsertProfile({
       displayName: suggestedName,
@@ -221,7 +227,7 @@ const AuthenticatedCreatorAuthGate = ({
               </div>
             </div>
             <p className="mt-5 text-sm leading-6 text-muted">
-              {text.auth.privacyConsentBefore}{" "}
+              {text.auth.privacyAcknowledgementBefore}{" "}
               <a
                 className="font-semibold text-primary underline decoration-primary/40 underline-offset-2 hover:decoration-primary"
                 href={privacyPolicyHrefs[language]}
@@ -230,7 +236,7 @@ const AuthenticatedCreatorAuthGate = ({
               >
                 {text.auth.privacyPolicy}
               </a>
-              {text.auth.privacyConsentAfter}
+              {text.auth.privacyAcknowledgementAfter}
             </p>
           </section>
         </main>

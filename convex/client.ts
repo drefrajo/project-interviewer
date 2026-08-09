@@ -25,6 +25,14 @@ import {
 } from "./lib/pass_accounting";
 import { visualDirection } from "./schema";
 import { internalRefs } from "./internal_refs";
+import {
+  publicCreatorIdentity,
+  requirePublicCreatorIdentity,
+} from "./lib/creator_identity";
+import {
+  activityRetentionPatch,
+  completedRetentionPatch,
+} from "./lib/retention";
 
 const rateLimiter = new RateLimiter(rateLimiterComponent, {
   billableAi: {
@@ -39,6 +47,11 @@ const rateLimiter = new RateLimiter(rateLimiterComponent, {
 // retry mutations and expose their UI to a Client.
 const TEMPORARY_CONCEPT_BATCH_RETRIES_ENABLED = false;
 const DEFAULT_CONCEPT_IMAGE_MODEL = "gpt-image-2" as const;
+
+const activityUpdatePatch = () => {
+  const now = Date.now();
+  return { updatedAt: now, ...activityRetentionPatch(now) };
+};
 
 const findByToken = async (
   ctx: QueryCtx | MutationCtx,
@@ -104,15 +117,14 @@ export const getByLink = query({
     const { interview } = access;
     const creator = await ctx.db.get("creatorProfiles", interview.creatorId);
     if (!creator) throw new Error("Interview creator not found.");
+    const publicCreator = publicCreatorIdentity(creator);
     const reservationRequired = !isInterviewPassBacked(interview);
     if (reservationRequired) {
       return {
         interviewId: interview._id,
         projectName: interview.projectName,
-        creator: {
-          displayName: creator.displayName,
-          email: creator.email,
-        },
+        creator: publicCreator,
+        creatorIdentityReady: publicCreator !== null,
         clientLanguage: interview.clientLanguage,
         modelFamily: "GPT-5.6 Terra",
         temporaryConceptBatchRetriesEnabled:
@@ -130,10 +142,8 @@ export const getByLink = query({
       reservationRequired: false,
       passState: interviewPassState(interview),
       modelFamily: "GPT-5.6 Terra",
-      creator: {
-        displayName: creator.displayName,
-        email: creator.email,
-      },
+      creator: publicCreator,
+      creatorIdentityReady: publicCreator !== null,
       disclosure: {
         approximateMinutes: 10,
         modelFamily: "GPT-5.6 Terra",
@@ -148,6 +158,9 @@ export const start = mutation({
   args: { token: v.string() },
   handler: async (ctx, args) => {
     const { interview, linkHash } = await byToken(ctx, args.token);
+    const creator = await ctx.db.get("creatorProfiles", interview.creatorId);
+    if (!creator) throw new Error("Interview creator not found.");
+    requirePublicCreatorIdentity(creator);
     if (!isInterviewPassBacked(interview)) {
       throw new Error("This Interview Link is waiting for the Creator to reserve a pass.");
     }
@@ -173,6 +186,7 @@ export const start = mutation({
         attempt: 0,
       },
       updatedAt: now,
+      ...activityRetentionPatch(now),
     });
     await ctx.scheduler.runAfter(0, internalRefs.jobs.runPending, {
       interviewId: interview._id,
@@ -225,6 +239,7 @@ export const sendMessage = mutation({
         input: saved.messageId,
       },
       updatedAt: now,
+      ...activityRetentionPatch(now),
     });
     await ctx.scheduler.runAfter(0, internalRefs.jobs.runPending, {
       interviewId: interview._id,
@@ -267,7 +282,7 @@ export const requestDocumentChanges = mutation({
         attempt: 0,
         input: changes,
       },
-      updatedAt: Date.now(),
+      ...activityUpdatePatch(),
     });
     await ctx.scheduler.runAfter(0, internalRefs.jobs.runPending, {
       interviewId: interview._id,
@@ -301,7 +316,7 @@ export const continueToConcepts = mutation({
         status: "pending",
         attempt: 0,
       },
-      updatedAt: Date.now(),
+      ...activityUpdatePatch(),
     });
     await ctx.scheduler.runAfter(0, internalRefs.jobs.runPending, {
       interviewId: interview._id,
@@ -348,7 +363,7 @@ export const requestMoreConcepts = mutation({
         imageModel: DEFAULT_CONCEPT_IMAGE_MODEL,
         additionalConcepts: true,
       },
-      updatedAt: Date.now(),
+      ...activityUpdatePatch(),
     });
     await ctx.scheduler.runAfter(0, internalRefs.jobs.runPending, {
       interviewId: interview._id,
@@ -415,7 +430,7 @@ export const retryAdditionalConcepts = mutation({
         additionalConcepts: true,
         regeneratePrompts: true,
       },
-      updatedAt: Date.now(),
+      ...activityUpdatePatch(),
     });
     await ctx.scheduler.runAfter(0, internalRefs.jobs.runPending, {
       interviewId: interview._id,
@@ -466,7 +481,7 @@ export const retryFirstConcepts = mutation({
         imageModel: DEFAULT_CONCEPT_IMAGE_MODEL,
         regeneratePrompts: true,
       },
-      updatedAt: Date.now(),
+      ...activityUpdatePatch(),
     });
     await ctx.scheduler.runAfter(0, internalRefs.jobs.runPending, {
       interviewId: interview._id,
@@ -506,7 +521,7 @@ export const retry = mutation({
     };
     await ctx.db.patch("interviews", interview._id, {
       operation: { ...operation, status: "pending" },
-      updatedAt: Date.now(),
+      ...activityUpdatePatch(),
     });
     await ctx.scheduler.runAfter(0, internalRefs.jobs.runPending, {
       interviewId: interview._id,
@@ -560,7 +575,7 @@ export const retryMalformedResponse = mutation({
         status: "pending",
         attempt: 0,
       },
-      updatedAt: Date.now(),
+      ...activityUpdatePatch(),
     });
     await ctx.scheduler.runAfter(0, internalRefs.jobs.runPending, {
       interviewId: interview._id,
@@ -579,7 +594,7 @@ export const setVisualDirection = mutation({
     const direction = directionValue(args.direction, interview.concepts);
     await ctx.db.patch("interviews", interview._id, {
       visualDirection: direction,
-      updatedAt: Date.now(),
+      ...activityUpdatePatch(),
     });
     return direction;
   },
@@ -628,6 +643,7 @@ export const submit = mutation({
         attempt: 0,
       },
       updatedAt: now,
+      ...completedRetentionPatch(now),
     });
     await ctx.scheduler.runAfter(0, internalRefs.jobs.runPending, {
       interviewId: interview._id,

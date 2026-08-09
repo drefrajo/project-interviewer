@@ -32,6 +32,8 @@ describe("Creator settings layout", () => {
       return {
         displayName: "Studio Example",
         email: "creator@example.com",
+        contactEmail: "hello@studio.example",
+        privacyPolicyUrl: "https://studio.example/privacy",
         language: "en",
       };
     });
@@ -52,5 +54,14 @@ describe("Creator settings layout", () => {
     expect(screen.getByRole("button", { name: "Buy for €31" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Buy for €123" })).toBeInTheDocument();
     expect(screen.getByRole("combobox")).toHaveValue("en");
+    expect(screen.getByRole("textbox", { name: /Creator contact email/ })).toHaveValue(
+      "hello@studio.example",
+    );
+    expect(screen.getByRole("textbox", { name: /Creator privacy-policy URL/ })).toHaveValue(
+      "https://studio.example/privacy",
+    );
+    expect(screen.getByRole("textbox", { name: /Private OAuth sign-in email/ })).toHaveValue(
+      "creator@example.com",
+    );
   });
 });

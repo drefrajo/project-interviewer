@@ -173,3 +173,90 @@ export const buildCloudflareEmailRequest = (args: {
     } satisfies RequestInit,
   };
 };
+
+export const buildRetentionWarningEmailRequest = (args: {
+  apiUrl: string | undefined;
+  apiToken: string | undefined;
+  from: string | undefined;
+  fromName: string | undefined;
+  to: string;
+  creatorName: string;
+  language: "en" | "de";
+  projectName: string;
+  dashboardUrl: string;
+  interviewId: string;
+  retentionExpiresAt: number;
+}) => {
+  const deletionDate = new Intl.DateTimeFormat(
+    args.language === "de" ? "de-DE" : "en-GB",
+    { dateStyle: "long", timeZone: "UTC" },
+  ).format(args.retentionExpiresAt);
+  const copy =
+    args.language === "de"
+      ? {
+          subject: `Interview wird am ${deletionDate} gelöscht: ${args.projectName}`,
+          text: [
+            `Hallo ${args.creatorName},`,
+            "",
+            `das Interview „${args.projectName}“ wird gemäß der Aufbewahrungsfrist am ${deletionDate} automatisch und endgültig gelöscht.`,
+            "",
+            "Exportieren Sie vorher im Creator-Arbeitsbereich alle Interview-Daten, die Sie weiter benötigen:",
+            args.dashboardUrl,
+            "",
+            "Nach der Löschung kann das Interview nicht wiederhergestellt werden.",
+            "",
+            "Viele Grüße",
+            "Interview",
+          ].join("\n"),
+        }
+      : {
+          subject: `Interview will be deleted on ${deletionDate}: ${args.projectName}`,
+          text: [
+            `Hello ${args.creatorName},`,
+            "",
+            `The Interview "${args.projectName}" will be automatically and permanently deleted under the retention policy on ${deletionDate}.`,
+            "",
+            "Before then, export everything you still need from the Creator workspace:",
+            args.dashboardUrl,
+            "",
+            "The Interview cannot be restored after deletion.",
+            "",
+            "Best,",
+            "Interview",
+          ].join("\n"),
+        };
+
+  return {
+    url: requireSecret(
+      args.apiUrl,
+      "CLOUDFLARE_EMAIL_API_URL",
+      "EMAIL_CONFIGURATION_MISSING",
+    ),
+    init: {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${requireSecret(
+          args.apiToken,
+          "CLOUDFLARE_EMAIL_API_TOKEN",
+          "EMAIL_CONFIGURATION_MISSING",
+        )}`,
+        "content-type": "application/json",
+        "idempotency-key": `retention-warning:${args.interviewId}:${args.retentionExpiresAt}`,
+      },
+      body: JSON.stringify({
+        from: {
+          address: requireSecret(
+            args.from,
+            "EMAIL_FROM",
+            "EMAIL_CONFIGURATION_MISSING",
+          ),
+          name: args.fromName?.trim() || "drefrajo | Interview",
+        },
+        to: [args.to],
+        subject: copy.subject,
+        text: copy.text,
+        headers: { "X-Interview-Retention-Warning": args.interviewId },
+      }),
+    } satisfies RequestInit,
+  };
+};

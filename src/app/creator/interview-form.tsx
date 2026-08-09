@@ -1,7 +1,7 @@
 import { useAction, useMutation, useQuery } from "convex/react";
 import { Languages, Save } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   interviewApi,
   interviewIdFrom,
@@ -21,6 +21,7 @@ import {
 } from "../shared/form-controls";
 import { creatorCopy } from "./creator-copy";
 import { useCreatorLanguage } from "./creator-language";
+import { hasCompletePublicCreatorIdentity } from "./creator-profile-readiness";
 
 export const InterviewForm = () => {
   const creatorLanguage = useCreatorLanguage();
@@ -28,6 +29,7 @@ export const InterviewForm = () => {
   const { interviewId } = useParams();
   const editing = Boolean(interviewId);
   const navigate = useNavigate();
+  const profile = useQuery(interviewApi.creator_profiles.getCurrent, {});
   const privateTemplates = useQuery(interviewApi.templates.list, {});
   const templates = useMemo(
     () => interviewTemplates(privateTemplates),
@@ -195,8 +197,23 @@ export const InterviewForm = () => {
     }
   };
 
-  if (editing && interview === undefined) {
+  if ((!editing && profile === undefined) || (editing && interview === undefined)) {
     return <FormLoading label={text.form.formLoading} />;
+  }
+  if (!editing && !hasCompletePublicCreatorIdentity(profile)) {
+    return (
+      <main className="mx-auto max-w-3xl px-4 py-10" id="main-content">
+        <h1 className="font-display text-3xl font-extrabold">
+          {text.form.settingsRequiredTitle}
+        </h1>
+        <p className="mt-3 max-w-2xl leading-7 text-muted">
+          {text.form.settingsRequiredDescription}
+        </p>
+        <Link className={`${primaryButton} mt-6`} to="/settings#settings-profile">
+          {text.shell.completeSettings}
+        </Link>
+      </main>
+    );
   }
   if (editing && interview === null) {
     return (

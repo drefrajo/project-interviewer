@@ -6,15 +6,24 @@ import { v } from "convex/values";
 import { internalRefs } from "./internal_refs";
 
 export const cleanup = internalAction({
-  args: { storageId: v.id("_storage") },
+  args: { archiveId: v.id("exportArchives") },
+  returns: v.null(),
   handler: async (ctx, args) => {
-    await ctx.storage.delete(args.storageId);
+    const archive = await ctx.runQuery(internalRefs.downloadsData.getArchive, {
+      archiveId: args.archiveId,
+    });
+    if (!archive) return null;
+    await ctx.storage.delete(archive.storageId);
+    await ctx.runMutation(internalRefs.downloadsData.removeArchive, {
+      archiveId: args.archiveId,
+    });
     return null;
   },
 });
 
 export const getManifest = action({
   args: { interviewId: v.id("interviews") },
+  returns: v.object({ url: v.string(), filename: v.string() }),
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated.");
@@ -22,15 +31,18 @@ export const getManifest = action({
       interviewId: args.interviewId,
       tokenIdentifier: identity.tokenIdentifier,
     });
-    if (!manifest) throw new Error("Project Submission not found.");
+    if (!manifest) throw new Error("Interview not found.");
 
     const zip = new JSZip();
-    zip.file("project-document.md", manifest.projectDocument);
-    zip.file(
-      "visual-direction.json",
-      JSON.stringify(manifest.visualDirection, null, 2),
-    );
-    zip.file("interview-transcript.md", manifest.transcript);
+    zip.file("interview.json", manifest.interviewJson);
+    zip.file("interview-transcript.md", manifest.transcriptMarkdown);
+    zip.file("interview-transcript.json", manifest.transcriptJson);
+    if (manifest.projectDocument) {
+      zip.file("project-document.md", manifest.projectDocument);
+    }
+    if (manifest.visualDirectionJson) {
+      zip.file("visual-direction.json", manifest.visualDirectionJson);
+    }
     for (const concept of manifest.concepts) {
       zip.file(
         `${concept.id}.md`,
@@ -45,10 +57,30 @@ export const getManifest = action({
     const storageId = await ctx.storage.store(
       new Blob([archive], { type: "application/zip" }),
     );
+    const expiresAt = Date.now() + 15 * 60 * 1000;
+    const archiveId = await ctx.runMutation(
+      internalRefs.downloadsData.registerArchive,
+      {
+        interviewId: args.interviewId,
+        tokenIdentifier: identity.tokenIdentifier,
+        storageId,
+        expiresAt,
+      },
+    );
+    if (!archiveId) {
+      await ctx.storage.delete(storageId);
+      throw new Error("Interview was deleted while its export was generated.");
+    }
     const url = await ctx.storage.getUrl(storageId);
-    if (!url) throw new Error("Could not create Project Submission download.");
+    if (!url) {
+      await ctx.storage.delete(storageId);
+      await ctx.runMutation(internalRefs.downloadsData.removeArchive, {
+        archiveId,
+      });
+      throw new Error("Could not create Interview export.");
+    }
     await ctx.scheduler.runAfter(15 * 60 * 1000, internalRefs.downloads.cleanup, {
-      storageId,
+      archiveId,
     });
     return {
       url,

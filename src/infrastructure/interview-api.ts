@@ -38,11 +38,30 @@ export type PassCatalogItem = {
   currency: "eur";
 };
 
+export type LegalDocumentVersion = {
+  version: number;
+  sha256: string;
+};
+
+export type LegalAcceptanceStatus = {
+  accepted: boolean;
+  terms: LegalDocumentVersion;
+  dpa: LegalDocumentVersion;
+};
+
 export interface CreatorProfile {
   displayName: string;
   email: string;
+  contactEmail?: string;
+  privacyPolicyUrl?: string;
   language?: "en" | "de";
   provider?: "google" | "github" | null;
+}
+
+export interface PublicCreatorIdentity {
+  displayName: string;
+  contactEmail: string;
+  privacyPolicyUrl: string;
 }
 
 export interface VisualConcept {
@@ -109,12 +128,15 @@ export interface CreatorInterviewView extends InterviewSummary {
   concepts?: VisualConcept[];
   visualDirection?: VisualDirection;
   submittedAt?: number;
+  lastActivityAt?: number;
+  retentionExpiresAt?: number;
 }
 
 export interface ClientInterviewView {
   interviewId: string;
   projectName: string;
-  creator: CreatorProfile;
+  creator: PublicCreatorIdentity | null;
+  creatorIdentityReady: boolean;
   clientLanguage: ClientLanguage;
   modelFamily: string;
   temporaryConceptBatchRetriesEnabled: boolean;
@@ -174,7 +196,12 @@ interface InterviewApi {
     >;
     updateDisplayName: Mutation<{ displayName: string }, CreatorProfile>;
     updateSettings: Mutation<
-      { displayName: string; language: "en" | "de" },
+      {
+        displayName: string;
+        contactEmail: string;
+        privacyPolicyUrl: string;
+        language: "en" | "de";
+      },
       CreatorProfile
     >;
   };
@@ -248,6 +275,10 @@ interface InterviewApi {
       { packId: "one_pass" | "five_passes" },
       { purchaseId: string; url: string }
     >;
+  };
+  legal: {
+    getStatus: Action<Record<string, never>, LegalAcceptanceStatus>;
+    acceptCurrent: Action<Record<string, never>, LegalAcceptanceStatus>;
   };
   local_dev: {
     seedSamples: Mutation<Record<string, never>, { created: number }>;

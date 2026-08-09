@@ -14,6 +14,14 @@ vi.mock("react-router-dom", () => ({
 import { ClientInterviewPage } from "./client-interview-page";
 
 describe("Client Interview reservation gate", () => {
+  it("does not imply that a permanently deleted Interview is recoverable", () => {
+    mocks.useQuery.mockReturnValue(null);
+
+    render(<ClientInterviewPage />);
+
+    expect(screen.getByText(/cannot be restored/i)).toBeInTheDocument();
+  });
+
   it.each([
     ["en", "This Interview is waiting for a pass reservation"],
     ["de", "Dieses Interview wartet auf eine Pass-Reservierung"],
@@ -24,7 +32,12 @@ describe("Client Interview reservation gate", () => {
         : {
             interviewId: "interview_1",
             projectName: "Portfolio",
-            creator: { displayName: "Creator", email: "creator@example.test" },
+            creator: {
+              displayName: "Creator",
+              contactEmail: "creator@example.test",
+              privacyPolicyUrl: "https://creator.example/privacy",
+            },
+            creatorIdentityReady: true,
             clientLanguage: language,
             modelFamily: "GPT-5.6 Terra",
             temporaryConceptBatchRetriesEnabled: false,

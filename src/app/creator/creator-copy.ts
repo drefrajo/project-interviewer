@@ -10,6 +10,29 @@ export const creatorCopy = {
       passBalance: (count: number) =>
         `${count} ${count === 1 ? "Interview Pass" : "Interview Passes"}`,
       buyPasses: "Buy passes",
+      profileIncompleteTitle: "Complete Settings before creating Interviews",
+      profileIncompleteDescription:
+        "Add your public display name, contact email, and privacy-policy URL. These details are shown to Clients and are required before you can create an Interview.",
+      completeSettings: "Complete Settings",
+    },
+    legal: {
+      label: "Legal information",
+      loading: "Checking the current legal documents…",
+      errorTitle: "Legal documents unavailable",
+      errorDescription:
+        "We couldn't check the current legal documents. Please try again.",
+      retry: "Try again",
+      title: "Updated legal documents",
+      description:
+        "Some parts of the terms have changed. Please review them carefully and agree to them to continue using this service.",
+      terms: "Terms",
+      termsDescription: "Review the current Terms before continuing.",
+      dpa: "Data Processing Agreement",
+      dpaDescription: "Review the current Data Processing Agreement before continuing.",
+      checkbox:
+        "I have reviewed and agree to the current Terms and Data Processing Agreement.",
+      continue: "Agree and continue",
+      accepting: "Saving…",
     },
     auth: {
       workspaceLabel: "Creator workspace",
@@ -18,9 +41,9 @@ export const creatorCopy = {
         "If you don't have an account yet, we'll create one for you.",
       continueWith: "Continue with",
       lastUsedProvider: (provider: string) => `Last used: ${provider}`,
-      privacyConsentBefore: "By logging in, you agree to our",
+      privacyAcknowledgementBefore: "By logging in, you acknowledge our",
       privacyPolicy: "privacy policy",
-      privacyConsentAfter: ".",
+      privacyAcknowledgementAfter: ".",
       openingWorkspace: "Opening your Creator workspace…",
       preparingProfile: "Preparing your Creator profile…",
       linkedAccount: (provider: string) =>
@@ -36,6 +59,7 @@ export const creatorCopy = {
       intro:
         "Create one focused Interview, send one link, and receive an implementation-ready Project Submission.",
       newInterview: "New Interview",
+      completeSettings: "Complete Settings",
       loading: "Loading Interviews…",
       currentStep: (step: string) => `Current step: ${step}`,
       open: "Open",
@@ -124,6 +148,9 @@ export const creatorCopy = {
         "The current edited Interview Instructions—not the original template—will be translated. Continue?",
       characters: (count: number) => `${count.toLocaleString()} / 50,000 characters`,
       formLoading: "Opening Interview…",
+      settingsRequiredTitle: "Complete Settings before creating an Interview",
+      settingsRequiredDescription:
+        "Add your public display name, contact email, and privacy-policy URL. Clients see these details before they start.",
     },
     detail: {
       unavailable: "Interview unavailable",
@@ -153,9 +180,11 @@ export const creatorCopy = {
       handoffArtifacts: "Handoff artifacts",
       handoffDescription:
         "The Interview Transcript remains secondary to the implementation direction.",
-      downloadZip: "Download ZIP",
+      exportEverything: "Export everything (ZIP)",
+      retentionTitle: "Data retention",
+      retentionDescription: (date: string) =>
+        `This Interview is scheduled for permanent deletion on ${date}. Export everything you need before then; automatic deletion cannot be undone or restored.`,
       projectDocument: "Project Document",
-      downloadMarkdown: "Markdown",
       documentPending: "The Project Document will appear after the Interview is complete.",
       visualConcepts: "Visual Concepts",
       generationFailed: "Generation failed",
@@ -171,7 +200,7 @@ export const creatorCopy = {
       deletePermanent: "Delete Interview permanently",
       confirmDelete: "Delete this Interview?",
       deleteDescription:
-        "This immediately and irreversibly removes the Interview Link, Interview Transcript, Project Document, Visual Concepts, and Project Submission.",
+        "Permanently deletes the Interview Link, Interview Transcript, Project Document, Visual Concepts, Project Submission, and temporary exports. Access stops immediately. This cannot be undone or restored.",
       language: { en: "English", de: "German" },
       unavailableConcept: "Unavailable",
       additionalNote: "Additional note",
@@ -181,7 +210,6 @@ export const creatorCopy = {
       reservationDescription:
         "Preparation is free. The first time you copy or share this link, one Interview Pass is reserved. The Client only consumes it by deliberately starting the Interview.",
       reservationReady: "This Interview has a reserved pass and its link is ready.",
-      passConsumed: "The Interview Pass was consumed when the Client deliberately started and is now permanent.",
       reserveAndCopyLink: "Reserve 1 pass and copy link",
       reservationConfirmTitle: "Reserve a pass and copy this link?",
       reservationConfirmDescription: (balance: number) =>
@@ -204,7 +232,7 @@ export const creatorCopy = {
       introductory: "Introductory passes",
       purchased: "Purchased passes",
       nonExpiring: "Passes do not expire.",
-      taxes: "plus applicable taxes",
+      taxes: "including tax",
       buyOneTitle: "1 Interview Pass",
       buyOneDescription: "One complete started Interview",
       buyFiveTitle: "5 Interview Passes",
@@ -230,10 +258,15 @@ export const creatorCopy = {
     settings: {
       title: "Settings",
       intro:
-        "This identity is shown to Clients so they can verify who invited them.",
-      displayName: "Business or display name",
-      emailHint: "Your verified identity cannot be changed here.",
-      email: "Verified email",
+        "Complete these required public identity fields before you can create an Interview. Clients see them before starting and after submission.",
+      displayName: "Public Creator display name",
+      displayNameHint: "Shown to Clients on the Interview start screen and after submission.",
+      contactEmail: "Creator contact email",
+      contactEmailHint: "Shown to Clients as the contact address for this Interview.",
+      privacyPolicyUrl: "Creator privacy-policy URL",
+      privacyPolicyUrlHint: "Clients can open this policy before starting and after submission.",
+      emailHint: "Your OAuth sign-in email is private and is never shown to Clients automatically.",
+      email: "Private OAuth sign-in email",
       language: "Language",
       languageHint:
         "This language is used for the Creator workspace and notification emails.",
@@ -252,6 +285,31 @@ export const creatorCopy = {
       passBalance: (count: number) =>
         `${count} ${count === 1 ? "Interview-Pass" : "Interview-Pässe"}`,
       buyPasses: "Pässe kaufen",
+      profileIncompleteTitle:
+        "Einstellungen vor dem Erstellen von Interviews vervollständigen",
+      profileIncompleteDescription:
+        "Ergänzen Sie Ihren öffentlichen Anzeigenamen, Ihre Kontakt-E-Mail und die URL Ihrer Datenschutzerklärung. Diese Angaben werden Clients angezeigt und sind erforderlich, bevor Sie ein Interview erstellen können.",
+      completeSettings: "Einstellungen vervollständigen",
+    },
+    legal: {
+      label: "Rechtliche Informationen",
+      loading: "Aktuelle rechtliche Dokumente werden geprüft…",
+      errorTitle: "Rechtliche Dokumente nicht verfügbar",
+      errorDescription:
+        "Die aktuellen rechtlichen Dokumente konnten nicht geprüft werden. Bitte versuchen Sie es erneut.",
+      retry: "Erneut versuchen",
+      title: "Aktualisierte rechtliche Dokumente",
+      description:
+        "Einige Teile der Bedingungen haben sich geändert. Bitte prüfen Sie sie sorgfältig und stimmen Sie ihnen zu, um diesen Dienst weiter nutzen zu können.",
+      terms: "Bedingungen",
+      termsDescription: "Prüfen Sie die aktuellen Bedingungen, bevor Sie fortfahren.",
+      dpa: "Auftragsverarbeitungsvertrag (DPA)",
+      dpaDescription:
+        "Prüfen Sie den aktuellen Auftragsverarbeitungsvertrag, bevor Sie fortfahren.",
+      checkbox:
+        "Ich habe die aktuellen Bedingungen und den Auftragsverarbeitungsvertrag geprüft und stimme ihnen zu.",
+      continue: "Zustimmen und fortfahren",
+      accepting: "Wird gespeichert…",
     },
     auth: {
       workspaceLabel: "Creator-Arbeitsbereich",
@@ -260,9 +318,9 @@ export const creatorCopy = {
         "Wenn Sie noch kein Konto haben, erstellen wir automatisch eines für Sie.",
       continueWith: "Weiter mit",
       lastUsedProvider: (provider: string) => `Zuletzt verwendet: ${provider}`,
-      privacyConsentBefore: "Mit der Anmeldung stimmen Sie unserer",
+      privacyAcknowledgementBefore: "Mit der Anmeldung nehmen Sie unsere",
       privacyPolicy: "Datenschutzerklärung",
-      privacyConsentAfter: " zu.",
+      privacyAcknowledgementAfter: " zur Kenntnis.",
       openingWorkspace: "Creator-Arbeitsbereich wird geöffnet…",
       preparingProfile: "Creator-Profil wird vorbereitet…",
       linkedAccount: (provider: string) =>
@@ -278,6 +336,7 @@ export const creatorCopy = {
       intro:
         "Erstellen Sie ein fokussiertes Interview, versenden Sie einen Link und erhalten Sie eine umsetzungsbereite Projektübergabe.",
       newInterview: "Neues Interview",
+      completeSettings: "Einstellungen vervollständigen",
       loading: "Interviews werden geladen…",
       currentStep: (step: string) => `Aktueller Schritt: ${step}`,
       open: "Öffnen",
@@ -366,6 +425,10 @@ export const creatorCopy = {
         "Die aktuell bearbeiteten Interview Instructions – nicht die ursprüngliche Vorlage – werden übersetzt. Fortfahren?",
       characters: (count: number) => `${count.toLocaleString("de-DE")} / 50.000 Zeichen`,
       formLoading: "Interview wird geöffnet…",
+      settingsRequiredTitle:
+        "Einstellungen vor dem Erstellen eines Interviews vervollständigen",
+      settingsRequiredDescription:
+        "Ergänzen Sie Ihren öffentlichen Anzeigenamen, Ihre Kontakt-E-Mail und die URL Ihrer Datenschutzerklärung. Clients sehen diese Angaben vor dem Start.",
     },
     detail: {
       unavailable: "Interview nicht verfügbar",
@@ -395,9 +458,11 @@ export const creatorCopy = {
       handoffArtifacts: "Übergabedateien",
       handoffDescription:
         "Das Interview-Transkript bleibt gegenüber der Umsetzungsrichtung nachgeordnet.",
-      downloadZip: "ZIP herunterladen",
+      exportEverything: "Alles exportieren (ZIP)",
+      retentionTitle: "Datenaufbewahrung",
+      retentionDescription: (date: string) =>
+        `Dieses Interview wird planmäßig am ${date} endgültig gelöscht. Exportieren Sie vorher alles, was Sie benötigen; die automatische Löschung kann weder rückgängig gemacht noch wiederhergestellt werden.`,
       projectDocument: "Projektdokument",
-      downloadMarkdown: "Markdown",
       documentPending: "Das Projektdokument erscheint nach Abschluss des Interviews.",
       visualConcepts: "Visuelle Konzepte",
       generationFailed: "Erstellung fehlgeschlagen",
@@ -413,7 +478,7 @@ export const creatorCopy = {
       deletePermanent: "Interview endgültig löschen",
       confirmDelete: "Dieses Interview löschen?",
       deleteDescription:
-        "Dadurch werden Interview-Link, Interview-Transkript, Projektdokument, visuelle Konzepte und Projektübergabe sofort und unwiderruflich gelöscht.",
+        "Interview-Link, Interview-Transkript, Projektdokument, visuelle Konzepte, Projektübergabe und temporäre Exporte werden endgültig gelöscht. Der Zugriff endet sofort. Dies kann weder rückgängig gemacht noch wiederhergestellt werden.",
       language: { en: "Englisch", de: "Deutsch" },
       unavailableConcept: "Nicht verfügbar",
       additionalNote: "Zusätzliche Notiz",
@@ -423,7 +488,6 @@ export const creatorCopy = {
       reservationDescription:
         "Die Vorbereitung ist kostenlos. Beim ersten Kopieren oder Teilen wird ein Interview-Pass reserviert. Erst der bewusste Start durch den Client verbraucht ihn.",
       reservationReady: "Für dieses Interview ist ein Pass reserviert; der Link ist bereit.",
-      passConsumed: "Der Interview-Pass wurde beim bewussten Start durch den Client verbraucht und ist dauerhaft gebunden.",
       reserveAndCopyLink: "1 Pass reservieren und Link kopieren",
       reservationConfirmTitle: "Einen Pass reservieren und diesen Link kopieren?",
       reservationConfirmDescription: (balance: number) =>
@@ -446,7 +510,7 @@ export const creatorCopy = {
       introductory: "Einführungspässe",
       purchased: "Gekaufte Pässe",
       nonExpiring: "Pässe laufen nicht ab.",
-      taxes: "zzgl. anfallender Steuern",
+      taxes: "inkl. Steuern",
       buyOneTitle: "1 Interview-Pass",
       buyOneDescription: "Ein vollständiges gestartetes Interview",
       buyFiveTitle: "5 Interview-Pässe",
@@ -472,10 +536,15 @@ export const creatorCopy = {
     settings: {
       title: "Einstellungen",
       intro:
-        "Diese Identität wird Clients angezeigt, damit sie prüfen können, wer sie eingeladen hat.",
-      displayName: "Geschäfts- oder Anzeigename",
-      emailHint: "Ihre verifizierte Identität kann hier nicht geändert werden.",
-      email: "Verifizierte E-Mail",
+        "Vervollständigen Sie diese erforderlichen öffentlichen Identitätsangaben, bevor Sie ein Interview erstellen können. Clients sehen sie vor dem Start und nach der Übermittlung.",
+      displayName: "Öffentlicher Anzeigename des Creators",
+      displayNameHint: "Wird Clients auf dem Startbildschirm und nach der Übermittlung angezeigt.",
+      contactEmail: "Kontakt-E-Mail des Creators",
+      contactEmailHint: "Wird Clients als Kontaktadresse für dieses Interview angezeigt.",
+      privacyPolicyUrl: "URL der Datenschutzerklärung des Creators",
+      privacyPolicyUrlHint: "Clients können diese Erklärung vor dem Start und nach der Übermittlung öffnen.",
+      emailHint: "Ihre OAuth-Anmelde-E-Mail bleibt privat und wird Clients nicht automatisch angezeigt.",
+      email: "Private OAuth-Anmelde-E-Mail",
       language: "Sprache",
       languageHint:
         "Diese Sprache wird für den Creator-Arbeitsbereich und E-Mail-Benachrichtigungen verwendet.",

@@ -8,8 +8,10 @@ describe("application schema", () => {
     ) as { tables: Array<{ tableName: string }> };
     expect(exported.tables.map(({ tableName }) => tableName).sort()).toEqual([
       "creatorProfiles",
+      "exportArchives",
       "interviewTemplates",
       "interviews",
+      "legalAcceptances",
       "passAccounts",
       "passLedger",
       "purchases",

@@ -3,22 +3,65 @@ import type { Doc, Id } from "./_generated/dataModel";
 
 export type DownloadManifest = {
   projectName: string;
-  projectDocument: string;
-  visualDirection: Doc<"interviews">["submission"] extends
-    | { visualDirection: infer Direction }
-    | undefined
-    ? Direction
-    : never;
-  transcript: string;
+  projectDocument?: string;
+  visualDirectionJson?: string;
+  transcriptMarkdown: string;
+  transcriptJson: string;
+  interviewJson: string;
   concepts: Array<{
     id: string;
     name: string;
     rationale: string;
+    prompt: string;
     imageId?: Id<"_storage">;
   }>;
 };
 
 export const internalRefs = {
+  retention: {
+    backfillDeadlines: makeFunctionReference<
+      "mutation",
+      { limit: number },
+      number
+    >("retention:backfillDeadlines"),
+    getExpired: makeFunctionReference<
+      "query",
+      { now: number; limit: number },
+      Array<{ interviewId: Id<"interviews"> }>
+    >("retention:getExpired"),
+    getWarnings: makeFunctionReference<
+      "query",
+      { now: number; limit: number },
+      Array<{
+        interviewId: Id<"interviews">;
+        projectName: string;
+        retentionExpiresAt: number;
+        creatorEmail: string;
+        creatorName: string;
+        creatorLanguage: "en" | "de";
+      }>
+    >("retention:getWarnings"),
+    recordWarningAttempt: makeFunctionReference<
+      "mutation",
+      {
+        interviewId: Id<"interviews">;
+        retentionExpiresAt: number;
+        attemptedAt: number;
+        delivered: boolean;
+      },
+      boolean
+    >("retention:recordWarningAttempt"),
+    deleteExpired: makeFunctionReference<
+      "mutation",
+      { interviewId: Id<"interviews">; now: number },
+      boolean
+    >("retention:deleteExpired"),
+    runSweep: makeFunctionReference<
+      "action",
+      Record<string, never>,
+      { backfilled: number; deleted: number; warningsSent: number }
+    >("retention:runSweep"),
+  },
   jobs: {
     runPending: makeFunctionReference<
       "action",
@@ -102,7 +145,7 @@ export const internalRefs = {
   downloads: {
     cleanup: makeFunctionReference<
       "action",
-      { storageId: Id<"_storage"> },
+      { archiveId: Id<"exportArchives"> },
       null
     >("downloads:cleanup"),
   },
@@ -115,6 +158,26 @@ export const internalRefs = {
       },
       DownloadManifest | null
     >("downloads_data:get"),
+    registerArchive: makeFunctionReference<
+      "mutation",
+      {
+        interviewId: Id<"interviews">;
+        tokenIdentifier: string;
+        storageId: Id<"_storage">;
+        expiresAt: number;
+      },
+      Id<"exportArchives"> | null
+    >("downloads_data:registerArchive"),
+    getArchive: makeFunctionReference<
+      "query",
+      { archiveId: Id<"exportArchives"> },
+      { storageId: Id<"_storage"> } | null
+    >("downloads_data:getArchive"),
+    removeArchive: makeFunctionReference<
+      "mutation",
+      { archiveId: Id<"exportArchives"> },
+      null
+    >("downloads_data:removeArchive"),
   },
   billing: {
     syncCatalog: makeFunctionReference<
@@ -276,5 +339,27 @@ export const internalRefs = {
         continueCursor: string;
       }
     >("billing:purchaseReconciliationPage"),
+  },
+  legal: {
+    latestAcceptance: makeFunctionReference<
+      "query",
+      Record<string, never>,
+      {
+        termsVersion: number;
+        dpaVersion: number;
+        termsHash: string;
+        dpaHash: string;
+      } | null
+    >("legal:latestAcceptance"),
+    recordAcceptance: makeFunctionReference<
+      "mutation",
+      {
+        termsVersion: number;
+        dpaVersion: number;
+        termsHash: string;
+        dpaHash: string;
+      },
+      null
+    >("legal:recordAcceptance"),
   },
 };

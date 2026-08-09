@@ -22,10 +22,7 @@ import {
 import { OperationFeedback } from "../shared/operation-feedback";
 import { ImageLightbox } from "../shared/image-lightbox";
 import { SafeMarkdown } from "../shared/safe-markdown";
-import {
-  visualDirectionMarkdown,
-  VisualDirectionSummary,
-} from "../shared/visual-direction-summary";
+import { VisualDirectionSummary } from "../shared/visual-direction-summary";
 import { creatorCopy } from "./creator-copy";
 import { useCreatorLanguage } from "./creator-language";
 
@@ -45,17 +42,6 @@ const linkFrom = (
   );
 };
 
-const downloadText = (filename: string, content: string) => {
-  const url = URL.createObjectURL(
-    new Blob([content], { type: "text/markdown;charset=utf-8" }),
-  );
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.click();
-  URL.revokeObjectURL(url);
-};
-
 export const shouldShowDetailStep = (status: InterviewStatus) =>
   status !== "not_started" && status !== "submitted";
 
@@ -65,9 +51,10 @@ export const InterviewDetailPage = () => {
   const { interviewId = "" } = useParams();
   const navigate = useNavigate();
   const interview = useQuery(interviewApi.interviews.get, { interviewId });
-  const transcript = useQuery(interviewApi.transcripts.listForCreator, {
-    interviewId,
-  });
+  const transcript = useQuery(
+    interviewApi.transcripts.listForCreator,
+    interview ? { interviewId } : "skip",
+  );
   const getDownload = useAction(interviewApi.downloads.getManifest);
   const rotate = useMutation(interviewApi.interviews.rotateLink);
   const reserveLink = useMutation(interviewApi.interviews.reserveLink);
@@ -158,71 +145,90 @@ export const InterviewDetailPage = () => {
           {error}
         </p>
       ) : null}
-      <section className="mt-7 rounded-box border border-forest/30 bg-soft p-5">
-        <h2 className="font-display text-2xl font-extrabold">
-          {passState === "unreserved"
-            ? text.detail.reservationTitle
-            : text.detail.reservationReady}
-        </h2>
-        <p className="mt-2 max-w-3xl leading-7 text-muted">
-          {passState === "unreserved"
-            ? text.detail.reservationDescription
-            : passState === "consumed"
-              ? text.detail.passConsumed
-              : text.detail.reservationReady}
-        </p>
-        {passState === "unreserved" ? (
-          balance === undefined ? (
-            <p className="mt-4 text-sm font-bold text-muted" role="status">
-              {text.detail.checkingBalance}
-            </p>
-          ) : balance && balance.availablePasses > 0 ? (
+      {interview.retentionExpiresAt ? (
+        <section className="mt-7 rounded-box border border-line bg-panel p-5">
+          <h2 className="font-display text-2xl font-extrabold">
+            {text.detail.retentionTitle}
+          </h2>
+          <p className="mt-2 max-w-3xl leading-7 text-muted">
+            {text.detail.retentionDescription(
+              new Intl.DateTimeFormat(
+                language === "de" ? "de-DE" : "en-GB",
+                { dateStyle: "long" },
+              ).format(interview.retentionExpiresAt),
+            )}
+          </p>
+        </section>
+      ) : null}
+      <section className="mt-7 rounded-box border border-forest/30 bg-soft p-4 sm:p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="font-display text-xl font-extrabold">
+              {text.detail.interviewLink}
+            </h2>
+            {passState !== "consumed" ? (
+              <p className="mt-1 text-sm font-bold text-primary">
+                {passState === "unreserved"
+                  ? text.detail.reservationTitle
+                  : text.detail.reservationReady}
+              </p>
+            ) : null}
+          </div>
+          {passState === "unreserved" ? (
+            balance === undefined ? (
+              <p className="text-sm font-bold text-muted" role="status">
+                {text.detail.checkingBalance}
+              </p>
+            ) : balance && balance.availablePasses > 0 ? (
+              <button
+                className={`${primaryButton} shrink-0`}
+                disabled={busy}
+                onClick={() => setConfirmReservation(true)}
+                type="button"
+              >
+                {text.detail.reserveAndCopyLink}
+              </button>
+            ) : (
+              <div className="flex flex-wrap items-center gap-3">
+                <p className="text-sm font-bold text-error-text">
+                  {text.detail.insufficientBalance}
+                </p>
+                <Link className={secondaryButton} to="/billing">
+                  {text.detail.buyPasses}
+                </Link>
+              </div>
+            )
+          ) : passState === "reserved" ? (
             <button
-              className={`${primaryButton} mt-4`}
+              className={`${secondaryButton} shrink-0`}
               disabled={busy}
-              onClick={() => setConfirmReservation(true)}
+              onClick={() => setConfirmDeactivation(true)}
               type="button"
             >
-              {text.detail.reserveAndCopyLink}
+              {text.detail.deactivateInterview}
             </button>
-          ) : (
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              <p className="text-sm font-bold text-error-text">
-                {text.detail.insufficientBalance}
-              </p>
-              <Link className={secondaryButton} to="/billing">
-                {text.detail.buyPasses}
-              </Link>
-            </div>
-          )
-        ) : passState === "reserved" ? (
-          <button
-            className={`${secondaryButton} mt-4`}
-            disabled={busy}
-            onClick={() => setConfirmDeactivation(true)}
-            type="button"
-          >
-            {text.detail.deactivateInterview}
-          </button>
+          ) : null}
+        </div>
+        {passState === "unreserved" ? (
+          <p className="mt-1 max-w-3xl text-sm leading-6 text-muted">
+            {text.detail.reservationDescription}
+          </p>
         ) : null}
-      </section>
-      <section className="mt-7 rounded-box border border-line bg-panel p-5">
-        <h2 className="font-display text-2xl font-extrabold">
-          {text.detail.interviewLink}
-        </h2>
-        <p className="mt-2 text-sm leading-6 text-muted">
-          {text.detail.linkDescription}
-        </p>
+        {passState !== "consumed" ? (
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-muted">
+            {text.detail.linkDescription}
+          </p>
+        ) : null}
         {interviewUrl ? (
-          <code className="mt-4 block overflow-x-auto rounded-lg bg-soft p-3 text-sm">
+          <code className="mt-3 block overflow-x-auto rounded-lg bg-soft-strong p-3 text-sm">
             {interviewUrl}
           </code>
         ) : (
-          <p className="mt-4 text-sm font-bold text-muted">
+          <p className="mt-3 text-sm font-bold text-muted">
             {text.detail.linkUnavailable}
           </p>
         )}
-        <div className="mt-4 flex flex-wrap gap-3">
+        <div className="mt-3 flex flex-wrap gap-3">
           <button
             className={primaryButton}
             disabled={!interviewUrl}
@@ -332,44 +338,28 @@ export const InterviewDetailPage = () => {
               {text.detail.handoffDescription}
             </p>
           </div>
-          {interview.status === "submitted" ? (
-            <button
-              className={primaryButton}
-              disabled={busy}
-              onClick={() =>
-                void perform(async () => {
-                  const manifest = await getDownload({ interviewId });
-                  const anchor = document.createElement("a");
-                  anchor.href = manifest.url;
-                  anchor.download = manifest.filename;
-                  anchor.click();
-                })
-              }
-              type="button"
-            >
-              <Download aria-hidden="true" size={17} /> {text.detail.downloadZip}
-            </button>
-          ) : null}
+          <button
+            className={primaryButton}
+            disabled={busy}
+            onClick={() =>
+              void perform(async () => {
+                const manifest = await getDownload({ interviewId });
+                const anchor = document.createElement("a");
+                anchor.href = manifest.url;
+                anchor.download = manifest.filename;
+                anchor.click();
+              })
+            }
+            type="button"
+          >
+            <Download aria-hidden="true" size={17} /> {text.detail.exportEverything}
+          </button>
         </div>
         {interview.projectDocument ? (
           <div className="mt-6">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-              <h3 className="font-display text-2xl font-extrabold">
-                {text.detail.projectDocument}
-              </h3>
-              <button
-                className={secondaryButton}
-                onClick={() =>
-                  downloadText(
-                    `${interview.projectName}-project-document.md`,
-                    interview.projectDocument ?? "",
-                  )
-                }
-                type="button"
-              >
-                <Download aria-hidden="true" size={16} /> {text.detail.downloadMarkdown}
-              </button>
-            </div>
+            <h3 className="mb-3 font-display text-2xl font-extrabold">
+              {text.detail.projectDocument}
+            </h3>
             <SafeMarkdown markdown={interview.projectDocument} />
           </div>
         ) : (
@@ -421,26 +411,9 @@ export const InterviewDetailPage = () => {
         ) : null}
         {interview.visualDirection ? (
           <section className="mt-7 rounded-box border border-line bg-panel p-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h3 className="font-display text-2xl font-extrabold">
-                {text.detail.visualDirection}
-              </h3>
-              <button
-                className={secondaryButton}
-                onClick={() =>
-                  downloadText(
-                    `${interview.projectName}-visual-direction.md`,
-                    visualDirectionMarkdown(
-                      interview.visualDirection!,
-                      interview.concepts ?? [],
-                    ),
-                  )
-                }
-                type="button"
-              >
-                <Download aria-hidden="true" size={16} /> {text.detail.downloadMarkdown}
-              </button>
-            </div>
+            <h3 className="font-display text-2xl font-extrabold">
+              {text.detail.visualDirection}
+            </h3>
             <VisualDirectionSummary
               concepts={interview.concepts ?? []}
               direction={interview.visualDirection}
@@ -453,25 +426,6 @@ export const InterviewDetailPage = () => {
         <summary className="cursor-pointer font-display text-2xl font-extrabold">
           {text.detail.transcript}
         </summary>
-        <div className="mt-4 flex justify-end">
-          <button
-            className={secondaryButton}
-            onClick={() =>
-              downloadText(
-                `${interview.projectName}-transcript.md`,
-                (transcript ?? [])
-                  .map(
-                    (message) =>
-                    `## ${message.role === "client" ? text.detail.client : text.detail.interviewModel}\n\n${message.content}`,
-                  )
-                  .join("\n\n"),
-              )
-            }
-            type="button"
-          >
-          <Download aria-hidden="true" size={16} /> {text.detail.downloadMarkdown}
-          </button>
-        </div>
         <ol className="mt-5 space-y-4">
           {(transcript ?? []).map((message) => (
             <li className="border-l-4 border-line pl-4" key={message.id}>

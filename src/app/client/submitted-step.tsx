@@ -62,7 +62,26 @@ export const SubmittedStep = ({
         )}
       </section>
       <footer className="mt-7 text-sm text-muted">
-        {interview.creator.displayName} · {interview.creator.email}
+        {interview.creator ? (
+          <>
+            <span>{interview.creator.displayName}</span>
+            <span aria-hidden="true"> · </span>
+            <a className="text-primary underline" href={`mailto:${interview.creator.contactEmail}`}>
+              {interview.creator.contactEmail}
+            </a>
+            <span aria-hidden="true"> · </span>
+            <a
+              className="text-primary underline"
+              href={interview.creator.privacyPolicyUrl}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              {interview.clientLanguage === "de"
+                ? "Datenschutzerklärung des Creators"
+                : "Creator privacy policy"}
+            </a>
+          </>
+        ) : null}
       </footer>
     </section>
   );

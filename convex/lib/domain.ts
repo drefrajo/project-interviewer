@@ -24,6 +24,28 @@ export const assertLength = (
   return trimmed;
 };
 
+export const assertEmailAddress = (label: string, value: string) => {
+  const email = assertLength(label, value, 254).toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new Error(`${label} must be a valid email address.`);
+  }
+  return email;
+};
+
+export const assertPrivacyPolicyUrl = (value: string) => {
+  const candidate = assertLength("Privacy policy URL", value, 2_048);
+  let parsed: URL;
+  try {
+    parsed = new URL(candidate);
+  } catch {
+    throw new Error("Privacy policy URL must be a valid HTTPS URL.");
+  }
+  if (parsed.protocol !== "https:") {
+    throw new Error("Privacy policy URL must be a valid HTTPS URL.");
+  }
+  return parsed.toString();
+};
+
 export const suggestedRepliesFromProvider = (value: unknown): string[] => {
   if (!Array.isArray(value) || value.length > MAX_SUGGESTED_REPLIES) {
     return [];
@@ -123,4 +145,6 @@ export const interviewDto = async (
   submittedAt: interview.submission?.submittedAt,
   createdAt: interview.createdAt,
   updatedAt: interview.updatedAt,
+  lastActivityAt: interview.lastActivityAt ?? interview.updatedAt,
+  retentionExpiresAt: interview.retentionExpiresAt,
 });

@@ -8,6 +8,10 @@ import {
 } from "./lib/capability_crypto";
 import { isLocalDevelopmentAuthBypassEnabled } from "./lib/environment";
 import { requireCreatorProfile } from "./lib/auth";
+import {
+  initialActivityRetention,
+  initialCompletedRetention,
+} from "./lib/retention";
 
 const sampleInterviews = [
   {
@@ -131,6 +135,9 @@ export const seedSamples = mutation({
           : {}),
         createdAt: timestamp,
         updatedAt: timestamp,
+        ...(sample.submitted
+          ? initialCompletedRetention(timestamp)
+          : initialActivityRetention(timestamp)),
         step: sample.step,
         clientMessageCount: sample.clientMessageCount,
         documentRevisionCount: sample.submitted ? 1 : 0,

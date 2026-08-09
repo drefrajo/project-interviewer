@@ -2,16 +2,22 @@ import { describe, expect, it } from "vitest";
 import { creatorCopy } from "./creator-copy";
 
 describe("Creator monetization copy", () => {
-  it("explains account creation and privacy consent on sign-in", () => {
+  it("explains account creation and privacy acknowledgement on sign-in", () => {
     expect(creatorCopy.en.auth.accountCreation).toBe(
       "If you don't have an account yet, we'll create one for you.",
     );
-    expect(creatorCopy.en.auth.privacyConsentBefore).toBe(
-      "By logging in, you agree to our",
+    expect(creatorCopy.en.auth.privacyAcknowledgementBefore).toBe(
+      "By logging in, you acknowledge our",
     );
     expect(creatorCopy.en.auth.privacyPolicy).toBe("privacy policy");
     expect(creatorCopy.de.auth.accountCreation).toBe(
       "Wenn Sie noch kein Konto haben, erstellen wir automatisch eines für Sie.",
+    );
+    expect(creatorCopy.de.auth.privacyAcknowledgementBefore).toBe(
+      "Mit der Anmeldung nehmen Sie unsere",
+    );
+    expect(creatorCopy.de.auth.privacyAcknowledgementAfter).toBe(
+      " zur Kenntnis.",
     );
   });
 
@@ -59,6 +65,39 @@ describe("Creator monetization copy", () => {
       expect(text.detail.reservationDescription).toMatch(
         /pass|Pass/i,
       );
+    },
+  );
+
+  it("states that prices include tax", () => {
+    expect(creatorCopy.en.billing.taxes).toBe("including tax");
+    expect(creatorCopy.de.billing.taxes).toBe("inkl. Steuern");
+  });
+
+  it.each(["en", "de"] as const)(
+    "states that Settings must be complete before Interview creation in %s",
+    (language) => {
+      const text = creatorCopy[language];
+      expect(text.shell.profileIncompleteTitle).toMatch(
+        /Settings|Einstellungen/,
+      );
+      expect(text.shell.profileIncompleteDescription).toMatch(
+        /before you can create|bevor Sie ein Interview erstellen können/i,
+      );
+      expect(text.settings.intro).toMatch(
+        /before you can create|bevor Sie ein Interview erstellen können/i,
+      );
+    },
+  );
+
+  it.each(["en", "de"] as const)(
+    "states that scheduled and manual deletion cannot be restored in %s",
+    (language) => {
+      const text = creatorCopy[language].detail;
+      expect(text.deleteDescription).toMatch(/restored|wiederhergestellt/i);
+      expect(text.retentionDescription("9 August 2027")).toMatch(
+        /restored|wiederhergestellt/i,
+      );
+      expect(text.exportEverything).toMatch(/export|exportieren/i);
     },
   );
 });
