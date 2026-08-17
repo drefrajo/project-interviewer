@@ -317,4 +317,174 @@ describe("Interview prompt contracts", () => {
     expect(normalized).toContain("I want a portfolio that feels like a feed.");
     expect(normalized).toContain("Return only the complete Markdown");
   });
+
+  it("gives Privacy document prompts a data-map contract without Website assumptions", () => {
+    const messages = buildProjectDocumentMessages({
+      instructions: "Map the company's customer data flows.",
+      transcript: [],
+      interviewKind: "privacy",
+    });
+    const normalized = messages
+      .map(({ content }) => content)
+      .join(" ")
+      .replace(/\s+/g, " ");
+
+    expect(normalized).toContain("factual privacy data map");
+    expect(normalized).toContain("privacy-policy preparation document");
+    expect(normalized).toContain("qualified legal or privacy review");
+    expect(normalized).toContain("evidence gap");
+    expect(normalized).toContain("actual personal data");
+    for (const websiteOnlyTerm of [
+      "complete first-draft copy",
+      "requested experience",
+      "content hierarchy",
+      "visual-direction level",
+      "pixel dimensions",
+      "framework choices",
+      "hosting details",
+      "defining interaction model",
+      "website",
+    ]) {
+      expect(normalized).not.toContain(websiteOnlyTerm);
+    }
+  });
+
+  it("gives Custom document prompts control over the document shape and domain", () => {
+    const messages = buildProjectDocumentMessages({
+      instructions: "Interview a team about its internal operating model.",
+      transcript: [],
+      interviewKind: "custom",
+    });
+    const normalized = messages
+      .map(({ content }) => content)
+      .join(" ")
+      .replace(/\s+/g, " ");
+
+    expect(normalized).toContain("choose the document shape");
+    expect(normalized).toContain("Creator-defined outcome");
+    expect(normalized).toContain("Do not impose a conventional domain");
+    for (const websiteOnlyTerm of [
+      "complete first-draft copy",
+      "content hierarchy",
+      "visual-direction level",
+      "pixel dimensions",
+      "framework choices",
+      "hosting details",
+      "defining interaction model",
+      "website",
+    ]) {
+      expect(normalized).not.toContain(websiteOnlyTerm);
+    }
+  });
+
+  it("keeps Privacy and Custom revision prompts out of the Website document contract", () => {
+    const websiteOnlyTerms = [
+      "complete first-draft copy",
+      "content hierarchy",
+      "visual-direction level",
+      "pixel dimensions",
+      "framework choices",
+      "hosting details",
+      "defining interaction model",
+    ];
+    const privacy = buildProjectDocumentRevisionMessages({
+      instructions: "Map data flows.",
+      projectDocument: "# Data map",
+      feedback: "Add the retention evidence gap.",
+      interviewKind: "privacy",
+    })
+      .map(({ content }) => content)
+      .join(" ")
+      .replace(/\s+/g, " ");
+    const custom = buildProjectDocumentRevisionMessages({
+      instructions: "Define an internal operating model interview.",
+      projectDocument: "# Operating model",
+      feedback: "Change the output structure.",
+      interviewKind: "custom",
+    })
+      .map(({ content }) => content)
+      .join(" ")
+      .replace(/\s+/g, " ");
+
+    expect(privacy).toContain("privacy data map");
+    expect(privacy).toContain("qualified legal or privacy review");
+    expect(privacy).toContain("evidence gaps");
+    expect(custom).toContain("Creator-defined subject");
+    expect(custom).toContain("document purpose, shape");
+    for (const websiteOnlyTerm of websiteOnlyTerms) {
+      expect(privacy).not.toContain(websiteOnlyTerm);
+      expect(custom).not.toContain(websiteOnlyTerm);
+    }
+    expect(privacy).not.toContain("website");
+    expect(custom).not.toContain("website");
+  });
+
+  it("branches the Interview Policy for privacy data mapping without legal claims", () => {
+    const policy = buildInterviewPolicy({
+      clientLanguage: "en",
+      instructions: "Map the company's customer data flows.",
+      alignmentAsked: false,
+      interviewKind: "privacy",
+    }).replace(/\s+/g, " ");
+
+    expect(policy).toContain("privacy data-mapping Interview");
+    expect(policy).toContain("not legal advice");
+    expect(policy).toContain("actual personal data");
+    expect(policy).toContain("credentials");
+    expect(policy).toContain("evidence gaps");
+    expect(policy).toContain("data is collected");
+    expect(policy).not.toContain("conventional website");
+  });
+
+  it("keeps custom Interview prompts generic and permits generic concepts", () => {
+    const policy = buildInterviewPolicy({
+      clientLanguage: "en",
+      instructions: "Interview a team about its internal operating model.",
+      alignmentAsked: false,
+      interviewKind: "custom",
+    }).replace(/\s+/g, " ");
+    expect(policy).toContain("Creator-defined Interview");
+    expect(policy).toContain("Do not assume a conventional domain");
+    expect(policy).not.toContain("website project Interview");
+
+    const concepts = buildConceptSeedMessages({
+      clientLanguage: "en",
+      instructions: "Interview a team about its internal operating model.",
+      projectDocument: "# Operating model",
+      interviewKind: "custom",
+    });
+    expect(JSON.stringify(concepts)).toContain("do not assume a conventional medium");
+    expect(JSON.stringify(concepts)).toContain("Creator-defined outcome");
+
+    const imagePrompt = buildVisualConceptImagePrompt({
+      instructions: "Interview a team about its internal operating model.",
+      projectDocument: "# Operating model",
+      conceptPrompt: "A visual map of the operating model.",
+      conceptIndex: 1,
+      interviewKind: "custom",
+    }).replace(/\s+/g, " ");
+    expect(imagePrompt).toContain("Render an appropriate visual representation");
+    expect(imagePrompt).toContain("For a nonvisual subject, visualize");
+    expect(imagePrompt).not.toContain("describe the relevant representation instead");
+  });
+
+  it("does not create concept prompts for Privacy Interviews", () => {
+    expect(() =>
+      buildConceptSeedMessages({
+        clientLanguage: "en",
+        instructions: "Map data flows.",
+        projectDocument: "# Data map",
+        interviewKind: "privacy",
+      }),
+    ).toThrow("Privacy Interviews cannot generate Visual Concepts.");
+    expect(() =>
+      buildVisualConceptImagePrompt({
+        instructions: "Map data flows.",
+        projectDocument: "# Data map",
+        conceptPrompt: "A visual direction",
+        conceptIndex: 1,
+        interviewKind: "privacy",
+      }),
+    ).toThrow("Privacy Interviews cannot generate Visual Concepts.");
+  });
 });

@@ -25,6 +25,11 @@ import { SafeMarkdown } from "../shared/safe-markdown";
 import { VisualDirectionSummary } from "../shared/visual-direction-summary";
 import { creatorCopy } from "./creator-copy";
 import { useCreatorLanguage } from "./creator-language";
+import {
+  conceptsLabel,
+  interviewKindLabel,
+  resolveInterviewConfiguration,
+} from "./interview-kind-picker";
 
 const linkFrom = (
   result: string | { interviewUrl?: string; linkToken?: string },
@@ -95,6 +100,8 @@ export const InterviewDetailPage = () => {
     );
   }
 
+  const configuration = resolveInterviewConfiguration(interview);
+
   const perform = async (operation: () => Promise<unknown>) => {
     if (busy) return;
     setBusy(true);
@@ -122,7 +129,10 @@ export const InterviewDetailPage = () => {
             {interview.projectName}
           </h1>
           <p className="mt-3 text-muted">
-            {text.detail.language[interview.clientLanguage]} · GPT-5.6 Terra
+            {text.detail.language[interview.clientLanguage]} · {interviewKindLabel(
+              configuration.interviewKind,
+              language,
+            )} · {conceptsLabel(configuration.includesVisualConcepts, language)} · GPT-5.6 Terra
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -367,7 +377,7 @@ export const InterviewDetailPage = () => {
             {text.detail.documentPending}
           </p>
         )}
-        {interview.concepts?.length ? (
+        {configuration.includesVisualConcepts && interview.concepts?.length ? (
           <div className="mt-7">
             <h3 className="font-display text-2xl font-extrabold">
               {text.detail.visualConcepts}
@@ -409,7 +419,7 @@ export const InterviewDetailPage = () => {
             </div>
           </div>
         ) : null}
-        {interview.visualDirection ? (
+        {configuration.includesVisualConcepts && interview.visualDirection ? (
           <section className="mt-7 rounded-box border border-line bg-panel p-5">
             <h3 className="font-display text-2xl font-extrabold">
               {text.detail.visualDirection}

@@ -117,6 +117,8 @@ export const seedSamples = mutation({
         projectName: sample.projectName,
         localDevSampleKey: sample.key,
         clientLanguage: "en",
+        interviewKind: "website",
+        includesVisualConcepts: true,
         model: "gpt-5.6-terra",
         instructions:
           "Local development sample data. This Interview is not a real client project.",

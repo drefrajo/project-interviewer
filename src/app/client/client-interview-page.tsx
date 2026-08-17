@@ -18,8 +18,10 @@ import { InterviewStepView } from "./interview-step";
 import { SubmittedStep } from "./submitted-step";
 import { WelcomeStep } from "./welcome-step";
 
-const stepIndex = (step: InterviewStep) =>
-  ({ interview: 0, review: 1, concepts: 2, submitted: 3 })[step];
+const stepIndex = (step: InterviewStep, includesVisualConcepts: boolean) =>
+  includesVisualConcepts
+    ? ({ interview: 0, review: 1, concepts: 2, submitted: 3 })[step]
+    : ({ interview: 0, review: 1, concepts: 1, submitted: 2 })[step];
 
 export const ClientInterviewPage = () => {
   const { interviewToken = "" } = useParams();
@@ -139,6 +141,10 @@ export const ClientInterviewPage = () => {
     );
   }
   const submitted = interview.step === "submitted";
+  const includesVisualConcepts = interview.includesVisualConcepts ?? true;
+  const steps = includesVisualConcepts
+    ? text.steps
+    : text.steps.filter((_label, index) => index !== 2);
   const pending =
     busy || (!submitted && interview.operation?.state === "pending");
   const showingInterview =
@@ -175,12 +181,20 @@ export const ClientInterviewPage = () => {
           aria-label={interview.clientLanguage === "de" ? "Fortschritt" : "Progress"}
           className="border-b border-line bg-surface px-4 py-3"
         >
-          <ol className="mx-auto grid max-w-3xl grid-cols-4 gap-2">
-            {text.steps.map((label, index) => (
+          <ol
+            className={`mx-auto grid max-w-3xl gap-2 ${
+              includesVisualConcepts ? "grid-cols-4" : "grid-cols-3"
+            }`}
+          >
+            {steps.map((label, index) => (
               <li
-                aria-current={index === stepIndex(interview.step) ? "step" : undefined}
+                aria-current={
+                  index === stepIndex(interview.step, includesVisualConcepts)
+                    ? "step"
+                    : undefined
+                }
                 className={`border-t-2 pt-2 text-center text-xs font-semibold sm:text-sm ${
-                  index <= stepIndex(interview.step)
+                  index <= stepIndex(interview.step, includesVisualConcepts)
                     ? "border-primary text-primary"
                     : "border-line text-muted"
                 }`}
@@ -247,15 +261,18 @@ export const ClientInterviewPage = () => {
             markdown={interview.projectDocument ?? ""}
             onContinue={() =>
               void perform(() =>
-                continueToConcepts({ token: interviewToken }),
+                includesVisualConcepts
+                  ? continueToConcepts({ token: interviewToken })
+                  : submit({ token: interviewToken }),
               )
             }
             onRequestChanges={(changes) =>
               perform(() => requestChanges({ token: interviewToken, changes }))
             }
             pending={pending}
+            includesVisualConcepts={includesVisualConcepts}
           />
-        ) : interview.step === "concepts" ? (
+        ) : interview.step === "concepts" && includesVisualConcepts ? (
           <ConceptsStep
             concepts={interview.concepts ?? []}
             generationPhase={

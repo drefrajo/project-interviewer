@@ -8,6 +8,7 @@ import { agentComponent } from "./lib/components";
 import { publicCreatorIdentity } from "./lib/creator_identity";
 import { dashboardStatus } from "./lib/domain";
 import { agentMessageContentText } from "./lib/agent_message";
+import { resolveInterviewConfiguration } from "./lib/interview_kind";
 
 const archiveConcept = v.object({
   id: v.string(),
@@ -76,6 +77,7 @@ export const get = internalQuery({
       ...(concept.imageId ? { imageId: concept.imageId } : {}),
     }));
     const exportedAt = Date.now();
+    const interviewConfiguration = resolveInterviewConfiguration(interview);
     return {
       projectName: interview.projectName,
       ...(interview.projectDocument
@@ -106,6 +108,7 @@ export const get = internalQuery({
             id: interview._id,
             projectName: interview.projectName,
             clientLanguage: interview.clientLanguage,
+            ...interviewConfiguration,
             model: "gpt-5.6-terra",
             status: dashboardStatus(interview),
             step: interview.step,

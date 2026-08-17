@@ -30,6 +30,7 @@ import type * as lib_creator_identity from "../lib/creator_identity.js";
 import type * as lib_delete_interview from "../lib/delete_interview.js";
 import type * as lib_domain from "../lib/domain.js";
 import type * as lib_environment from "../lib/environment.js";
+import type * as lib_interview_kind from "../lib/interview_kind.js";
 import type * as lib_interview_messages from "../lib/interview_messages.js";
 import type * as lib_interview_output from "../lib/interview_output.js";
 import type * as lib_interview_prompts from "../lib/interview_prompts.js";
@@ -77,6 +78,7 @@ declare const fullApi: ApiFromModules<{
   "lib/delete_interview": typeof lib_delete_interview;
   "lib/domain": typeof lib_domain;
   "lib/environment": typeof lib_environment;
+  "lib/interview_kind": typeof lib_interview_kind;
   "lib/interview_messages": typeof lib_interview_messages;
   "lib/interview_output": typeof lib_interview_output;
   "lib/interview_prompts": typeof lib_interview_prompts;

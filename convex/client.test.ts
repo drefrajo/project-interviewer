@@ -272,4 +272,103 @@ describe("Client Visual Concept controls", () => {
       }),
     ).rejects.toThrow("Visual Direction note is required.");
   });
+
+  it("submits a document-only Interview directly from Document Review", async () => {
+    const t = convexTest(schema, modules);
+    const token = "document-only-submit-token";
+    const linkHash = await hashCapability(token);
+    await t.run(async (ctx) => {
+      const creatorId = await ctx.db.insert("creatorProfiles", {
+        authUserId: "creator-auth-id",
+        tokenIdentifier: "test|creator",
+        email: "creator@example.com",
+        displayName: "Creator",
+        createdAt: 1,
+        updatedAt: 1,
+      });
+      await ctx.db.insert("interviews", {
+        creatorId,
+        agentThreadId: "thread",
+        linkHash,
+        linkTokenCiphertext: "ciphertext",
+        linkTokenIv: "iv",
+        linkVersion: 1,
+        projectName: "Privacy map",
+        clientLanguage: "en",
+        interviewKind: "privacy",
+        includesVisualConcepts: false,
+        model: "gpt-5.6-terra",
+        instructions: "Map the organization's data flows.",
+        passState: "consumed",
+        createdAt: 1,
+        updatedAt: 1,
+        step: "review",
+        clientMessageCount: 3,
+        documentRevisionCount: 0,
+        projectDocument: "# Privacy data map\n\n[UNKNOWN: retention]",
+        concepts: [],
+        usage: { inputTokens: 0, outputTokens: 0, estimatedCostUsd: 0 },
+      });
+    });
+
+    const result = await t.mutation(api.client.submit, { token });
+    expect(result.created).toBe(true);
+    expect(result.submission).not.toHaveProperty("visualDirection");
+    const interview = await t.run(async (ctx) =>
+      await ctx.db
+        .query("interviews")
+        .withIndex("by_linkHash", (q) => q.eq("linkHash", linkHash))
+        .unique(),
+    );
+    expect(interview).toMatchObject({
+      interviewKind: "privacy",
+      includesVisualConcepts: false,
+      step: "submitted",
+      submission: { projectDocument: "# Privacy data map\n\n[UNKNOWN: retention]" },
+    });
+    expect(interview?.submission?.visualDirection).toBeUndefined();
+  });
+
+  it("rejects Visual Concept entry for a document-only Interview", async () => {
+    const t = convexTest(schema, modules);
+    const token = "document-only-concepts-token";
+    const linkHash = await hashCapability(token);
+    await t.run(async (ctx) => {
+      const creatorId = await ctx.db.insert("creatorProfiles", {
+        authUserId: "creator-auth-id",
+        tokenIdentifier: "test|creator",
+        email: "creator@example.com",
+        displayName: "Creator",
+        createdAt: 1,
+        updatedAt: 1,
+      });
+      await ctx.db.insert("interviews", {
+        creatorId,
+        agentThreadId: "thread",
+        linkHash,
+        linkTokenCiphertext: "ciphertext",
+        linkTokenIv: "iv",
+        linkVersion: 1,
+        projectName: "Privacy map",
+        clientLanguage: "en",
+        interviewKind: "privacy",
+        includesVisualConcepts: false,
+        model: "gpt-5.6-terra",
+        instructions: "Map data flows.",
+        passState: "consumed",
+        createdAt: 1,
+        updatedAt: 1,
+        step: "review",
+        clientMessageCount: 3,
+        documentRevisionCount: 0,
+        projectDocument: "# Privacy data map",
+        concepts: [],
+        usage: { inputTokens: 0, outputTokens: 0, estimatedCostUsd: 0 },
+      });
+    });
+
+    await expect(
+      t.mutation(api.client.continueToConcepts, { token }),
+    ).rejects.toThrow("This Interview does not include Visual Concepts.");
+  });
 });

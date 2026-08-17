@@ -10,6 +10,7 @@ export const SubmittedStep = ({
   interview: ClientInterviewView;
 }) => {
   const text = CLIENT_COPY[interview.clientLanguage];
+  const includesVisualConcepts = interview.includesVisualConcepts ?? true;
   return (
     <section className="mx-auto w-full max-w-5xl">
       <header className="rounded-box border border-primary/20 bg-primary p-6 text-white dark:border-line dark:bg-surface dark:text-ink sm:p-8">
@@ -27,7 +28,7 @@ export const SubmittedStep = ({
         </h2>
         <SafeMarkdown markdown={interview.projectDocument ?? ""} />
       </section>
-      <section className="mt-7">
+      {includesVisualConcepts ? <section className="mt-7">
         <h2 className="font-display text-2xl font-extrabold">Visual Concepts</h2>
         <div className="mt-3 grid gap-4 md:grid-cols-3">
           {(interview.concepts ?? []).map((concept) => (
@@ -44,8 +45,8 @@ export const SubmittedStep = ({
             </figure>
           ))}
         </div>
-      </section>
-      <section className="mt-7 rounded-box border border-line bg-panel p-5">
+      </section> : null}
+      {includesVisualConcepts ? <section className="mt-7 rounded-box border border-line bg-panel p-5">
         <h2 className="font-display text-2xl font-extrabold">Visual Direction</h2>
         {interview.visualDirection ? (
           <VisualDirectionSummary
@@ -60,7 +61,7 @@ export const SubmittedStep = ({
               : "Unavailable"}
           </p>
         )}
-      </section>
+      </section> : null}
       <footer className="mt-7 text-sm text-muted">
         {interview.creator ? (
           <>

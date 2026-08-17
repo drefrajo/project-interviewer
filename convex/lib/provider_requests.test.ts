@@ -175,6 +175,26 @@ describe("provider request privacy contract", () => {
     });
   });
 
+  it("does not promise Visual Concepts for document-only submissions", () => {
+    const request = buildCloudflareEmailRequest({
+      apiUrl: "https://api.example.test/send",
+      apiToken: "secret",
+      from: "product@example.test",
+      fromName: undefined,
+      to: "creator@example.test",
+      creatorName: "Alex",
+      language: "en",
+      projectName: "Privacy map",
+      dashboardUrl: "https://app.example.test/interviews/123",
+      submissionId: "submission_privacy",
+      includesVisualConcepts: false,
+    });
+    const body = JSON.parse(String(request.init.body));
+    expect(body.text).toContain("Project Document and the Interview Transcript");
+    expect(body.text).not.toContain("generated Visual Concepts");
+    expect(body.text).not.toContain("selected Visual Direction");
+  });
+
   it("builds an idempotent warning with export and non-recovery wording", () => {
     const expiresAt = Date.UTC(2027, 7, 9);
     const request = buildRetentionWarningEmailRequest({

@@ -99,7 +99,9 @@ export const buildCloudflareEmailRequest = (args: {
   projectName: string;
   dashboardUrl: string;
   submissionId: string;
+  includesVisualConcepts?: boolean;
 }) => {
+  const includesVisualConcepts = args.includesVisualConcepts ?? true;
   const copy =
     args.language === "de"
       ? {
@@ -109,7 +111,9 @@ export const buildCloudflareEmailRequest = (args: {
             "",
             `der Client hat das Interview für „${args.projectName}“ abgeschlossen und die Projektübergabe übermittelt.`,
             "",
-            "Sie enthält das Projektdokument, die generierten visuellen Konzepte, die ausgewählte visuelle Richtung und das Interview-Transkript.",
+            includesVisualConcepts
+              ? "Sie enthält das Projektdokument, die generierten visuellen Konzepte, die ausgewählte visuelle Richtung und das Interview-Transkript."
+              : "Sie enthält das Projektdokument und das Interview-Transkript. Es wurden keine visuellen Konzepte erstellt.",
             "",
             "In Ihrem authentifizierten Creator-Workspace öffnen:",
             args.dashboardUrl,
@@ -127,7 +131,9 @@ export const buildCloudflareEmailRequest = (args: {
             "",
             `The Client has completed the Interview for "${args.projectName}" and submitted the Project Submission.`,
             "",
-            "It includes the Project Document, the generated Visual Concepts, the selected Visual Direction, and the Interview Transcript.",
+            includesVisualConcepts
+              ? "It includes the Project Document, the generated Visual Concepts, the selected Visual Direction, and the Interview Transcript."
+              : "It includes the Project Document and the Interview Transcript. This Interview did not include Visual Concepts.",
             "",
             "Open it in your authenticated Creator workspace:",
             args.dashboardUrl,

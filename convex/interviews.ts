@@ -23,7 +23,8 @@ import {
   reservationKeyFor,
   reserveInterviewPass,
 } from "./lib/pass_accounting";
-import { clientLanguage } from "./schema";
+import { clientLanguage, interviewKind } from "./schema";
+import { resolveInterviewConfiguration } from "./lib/interview_kind";
 import { internalRefs } from "./internal_refs";
 import { requirePublicCreatorIdentity } from "./lib/creator_identity";
 import { deleteInterviewData } from "./lib/delete_interview";
@@ -107,6 +108,8 @@ export const create = mutation({
     projectName: v.string(),
     clientLanguage,
     instructions: v.string(),
+    interviewKind: v.optional(interviewKind),
+    includesVisualConcepts: v.optional(v.boolean()),
   },
   returns: v.object({
     interviewId: v.id("interviews"),
@@ -122,6 +125,7 @@ export const create = mutation({
       args.instructions,
       MAX_INSTRUCTIONS_LENGTH,
     );
+    const configuration = resolveInterviewConfiguration(args);
     const token = createCapabilityToken();
     const linkHash = await hashCapability(token);
     const sealedToken = await sealCapabilityToken(
@@ -143,6 +147,7 @@ export const create = mutation({
       linkVersion: 1,
       projectName,
       clientLanguage: args.clientLanguage,
+      ...configuration,
       model: "gpt-5.6-terra",
       instructions,
       passState: "unreserved",
@@ -226,15 +231,27 @@ export const updateBeforeStart = mutation({
     projectName: v.string(),
     clientLanguage,
     instructions: v.string(),
+    interviewKind: v.optional(interviewKind),
+    includesVisualConcepts: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const { interview } = await ownedInterview(ctx, args.interviewId);
     if (interview.frozenAt || interview.clientMessageCount > 0) {
       throw new Error("Interview configuration is frozen.");
     }
+    const existingConfiguration = resolveInterviewConfiguration(interview);
+    const configuration = resolveInterviewConfiguration({
+      interviewKind: args.interviewKind ?? existingConfiguration.interviewKind,
+      includesVisualConcepts:
+        args.includesVisualConcepts ??
+        (args.interviewKind !== undefined
+          ? undefined
+          : existingConfiguration.includesVisualConcepts),
+    });
     await ctx.db.patch("interviews", interview._id, {
       projectName: assertLength("Project name", args.projectName, 160),
       clientLanguage: args.clientLanguage,
+      ...configuration,
       model: "gpt-5.6-terra",
       instructions: assertLength(
         "Interview Instructions",

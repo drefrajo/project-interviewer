@@ -1,8 +1,13 @@
 import { action, env, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { requireCreatorProfile } from "./lib/auth";
-import { assertLength, MAX_INSTRUCTIONS_LENGTH } from "./lib/domain";
-import { clientLanguage } from "./schema";
+import {
+  assertLength,
+  MAX_INSTRUCTIONS_LENGTH,
+  MAX_TEMPLATE_DESCRIPTION_LENGTH,
+} from "./lib/domain";
+import { resolveInterviewConfiguration } from "./lib/interview_kind";
+import { clientLanguage, interviewKind } from "./schema";
 import { buildOpenRouterTextRequest } from "./lib/provider_requests";
 
 export const list = query({
@@ -16,14 +21,21 @@ export const list = query({
       .take(100);
     return privateTemplates
       .filter((template) => template.kind === "private")
-      .map((template) => ({
-        _id: template._id,
-        kind: "private" as const,
-        name: template.name,
-        sourceLanguage: template.sourceLanguage,
-        instructions: template.instructions,
-        updatedAt: template.updatedAt,
-      }));
+      .map((template) => {
+        const configuration = resolveInterviewConfiguration(template);
+        return {
+          _id: template._id,
+          kind: "private" as const,
+          name: template.name,
+          sourceLanguage: template.sourceLanguage,
+          instructions: template.instructions,
+          ...configuration,
+          ...(template.description
+            ? { description: template.description }
+            : {}),
+          updatedAt: template.updatedAt,
+        };
+      });
   },
 });
 
@@ -32,10 +44,21 @@ export const create = mutation({
     name: v.string(),
     sourceLanguage: clientLanguage,
     instructions: v.string(),
+    interviewKind: v.optional(interviewKind),
+    description: v.optional(v.string()),
+    includesVisualConcepts: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const creator = await requireCreatorProfile(ctx);
+    const configuration = resolveInterviewConfiguration(args);
     const now = Date.now();
+    const description = args.description?.trim()
+      ? assertLength(
+          "Template description",
+          args.description,
+          MAX_TEMPLATE_DESCRIPTION_LENGTH,
+        )
+      : undefined;
     return await ctx.db.insert("interviewTemplates", {
       kind: "private",
       ownerId: creator._id,
@@ -46,6 +69,8 @@ export const create = mutation({
         args.instructions,
         MAX_INSTRUCTIONS_LENGTH,
       ),
+      ...configuration,
+      ...(description ? { description } : {}),
       createdAt: now,
       updatedAt: now,
     });
@@ -58,6 +83,9 @@ export const update = mutation({
     name: v.string(),
     sourceLanguage: clientLanguage,
     instructions: v.string(),
+    interviewKind: v.optional(interviewKind),
+    description: v.optional(v.string()),
+    includesVisualConcepts: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const creator = await requireCreatorProfile(ctx);
@@ -69,7 +97,16 @@ export const update = mutation({
     ) {
       throw new Error("Template not found.");
     }
-    await ctx.db.patch("interviewTemplates", template._id, {
+    const existingConfiguration = resolveInterviewConfiguration(template);
+    const configuration = resolveInterviewConfiguration({
+      interviewKind: args.interviewKind ?? existingConfiguration.interviewKind,
+      includesVisualConcepts:
+        args.includesVisualConcepts ??
+        (args.interviewKind !== undefined
+          ? undefined
+          : existingConfiguration.includesVisualConcepts),
+    });
+    const patch = {
       name: assertLength("Template name", args.name, 120),
       sourceLanguage: args.sourceLanguage,
       instructions: assertLength(
@@ -77,8 +114,21 @@ export const update = mutation({
         args.instructions,
         MAX_INSTRUCTIONS_LENGTH,
       ),
+      ...configuration,
+      ...(args.description !== undefined
+        ? {
+            description: args.description.trim()
+              ? assertLength(
+                  "Template description",
+                  args.description,
+                  MAX_TEMPLATE_DESCRIPTION_LENGTH,
+                )
+              : undefined,
+          }
+        : {}),
       updatedAt: Date.now(),
-    });
+    };
+    await ctx.db.patch("interviewTemplates", template._id, patch);
     return template._id;
   },
 });

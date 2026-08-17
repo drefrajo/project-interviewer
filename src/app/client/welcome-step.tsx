@@ -12,11 +12,15 @@ const copy = {
     inviterCheck:
       "Before you start, check that this name and email match the person you expect.",
     intro:
-      "Answer a focused conversation, review the resulting Project Document, then choose a rough visual direction.",
+      "Answer a focused conversation, review the resulting Project Document, and submit the finished handoff.",
     duration: "About 10 minutes",
     shared: "Your responses and final handoff are shared with the named Creator.",
-    sensitive: "Do not submit sensitive personal data.",
+    sensitive:
+      "Do not submit actual personal data, credentials, API keys, or other secrets. Use categories, fictional examples, or documentation references instead.",
     concepts: "Visual Concepts are rough directions, not final designs.",
+    documentOnly: "This Interview includes the conversation and Project Document, then a final submission.",
+    withConcepts:
+      "This Interview includes the conversation, Project Document, and rough Visual Concepts before submission.",
     retention:
       "All Interviews are deleted after 24 months: completed Interviews after submission, and incomplete Interviews after last activity.",
     providers: "External providers are used for AI functionality.",
@@ -34,12 +38,16 @@ const copy = {
     inviterCheck:
       "Prüfen Sie vor dem Start, ob Name und E-Mail zu der Person passen, die Sie erwarten.",
     intro:
-      "Beantworten Sie einige gezielte Fragen, prüfen Sie das Projektdokument und wählen Sie anschließend eine grobe visuelle Richtung.",
+      "Beantworten Sie einige gezielte Fragen, prüfen Sie das Projektdokument und übermitteln Sie anschließend die fertige Übergabe.",
     duration: "Etwa 10 Minuten",
     shared:
       "Ihre Antworten und die endgültige Übergabe werden mit dem genannten Creator geteilt.",
-    sensitive: "Übermitteln Sie keine sensiblen personenbezogenen Daten.",
+    sensitive:
+      "Übermitteln Sie keine echten personenbezogenen Daten, Zugangsdaten, API-Schlüssel oder andere Geheimnisse. Verwenden Sie stattdessen Kategorien, fingierte Beispiele oder Dokumentationsverweise.",
     concepts: "Visuelle Konzepte sind grobe Richtungen, keine finalen Designs.",
+    documentOnly: "Dieses Interview umfasst das Gespräch und das Projektdokument, danach erfolgt die Übermittlung.",
+    withConcepts:
+      "Dieses Interview umfasst das Gespräch, das Projektdokument und grobe visuelle Konzepte vor der Übermittlung.",
     retention:
       "Alle Interviews werden nach 24 Monaten gelöscht: abgeschlossene Interviews nach der Übermittlung und unvollständige Interviews nach der letzten Aktivität.",
     providers: "Für KI-Funktionen werden externe Anbieter verwendet.",
@@ -66,6 +74,7 @@ export const WelcomeStep = ({
   const text = copy[interview.clientLanguage];
   const creator = interview.creator;
   const identityReady = interview.creatorIdentityReady && creator !== null;
+  const includesVisualConcepts = interview.includesVisualConcepts ?? true;
   return (
     <section className="mx-auto w-full max-w-3xl rounded-box border border-line bg-panel p-6 shadow-[0_1.5rem_4rem_rgb(15_23_42_/_8%)] dark:shadow-[0_1.5rem_4rem_rgb(2_6_23_/_50%)] sm:p-10">
       <h1 className="font-display text-4xl leading-tight font-extrabold tracking-tight sm:text-5xl">
@@ -107,7 +116,13 @@ export const WelcomeStep = ({
         <Disclosure icon={<Clock3 />} text={text.duration} />
         <Disclosure icon={<Eye />} text={text.shared} />
         <Disclosure icon={<ShieldAlert />} text={text.sensitive} />
-        <Disclosure icon={<Sparkles />} text={text.concepts} />
+        <Disclosure
+          icon={<Sparkles />}
+          text={includesVisualConcepts ? text.withConcepts : text.documentOnly}
+        />
+        {includesVisualConcepts ? (
+          <Disclosure icon={<Sparkles />} text={text.concepts} />
+        ) : null}
         <Disclosure icon={<ShieldAlert />} text={text.retention} />
       </dl>
       <div className="mt-8 rounded-lg bg-soft p-4 text-sm leading-6 text-muted">

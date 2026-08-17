@@ -61,4 +61,34 @@ describe("SubmittedStep", () => {
     expect(screen.getByRole("link", { name: "creator@example.test" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Creator privacy policy" })).not.toBeInTheDocument();
   });
+
+  it("omits Visual Concepts and Visual Direction for a document-only submission", () => {
+    render(
+      <SubmittedStep
+        interview={{
+          interviewId: "interview_1",
+          projectName: "Privacy mapping",
+          creator: null,
+          creatorIdentityReady: false,
+          clientLanguage: "en",
+          modelFamily: "GPT-5.6 Terra",
+          temporaryConceptBatchRetriesEnabled: false,
+          interviewKind: "privacy",
+          includesVisualConcepts: false,
+          step: "submitted",
+          started: true,
+          reservationRequired: false,
+          passState: "consumed",
+          projectDocument: "# Privacy data map",
+          concepts: [{ id: "concept_1", name: "Should be hidden" }],
+          visualDirection: { kind: "inspiration_links", inspirationLinks: [] },
+        }}
+      />,
+    );
+
+    expect(screen.getByText("Privacy data map")).toBeInTheDocument();
+    expect(screen.queryByText("Visual Concepts")).not.toBeInTheDocument();
+    expect(screen.queryByText("Visual Direction")).not.toBeInTheDocument();
+    expect(screen.queryByText("Should be hidden")).not.toBeInTheDocument();
+  });
 });
