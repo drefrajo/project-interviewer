@@ -103,4 +103,38 @@ describe("WelcomeStep", () => {
     expect(screen.getByRole("button", { name: "Start interview" })).toBeEnabled();
     expect(screen.queryByRole("link", { name: "Creator privacy policy" })).not.toBeInTheDocument();
   });
+
+  it("discloses a document-only workflow when concepts are excluded", () => {
+    render(
+      <WelcomeStep
+        interview={{
+          interviewId: "interview_1",
+          projectName: "Privacy mapping",
+          creator: {
+            displayName: "Creator",
+            contactEmail: "creator@example.test",
+          },
+          creatorIdentityReady: true,
+          clientLanguage: "en",
+          modelFamily: "GPT-5.6 Terra",
+          temporaryConceptBatchRetriesEnabled: false,
+          interviewKind: "privacy",
+          includesVisualConcepts: false,
+          step: "interview",
+          started: false,
+          reservationRequired: false,
+          passState: "reserved",
+        }}
+        onStart={() => undefined}
+        pending={false}
+      />,
+    );
+
+    expect(
+      screen.getByText(
+        "This Interview includes the conversation and Project Document, then a final submission.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Visual Concepts are rough directions, not final designs.")).not.toBeInTheDocument();
+  });
 });

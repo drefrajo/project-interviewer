@@ -29,6 +29,7 @@ import {
 } from "./lib/provider_requests";
 import { visualConcept } from "./schema";
 import { internalRefs } from "./internal_refs";
+import { resolveInterviewConfiguration } from "./lib/interview_kind";
 
 type Completion = {
   choices?: Array<{ message?: { content?: unknown } }>;
@@ -236,6 +237,9 @@ export const setConceptGenerationPhase = internalMutation({
     ) {
       return null;
     }
+    if (!resolveInterviewConfiguration(interview).includesVisualConcepts) {
+      throw new Error("This Interview does not include Visual Concepts.");
+    }
     await ctx.db.patch("interviews", interview._id, {
       operation: { ...interview.operation, phase: args.phase },
       updatedAt: Date.now(),
@@ -258,6 +262,9 @@ export const completeConcepts = internalMutation({
       interview.operation.status !== "running"
     ) {
       return null;
+    }
+    if (!resolveInterviewConfiguration(interview).includesVisualConcepts) {
+      throw new Error("This Interview does not include Visual Concepts.");
     }
     await ctx.db.patch("interviews", interview._id, {
       concepts: args.concepts,
@@ -368,6 +375,7 @@ const runInterview = async (
   ctx: ActionCtx,
   interview: Doc<"interviews">,
 ) => {
+  const { interviewKind } = resolveInterviewConfiguration(interview);
   const transcript = await listMessages(ctx, agentComponent, {
     threadId: interview.agentThreadId,
     paginationOpts: { numItems: 120, cursor: null },
@@ -391,6 +399,7 @@ const runInterview = async (
       messages: buildInterviewPlanMessages({
         instructions: interview.instructions,
         transcript: transcriptMessages,
+        interviewKind,
       }),
     });
     const generatedPlan = await (async () => {
@@ -423,6 +432,7 @@ const runInterview = async (
       buildInterviewPolicy({
         clientLanguage: interview.clientLanguage,
         instructions: interview.instructions,
+        interviewKind,
         alignmentAsked:
           interview.alignmentAskedAtClientMessageCount !== undefined,
         ...(interviewPlan ? { interviewPlan } : {}),
@@ -457,6 +467,7 @@ const runInterview = async (
     messages: buildProjectDocumentMessages({
       instructions: interview.instructions,
       transcript: transcriptMessages,
+      interviewKind,
     }),
   });
   const document = await responseText(
@@ -495,6 +506,7 @@ const runDocumentRevision = async (
       instructions: interview.instructions,
       projectDocument: interview.projectDocument,
       feedback: interview.operation.input,
+      interviewKind: resolveInterviewConfiguration(interview).interviewKind,
     }),
   });
   const generated = await responseText(await fetch(request.url, request.init));
@@ -512,6 +524,11 @@ const conceptSeeds = async (
   interview: Doc<"interviews">,
   idOffset = 0,
 ) => {
+  const { interviewKind, includesVisualConcepts } =
+    resolveInterviewConfiguration(interview);
+  if (!includesVisualConcepts) {
+    throw new Error("This Interview does not include Visual Concepts.");
+  }
   if (!interview.projectDocument) {
     throw new Error("Project Document is missing.");
   }
@@ -523,6 +540,7 @@ const conceptSeeds = async (
       clientLanguage: interview.clientLanguage,
       instructions: interview.instructions,
       projectDocument: interview.projectDocument,
+      interviewKind,
       ...(idOffset > 0 ? { existingConcepts: interview.concepts } : {}),
     }),
   });
@@ -586,6 +604,11 @@ const runConceptGeneration = async (
   ctx: ActionCtx,
   interview: Doc<"interviews">,
 ) => {
+  const { includesVisualConcepts, interviewKind } =
+    resolveInterviewConfiguration(interview);
+  if (!includesVisualConcepts) {
+    throw new Error("This Interview does not include Visual Concepts.");
+  }
   const projectDocument = interview.projectDocument;
   if (!projectDocument) {
     throw new Error("Project Document is missing.");
@@ -628,6 +651,7 @@ const runConceptGeneration = async (
             projectDocument,
             conceptPrompt: seed.prompt,
             conceptIndex: Number.parseInt(seed.id.replace("concept_", ""), 10),
+            interviewKind,
             existingConcepts: [
               ...(additionalConcepts
                 ? interview.concepts.slice(0, 3)
@@ -671,6 +695,8 @@ const runEmail = async (
     projectName: interview.projectName,
     dashboardUrl,
     submissionId: interview.submission.id,
+    includesVisualConcepts: resolveInterviewConfiguration(interview)
+      .includesVisualConcepts,
   });
   const response = await fetch(request.url, request.init);
   await ctx.runMutation(internalRefs.jobs.completeEmail, {

@@ -2,13 +2,16 @@ import type { FunctionReference } from "convex/server";
 import { api as sourceApi } from "../../convex/typed_api";
 import type {
   ClientLanguage,
+  InterviewKind,
   PrivateInterviewTemplate,
 } from "../domain/interview-templates";
 
 export type {
   ClientLanguage,
+  InterviewKind,
   InterviewTemplate,
   PrivateInterviewTemplate,
+  VisualConceptsMode,
 } from "../domain/interview-templates";
 export type InterviewModel = "gpt-5.6-terra";
 export type InterviewStep = "interview" | "review" | "concepts" | "submitted";
@@ -102,6 +105,9 @@ export interface InterviewSummary {
   _id: string;
   projectName: string;
   clientLanguage: ClientLanguage;
+  /** Legacy rows resolve to website + included concepts in the UI. */
+  interviewKind?: InterviewKind;
+  includesVisualConcepts?: boolean;
   interviewModel: InterviewModel;
   status: InterviewStatus;
   step: InterviewStep;
@@ -138,6 +144,9 @@ export interface ClientInterviewView {
   creator: PublicCreatorIdentity | null;
   creatorIdentityReady: boolean;
   clientLanguage: ClientLanguage;
+  /** Legacy rows resolve to website + included concepts in the UI. */
+  interviewKind?: InterviewKind;
+  includesVisualConcepts?: boolean;
   modelFamily: string;
   temporaryConceptBatchRetriesEnabled: boolean;
   step: InterviewStep;
@@ -212,6 +221,9 @@ interface InterviewApi {
         name: string;
         sourceLanguage: ClientLanguage;
         instructions: string;
+        interviewKind: InterviewKind;
+        includesVisualConcepts: boolean;
+        description?: string;
       },
       string
     >;
@@ -221,6 +233,9 @@ interface InterviewApi {
         name: string;
         sourceLanguage: ClientLanguage;
         instructions: string;
+        interviewKind: InterviewKind;
+        includesVisualConcepts: boolean;
+        description?: string;
       }
     >;
     remove: Mutation<{ templateId: string }>;
@@ -237,6 +252,8 @@ interface InterviewApi {
         projectName: string;
         clientLanguage: ClientLanguage;
         instructions: string;
+        interviewKind: InterviewKind;
+        includesVisualConcepts: boolean;
       },
       { interviewId: string; interviewUrl?: string; linkToken?: string } | string
     >;
@@ -258,6 +275,8 @@ interface InterviewApi {
       projectName: string;
       clientLanguage: ClientLanguage;
       instructions: string;
+      interviewKind: InterviewKind;
+      includesVisualConcepts: boolean;
     }>;
     rotateLink: Mutation<
       { interviewId: string },

@@ -48,6 +48,62 @@ const insertRunningInterview = async (
   });
 
 describe("Interview completion state", () => {
+  it("rejects internal concept mutations for document-only Interviews", async () => {
+    const t = convexTest(schema, modules);
+    const interviewId = await t.run(async (ctx) => {
+      const creatorId = await ctx.db.insert("creatorProfiles", {
+        authUserId: "creator-auth-id",
+        tokenIdentifier: "test|creator",
+        email: "creator@example.com",
+        displayName: "Creator",
+        createdAt: 1,
+        updatedAt: 1,
+      });
+      return await ctx.db.insert("interviews", {
+        creatorId,
+        agentThreadId: "thread",
+        linkHash: "document-only-job-hash",
+        linkTokenCiphertext: "ciphertext",
+        linkTokenIv: "iv",
+        linkVersion: 1,
+        projectName: "Privacy map",
+        clientLanguage: "en",
+        interviewKind: "privacy",
+        includesVisualConcepts: false,
+        model: "gpt-5.6-terra",
+        instructions: "Map data flows.",
+        passState: "consumed",
+        createdAt: 1,
+        updatedAt: 1,
+        step: "review",
+        clientMessageCount: 3,
+        documentRevisionCount: 0,
+        projectDocument: "# Data map",
+        concepts: [],
+        operation: {
+          kind: "concept_generation",
+          status: "running",
+          attempt: 1,
+        },
+        usage: { inputTokens: 0, outputTokens: 0, estimatedCostUsd: 0 },
+      });
+    });
+
+    await expect(
+      t.mutation(internal.jobs.setConceptGenerationPhase, {
+        interviewId,
+        phase: "concept_creating",
+      }),
+    ).rejects.toThrow("This Interview does not include Visual Concepts.");
+    await expect(
+      t.mutation(internal.jobs.completeConcepts, {
+        interviewId,
+        concepts: [],
+        hasFailure: false,
+      }),
+    ).rejects.toThrow("This Interview does not include Visual Concepts.");
+  });
+
   it("publishes the current Visual Concept generation phase", async () => {
     const t = convexTest(schema, modules);
     const interviewId = await insertRunningInterview(t);

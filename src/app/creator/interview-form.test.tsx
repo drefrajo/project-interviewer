@@ -24,6 +24,10 @@ const privateTemplates: PrivateInterviewTemplate[] = [
     name: "English private template",
     sourceLanguage: "en",
     instructions: "English private instructions",
+    interviewKind: "website",
+    visualConceptsMode: "included",
+    includesVisualConcepts: true,
+    description: "For web projects",
   },
   {
     _id: "private-de",
@@ -31,6 +35,10 @@ const privateTemplates: PrivateInterviewTemplate[] = [
     name: "German private template",
     sourceLanguage: "de",
     instructions: "Deutsche private Anweisungen",
+    interviewKind: "privacy",
+    visualConceptsMode: "excluded",
+    includesVisualConcepts: false,
+    description: "For data mapping",
   },
 ];
 const completeProfile = {
@@ -39,11 +47,11 @@ const completeProfile = {
   contactEmail: "hello@example.test",
   privacyPolicyUrl: "https://example.test/privacy",
 };
-const singlePageEnglish = BUILT_IN_INTERVIEW_TEMPLATES.find(
-  ({ _id }) => _id === "built-in:single-page-business:en",
+const websiteEnglish = BUILT_IN_INTERVIEW_TEMPLATES.find(
+  ({ _id }) => _id === "built-in:website:en",
 )!;
-const singlePageGerman = BUILT_IN_INTERVIEW_TEMPLATES.find(
-  ({ _id }) => _id === "built-in:single-page-business:de",
+const websiteGerman = BUILT_IN_INTERVIEW_TEMPLATES.find(
+  ({ _id }) => _id === "built-in:website:de",
 )!;
 
 const renderForm = () =>
@@ -69,59 +77,45 @@ describe("Create Interview template language", () => {
   it("shows matching built-ins and every private template", async () => {
     const user = userEvent.setup();
     renderForm();
-    const templateSelect = screen.getByRole("combobox", {
-      name: /^Optional Interview Template/,
+    const templatePicker = screen.getByRole("group", {
+      name: "Optional Interview Template",
     });
 
-    expect(
-      within(templateSelect).getByRole("option", {
-        name: "Built-in · Single-page business website · EN",
-      }),
-    ).toBeInTheDocument();
-    expect(
-      within(templateSelect).queryByRole("option", {
-        name: "Built-in · Single-page business website · DE",
-      }),
-    ).not.toBeInTheDocument();
-    expect(
-      within(templateSelect).getByRole("option", {
-        name: "Private · English private template · EN",
-      }),
-    ).toBeInTheDocument();
-    expect(
-      within(templateSelect).getByRole("option", {
-        name: "Private · German private template · DE",
-      }),
-    ).toBeInTheDocument();
+    expect(within(templatePicker).getAllByRole("radio")).toHaveLength(5);
+    expect(screen.getByDisplayValue("built-in:website:en")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("built-in:privacy:en")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("built-in:custom:en")).toBeInTheDocument();
+    expect(screen.getAllByText(/Visual Concepts: included/)).toHaveLength(2);
+    expect(screen.getAllByText(/Visual Concepts: not included/)).toHaveLength(2);
 
     await user.selectOptions(
       screen.getByRole("combobox", { name: "Interview language" }),
       "de",
     );
 
-    expect(
-      within(templateSelect).getByRole("option", {
-        name: "Built-in · Single-page business website · DE",
-      }),
-    ).toBeInTheDocument();
-    expect(
-      within(templateSelect).queryByRole("option", {
-        name: "Built-in · Single-page business website · EN",
-      }),
-    ).not.toBeInTheDocument();
+    expect(screen.getByDisplayValue("built-in:website:de")).toBeInTheDocument();
+    expect(screen.queryByDisplayValue("built-in:website:en")).not.toBeInTheDocument();
   });
 
-  it("does not expose an interview model selector", () => {
+  it("exposes Custom's concept toggle but no interview model selector", () => {
     renderForm();
 
     expect(
       screen.queryByRole("combobox", { name: "Interview Model" }),
     ).not.toBeInTheDocument();
-    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: /Include Visual Concepts/ })).toBeInTheDocument();
     expect(screen.queryByText(/privacy routing/i)).not.toBeInTheDocument();
     expect(
       screen.queryByText(/German-language support is less certain/i),
     ).not.toBeInTheDocument();
+  });
+
+  it("keeps Interview Instructions content at normal weight", () => {
+    renderForm();
+
+    expect(
+      screen.getByRole("textbox", { name: /^Interview Instructions/ }),
+    ).toHaveClass("font-normal");
   });
 
   it("translates into the currently selected interview language", async () => {
@@ -178,20 +172,17 @@ describe("Create Interview template language", () => {
     const languageSelect = screen.getByRole("combobox", {
       name: "Interview language",
     });
-    const templateSelect = screen.getByRole("combobox", {
-      name: /^Optional Interview Template/,
-    });
     const instructions = screen.getByRole("textbox", {
       name: /^Interview Instructions/,
     });
 
-    await user.selectOptions(templateSelect, singlePageEnglish._id);
-    expect(instructions).toHaveValue(singlePageEnglish.instructions);
+    await user.click(screen.getByDisplayValue(websiteEnglish._id));
+    expect(instructions).toHaveValue(websiteEnglish.instructions);
 
     await user.selectOptions(languageSelect, "de");
 
-    expect(templateSelect).toHaveValue(singlePageGerman._id);
-    expect(instructions).toHaveValue(singlePageGerman.instructions);
+    expect(screen.getByDisplayValue(websiteGerman._id)).toBeChecked();
+    expect(instructions).toHaveValue(websiteGerman.instructions);
   });
 
   it("keeps edited instructions instead of switching their built-in", async () => {
@@ -200,21 +191,18 @@ describe("Create Interview template language", () => {
     const languageSelect = screen.getByRole("combobox", {
       name: "Interview language",
     });
-    const templateSelect = screen.getByRole("combobox", {
-      name: /^Optional Interview Template/,
-    });
     const instructions = screen.getByRole("textbox", {
       name: /^Interview Instructions/,
     });
 
-    await user.selectOptions(templateSelect, singlePageEnglish._id);
+    await user.click(screen.getByDisplayValue(websiteEnglish._id));
     await user.type(instructions, " with owner edits");
     await user.selectOptions(languageSelect, "de");
 
     expect(languageSelect).toHaveValue("de");
-    expect(templateSelect).toHaveValue("");
+    expect(screen.getByDisplayValue("built-in:website:de")).not.toBeChecked();
     expect(instructions).toHaveValue(
-      `${singlePageEnglish.instructions} with owner edits`,
+      `${websiteEnglish.instructions} with owner edits`,
     );
   });
 
@@ -224,17 +212,14 @@ describe("Create Interview template language", () => {
     const languageSelect = screen.getByRole("combobox", {
       name: "Interview language",
     });
-    const templateSelect = screen.getByRole("combobox", {
-      name: /^Optional Interview Template/,
-    });
     const instructions = screen.getByRole("textbox", {
       name: /^Interview Instructions/,
     });
 
-    await user.selectOptions(templateSelect, "private-en");
+    await user.click(screen.getByDisplayValue("private-en"));
     await user.selectOptions(languageSelect, "de");
 
-    expect(templateSelect).toHaveValue("private-en");
+    expect(screen.getByDisplayValue("private-en")).toBeChecked();
     expect(instructions).toHaveValue("English private instructions");
   });
 
@@ -251,5 +236,32 @@ describe("Create Interview template language", () => {
 
     expect(screen.getByRole("heading", { name: "Prepare an Interview" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Create Interview" })).toBeInTheDocument();
+  });
+
+  it("saves the Custom kind and concrete concept choice", async () => {
+    const user = userEvent.setup();
+    const createInterview = vi.fn(async () => "interview_1");
+    convex.useMutation.mockImplementation((reference) =>
+      getFunctionName(reference) === "interviews:create"
+        ? createInterview
+        : vi.fn(async () => null),
+    );
+    renderForm();
+
+    await user.type(screen.getByRole("textbox", { name: "Project name" }), "Data review");
+    await user.type(
+      screen.getByRole("textbox", { name: /^Interview Instructions/ }),
+      "Ask about the process and produce a concise handoff.",
+    );
+    await user.click(screen.getByRole("checkbox", { name: /Include Visual Concepts/ }));
+    await user.click(screen.getByRole("button", { name: "Create Interview" }));
+
+    expect(createInterview).toHaveBeenCalledWith({
+      projectName: "Data review",
+      clientLanguage: "en",
+      instructions: "Ask about the process and produce a concise handoff.",
+      interviewKind: "custom",
+      includesVisualConcepts: true,
+    });
   });
 });

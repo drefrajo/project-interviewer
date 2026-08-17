@@ -40,12 +40,14 @@ export const DocumentReviewStep = ({
   pending,
   onRequestChanges,
   onContinue,
+  includesVisualConcepts = true,
 }: {
   language: ClientLanguage;
   markdown: string;
   pending: boolean;
   onRequestChanges(changes: string): Promise<boolean>;
   onContinue(): void;
+  includesVisualConcepts?: boolean;
 }) => {
   const text = CLIENT_COPY[language];
   const [changes, setChanges] = useState("");
@@ -95,22 +97,34 @@ export const DocumentReviewStep = ({
             onClick={() => setConfirmingContinue(true)}
             type="button"
           >
-            {text.continueConcepts}
+            {includesVisualConcepts ? text.continueConcepts : text.submitDocument}
           </button>
         </div>
       </form>
       <ConfirmDialog
         cancelLabel={text.cancel}
-        confirmLabel={text.continueConceptsConfirm}
+        confirmLabel={
+          includesVisualConcepts
+            ? text.continueConceptsConfirm
+            : text.submitDocumentConfirm
+        }
         onCancel={() => setConfirmingContinue(false)}
         onConfirm={() => {
           setConfirmingContinue(false);
           onContinue();
         }}
         open={confirmingContinue}
-        title={text.continueConceptsTitle}
+        title={
+          includesVisualConcepts
+            ? text.continueConceptsTitle
+            : text.submitDocumentTitle
+        }
       >
-        <p>{text.continueConceptsWarning}</p>
+        <p>
+          {includesVisualConcepts
+            ? text.continueConceptsWarning
+            : text.submitDocumentWarning}
+        </p>
       </ConfirmDialog>
     </section>
   );

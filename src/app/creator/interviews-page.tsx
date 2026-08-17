@@ -6,6 +6,11 @@ import { primaryButton, textLink } from "../shared/form-controls";
 import { creatorCopy } from "./creator-copy";
 import { useCreatorLanguage } from "./creator-language";
 import { hasCompletePublicCreatorIdentity } from "./creator-profile-readiness";
+import {
+  conceptsLabel,
+  interviewKindLabel,
+  resolveInterviewConfiguration,
+} from "./interview-kind-picker";
 
 export const InterviewsPage = () => {
   const language = useCreatorLanguage();
@@ -46,6 +51,7 @@ export const InterviewsPage = () => {
       ) : interviews.length ? (
         <section className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {interviews.map((interview) => {
+            const configuration = resolveInterviewConfiguration(interview);
             const needsReservation =
               interview.status === "not_started" &&
               interview.passState === "unreserved";
@@ -91,6 +97,15 @@ export const InterviewsPage = () => {
                     : interview.status === "in_progress"
                       ? text.interviews.currentStep(text.interviews.step[interview.step])
                       : text.interviews.language[interview.clientLanguage]}
+                </p>
+                <p className="mt-2 text-sm font-bold text-primary">
+                  {interviewKindLabel(
+                    configuration.interviewKind,
+                    language,
+                  )} · {conceptsLabel(
+                    configuration.includesVisualConcepts,
+                    language,
+                  )}
                 </p>
                 <span className={`${textLink} group-hover:underline group-focus-visible:underline mt-auto inline-flex items-center gap-1 pt-6`}>
                   {text.interviews.open} <ArrowRight aria-hidden="true" size={16} />

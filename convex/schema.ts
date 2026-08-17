@@ -6,6 +6,11 @@ export const creatorLanguage = v.union(
   v.literal("en"),
   v.literal("de"),
 );
+export const interviewKind = v.union(
+  v.literal("website"),
+  v.literal("privacy"),
+  v.literal("custom"),
+);
 export const interviewModel = v.literal("gpt-5.6-terra");
 // Existing operation documents may still contain retired image-model values.
 // They are accepted only for validation; generation always uses GPT Image 2
@@ -163,7 +168,7 @@ export const projectSubmission = v.object({
   id: v.string(),
   submittedAt: v.number(),
   projectDocument: v.string(),
-  visualDirection,
+  visualDirection: v.optional(visualDirection),
   emailDelivery: v.union(
     v.literal("pending"),
     v.literal("sent"),
@@ -211,6 +216,11 @@ export default defineSchema({
     name: v.string(),
     sourceLanguage: clientLanguage,
     instructions: v.string(),
+    // Widened for existing built-in/private templates. New private templates
+    // write both fields; readers resolve missing values to website + concepts.
+    interviewKind: v.optional(interviewKind),
+    description: v.optional(v.string()),
+    includesVisualConcepts: v.optional(v.boolean()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -231,6 +241,9 @@ export default defineSchema({
     projectName: v.string(),
     localDevSampleKey: v.optional(v.string()),
     clientLanguage,
+    // Widened for legacy website Interviews. See resolveInterviewConfiguration.
+    interviewKind: v.optional(interviewKind),
+    includesVisualConcepts: v.optional(v.boolean()),
     model: storedInterviewModel,
     instructions: v.string(),
     passState: interviewPassState,

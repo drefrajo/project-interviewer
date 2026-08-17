@@ -1,7 +1,9 @@
 import type { Doc } from "../_generated/dataModel";
 import { interviewPassState } from "./pass_accounting";
+import { resolveInterviewConfiguration } from "./interview_kind";
 
 export const MAX_INSTRUCTIONS_LENGTH = 50_000;
+export const MAX_TEMPLATE_DESCRIPTION_LENGTH = 500;
 export const MAX_CLIENT_MESSAGE_LENGTH = 10_000;
 export const MAX_VISUAL_NOTE_LENGTH = 2_000;
 export const MAX_CLIENT_MESSAGES = 60;
@@ -97,6 +99,7 @@ export const interviewDto = async (
     Doc<"interviews">["concepts"][number]["imageId"]
   >) => Promise<string | null>,
 ) => ({
+  ...resolveInterviewConfiguration(interview),
   _id: interview._id,
   projectName: interview.projectName,
   clientLanguage: interview.clientLanguage,

@@ -54,4 +54,30 @@ describe("DocumentReviewStep", () => {
 
     expect(onContinue).toHaveBeenCalledOnce();
   });
+
+  it("uses a direct submission confirmation when Visual Concepts are excluded", async () => {
+    const user = userEvent.setup();
+    const onContinue = vi.fn();
+    render(
+      <DocumentReviewStep
+        includesVisualConcepts={false}
+        language="en"
+        markdown="# Project Document"
+        onContinue={onContinue}
+        onRequestChanges={async () => true}
+        pending={false}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Submit Project Document" }));
+    expect(screen.getByRole("dialog")).toHaveTextContent(
+      "Once you submit, you cannot return",
+    );
+    await user.click(
+      within(screen.getByRole("dialog")).getByRole("button", {
+        name: "Submit Project Document",
+      }),
+    );
+    expect(onContinue).toHaveBeenCalledOnce();
+  });
 });

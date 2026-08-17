@@ -12,7 +12,7 @@ export const CLIENT_COPY = {
     reply: "Your reply",
     reviewTitle: "Review your Project Document",
     reviewIntro:
-      "This is the current implementation direction and first-draft website copy. Request a change if anything important is wrong or missing.",
+      "This is the current implementation direction and project information. Request a change if anything important is wrong or missing.",
     changes: "Should anything be changed?",
     continueConceptsTitle: "Continue to concepts?",
     continueConceptsWarning:
@@ -23,6 +23,11 @@ export const CLIENT_COPY = {
     reviewWorkingDetail: "Reviewing the requested changes…",
     requestChanges: "Request changes",
     continueConcepts: "Continue to concepts",
+    submitDocumentTitle: "Submit this Project Document?",
+    submitDocumentWarning:
+      "Once you submit, you cannot return to this Project Document review or request further changes.",
+    submitDocumentConfirm: "Submit Project Document",
+    submitDocument: "Submit Project Document",
     conceptsTitle: "Choose a visual direction",
     conceptsIntro:
       "These are rough directions, not final designs. Choose one, or provide up to three public inspiration links.",
@@ -46,7 +51,7 @@ export const CLIENT_COPY = {
       "Submission is final. The Project Submission becomes read-only for you and the Creator.",
     submittedTitle: "Project submitted",
     submittedIntro:
-      "The Creator has received this project description. They will get in touch about the next steps.",
+      "The Creator has received this Project Submission. They will get in touch about the next steps.",
   },
   de: {
     steps: ["Interview", "Prüfung", "Konzepte", "Übermittelt"],
@@ -59,7 +64,7 @@ export const CLIENT_COPY = {
     reply: "Ihre Antwort",
     reviewTitle: "Projektdokument prüfen",
     reviewIntro:
-      "Dies ist die aktuelle Umsetzungsrichtung mit ersten Website-Texten. Fordern Sie eine Änderung an, falls etwas Wichtiges fehlt oder nicht stimmt.",
+      "Dies ist die aktuelle Umsetzungsrichtung mit den Projektinformationen. Fordern Sie eine Änderung an, falls etwas Wichtiges fehlt oder nicht stimmt.",
     changes: "Soll etwas geändert werden?",
     continueConceptsTitle: "Zu den Konzepten weitergehen?",
     continueConceptsWarning:
@@ -70,6 +75,11 @@ export const CLIENT_COPY = {
     reviewWorkingDetail: "Die gewünschten Änderungen werden geprüft…",
     requestChanges: "Änderungen anfordern",
     continueConcepts: "Weiter zu den Konzepten",
+    submitDocumentTitle: "Dieses Projektdokument übermitteln?",
+    submitDocumentWarning:
+      "Nach der Übermittlung können Sie nicht zu dieser Prüfung zurückkehren und keine weiteren Änderungen anfordern.",
+    submitDocumentConfirm: "Projektdokument übermitteln",
+    submitDocument: "Projektdokument übermitteln",
     conceptsTitle: "Visuelle Richtung wählen",
     conceptsIntro:
       "Dies sind grobe Richtungen, keine finalen Designs. Wählen Sie eine aus oder geben Sie bis zu drei öffentliche Inspirationslinks an.",
@@ -93,6 +103,6 @@ export const CLIENT_COPY = {
       "Die Übermittlung ist endgültig. Danach ist die Projektübergabe für Sie und den Creator schreibgeschützt.",
     submittedTitle: "Projekt übermittelt",
     submittedIntro:
-      "Der Creator hat diese Projektbeschreibung erhalten. Er wird sich für die nächsten Schritte melden.",
+      "Der Creator hat diese Projektübergabe erhalten. Er wird sich für die nächsten Schritte melden.",
   },
 } as const satisfies Record<ClientLanguage, object>;

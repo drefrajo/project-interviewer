@@ -119,14 +119,14 @@ export const creatorCopy = {
       workspace: "Creator workspace",
       title: "Interviews",
       intro:
-        "Create one focused Interview, send one link, and receive an implementation-ready Project Submission.",
+        "Create a focused Interview for the kind of work you need, send one link, and receive an implementation-ready Project Submission.",
       newInterview: "New Interview",
       completeSettings: "Complete Settings",
       loading: "Loading Interviews…",
       currentStep: (step: string) => `Current step: ${step}`,
       open: "Open",
       emptyTitle: "No Interviews yet",
-      emptyIntro: "Start with concise instructions for the website work you sell.",
+      emptyIntro: "Start with a template or concise instructions for the work you sell.",
       status: {
         not_started: "Not started",
         in_progress: "In progress",
@@ -142,11 +142,18 @@ export const creatorCopy = {
         submitted: "Submitted",
       },
       language: { en: "English", de: "German" },
+      kind: {
+        website: "Website discovery",
+        privacy: "Privacy data mapping",
+        custom: "Custom interview",
+      },
+      conceptsIncluded: "Visual Concepts included",
+      conceptsNotIncluded: "Visual Concepts not included",
     },
     templates: {
       title: "Templates",
       intro:
-        "Templates prefill Interview Instructions. Editing one never changes an existing Interview.",
+        "Templates copy an Interview Kind and Interview Instructions into a new Interview. Editing one never changes an existing Interview.",
       newPrivate: "New Private Template",
       builtInUnavailable: "Built-in templates are not available.",
       builtInTitle: "Built-in Interview Templates",
@@ -155,11 +162,19 @@ export const creatorCopy = {
       deleteLabel: "Delete template",
       deleteTitle: "Delete Private Interview Template?",
       deleteDescription: (name: string) =>
-        `${name} will be deleted immediately. Existing Interviews keep their instruction snapshot.`,
+        `${name} will be deleted immediately. Existing Interviews retain their full Interview Kind, Visual Concepts setting, and Interview Instructions snapshot.`,
       edit: (name: string) => `Edit ${name}`,
       delete: (name: string) => `Delete ${name}`,
       sourceLanguage: "Source language",
       language: { en: "English", de: "German" },
+      description: "When to use this template (optional)",
+      interviewKind: "Interview kind",
+      includeVisualConcepts: "Include Visual Concepts",
+      includeVisualConceptsHint:
+        "Website Interviews always include concepts. Privacy Interviews never do. Custom Interviews can choose.",
+      conceptsIncluded: "Visual Concepts included",
+      conceptsNotIncluded: "Visual Concepts not included",
+      conceptsOptional: "Visual Concepts optional",
       editPrivate: "Edit Private Interview Template",
       newPrivateForm: "New Private Interview Template",
       templateName: "Template name",
@@ -177,15 +192,18 @@ export const creatorCopy = {
       unavailable: "Interview unavailable",
       frozenTitle: "Interview configuration is frozen",
       frozenDescription:
-        "The first Client message fixed the project name, interview language, and Interview Instructions.",
+        "The first Client message fixed the project name, interview language, Interview Kind, Visual Concepts setting, and Interview Instructions.",
       projectName: "Project name",
       interviewLanguage: "Interview language",
       templateHint:
-        "A template prefills this field; it never governs the Interview after copying.",
+        "A template copies its Interview Kind, concrete Visual Concepts setting, and Interview Instructions into this Interview. Later template edits never change this Interview.",
       templateLabel: "Optional Interview Template",
       noTemplate: "No template",
       builtIn: "Built-in",
       private: "Private",
+      includeVisualConcepts: "Include Visual Concepts",
+      includeVisualConceptsHint:
+        "Website Interviews always include concepts. Privacy Interviews never do. Custom Interviews can choose.",
       instructions: "Interview Instructions",
       translating: "Translating Interview Instructions…",
       translateTo: (language: string) => `Translate to ${language}`,
@@ -262,7 +280,7 @@ export const creatorCopy = {
       deletePermanent: "Delete Interview permanently",
       confirmDelete: "Delete this Interview?",
       deleteDescription:
-        "Permanently deletes the Interview Link, Interview Transcript, Project Document, Visual Concepts, Project Submission, and temporary exports. Access stops immediately. This cannot be undone or restored.",
+        "Permanently deletes the Interview Link, Interview Transcript, Project Document, configured Visual Concepts when included, Project Submission, and temporary exports. Access stops immediately. This cannot be undone or restored.",
       language: { en: "English", de: "German" },
       unavailableConcept: "Unavailable",
       additionalNote: "Additional note",
@@ -288,7 +306,7 @@ export const creatorCopy = {
     billing: {
       title: "Interview Passes",
       intro:
-        "One pass pays for one complete Interview after the Client starts, including the conversation, document, revisions, Visual Concepts, submission, storage, and downloads.",
+        "One pass pays for one complete Interview after the Client starts, including the conversation, document, revisions, configured Visual Concepts when included, submission, storage, and downloads.",
       available: "Available passes",
       reserved: "Reserved passes",
       introductory: "Introductory passes",
@@ -459,14 +477,14 @@ export const creatorCopy = {
       workspace: "Creator-Arbeitsbereich",
       title: "Interviews",
       intro:
-        "Erstellen Sie ein fokussiertes Interview, versenden Sie einen Link und erhalten Sie eine umsetzungsbereite Projektübergabe.",
+        "Erstellen Sie ein fokussiertes Interview für die gewünschte Arbeit, versenden Sie einen Link und erhalten Sie eine umsetzungsbereite Projektübergabe.",
       newInterview: "Neues Interview",
       completeSettings: "Einstellungen vervollständigen",
       loading: "Interviews werden geladen…",
       currentStep: (step: string) => `Aktueller Schritt: ${step}`,
       open: "Öffnen",
       emptyTitle: "Noch keine Interviews",
-      emptyIntro: "Beginnen Sie mit präzisen Anweisungen für Ihre Website-Leistung.",
+      emptyIntro: "Beginnen Sie mit einer Vorlage oder präzisen Anweisungen für Ihre Leistung.",
       status: {
         not_started: "Nicht gestartet",
         in_progress: "In Bearbeitung",
@@ -482,11 +500,18 @@ export const creatorCopy = {
         submitted: "Übermittelt",
       },
       language: { en: "Englisch", de: "Deutsch" },
+      kind: {
+        website: "Website allgemein",
+        privacy: "Datenschutz-Datenmapping",
+        custom: "Individuelles Interview",
+      },
+      conceptsIncluded: "Visuelle Konzepte enthalten",
+      conceptsNotIncluded: "Visuelle Konzepte nicht enthalten",
     },
     templates: {
       title: "Vorlagen",
       intro:
-        "Vorlagen füllen die Interview Instructions vor. Änderungen an einer Vorlage wirken sich nie auf ein bestehendes Interview aus.",
+        "Vorlagen kopieren eine Interview-Art und Interview Instructions in ein neues Interview. Änderungen an einer Vorlage wirken sich nie auf ein bestehendes Interview aus.",
       newPrivate: "Neue private Vorlage",
       builtInUnavailable: "Integrierte Vorlagen sind nicht verfügbar.",
       builtInTitle: "Integrierte Interview-Vorlagen",
@@ -495,11 +520,19 @@ export const creatorCopy = {
       deleteLabel: "Vorlage löschen",
       deleteTitle: "Private Interview-Vorlage löschen?",
       deleteDescription: (name: string) =>
-        `${name} wird sofort gelöscht. Bestehende Interviews behalten ihre gespeicherten Anweisungen.`,
+        `${name} wird sofort gelöscht. Bestehende Interviews behalten ihre vollständige Interview-Art, die Einstellung für visuelle Konzepte und den gespeicherten Snapshot der Interview Instructions.`,
       edit: (name: string) => `${name} bearbeiten`,
       delete: (name: string) => `${name} löschen`,
       sourceLanguage: "Quellsprache",
       language: { en: "Englisch", de: "Deutsch" },
+      description: "Wann sollte diese Vorlage verwendet werden? (optional)",
+      interviewKind: "Interview-Art",
+      includeVisualConcepts: "Visuelle Konzepte einschließen",
+      includeVisualConceptsHint:
+        "Website-Interviews enthalten immer Konzepte. Datenschutz-Interviews enthalten keine. Bei individuellen Interviews ist die Wahl frei.",
+      conceptsIncluded: "Visuelle Konzepte enthalten",
+      conceptsNotIncluded: "Visuelle Konzepte nicht enthalten",
+      conceptsOptional: "Visuelle Konzepte optional",
       editPrivate: "Private Interview-Vorlage bearbeiten",
       newPrivateForm: "Neue private Interview-Vorlage",
       templateName: "Vorlagenname",
@@ -517,15 +550,18 @@ export const creatorCopy = {
       unavailable: "Interview nicht verfügbar",
       frozenTitle: "Interview-Konfiguration ist eingefroren",
       frozenDescription:
-        "Die erste Client-Nachricht hat Projektname, Interview-Sprache und Interviewanweisungen festgelegt.",
+        "Die erste Client-Nachricht hat Projektname, Interview-Sprache, Interview-Art, die Einstellung für visuelle Konzepte und die Interview Instructions festgelegt.",
       projectName: "Projektname",
       interviewLanguage: "Interview-Sprache",
       templateHint:
-        "Eine Vorlage füllt dieses Feld vor, steuert das Interview nach dem Kopieren aber nicht.",
+        "Eine Vorlage kopiert ihre Interview-Art, die konkrete Einstellung für visuelle Konzepte und die Interview Instructions in dieses Interview. Spätere Änderungen an der Vorlage wirken sich nie auf dieses Interview aus.",
       templateLabel: "Optionale Interview-Vorlage",
       noTemplate: "Keine Vorlage",
       builtIn: "Integriert",
       private: "Privat",
+      includeVisualConcepts: "Visuelle Konzepte einschließen",
+      includeVisualConceptsHint:
+        "Website-Interviews enthalten immer Konzepte. Datenschutz-Interviews enthalten keine. Bei individuellen Interviews ist die Wahl frei.",
       instructions: "Interview Instructions",
       translating: "Interview Instructions werden übersetzt…",
       translateTo: (language: string) => `Ins ${language} übersetzen`,
@@ -603,7 +639,7 @@ export const creatorCopy = {
       deletePermanent: "Interview endgültig löschen",
       confirmDelete: "Dieses Interview löschen?",
       deleteDescription:
-        "Interview-Link, Interview-Transkript, Projektdokument, visuelle Konzepte, Projektübergabe und temporäre Exporte werden endgültig gelöscht. Der Zugriff endet sofort. Dies kann weder rückgängig gemacht noch wiederhergestellt werden.",
+        "Interview-Link, Interview-Transkript, Projektdokument, konfigurierte visuelle Konzepte, wenn enthalten, Projektübergabe und temporäre Exporte werden endgültig gelöscht. Der Zugriff endet sofort. Dies kann weder rückgängig gemacht noch wiederhergestellt werden.",
       language: { en: "Englisch", de: "Deutsch" },
       unavailableConcept: "Nicht verfügbar",
       additionalNote: "Zusätzliche Notiz",
@@ -629,7 +665,7 @@ export const creatorCopy = {
     billing: {
       title: "Interview-Pässe",
       intro:
-        "Ein Pass bezahlt ein vollständiges Interview nach dem Start durch den Client – einschließlich Gespräch, Dokument, Überarbeitungen, visueller Konzepte, Übergabe, Speicherung und Downloads.",
+        "Ein Pass bezahlt ein vollständiges Interview nach dem Start durch den Client – einschließlich Gespräch, Dokument, Überarbeitungen, konfigurierten visuellen Konzepten, wenn diese enthalten sind, Übergabe, Speicherung und Downloads.",
       available: "Verfügbare Pässe",
       reserved: "Reservierte Pässe",
       introductory: "Einführungspässe",

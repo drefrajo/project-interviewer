@@ -6,6 +6,7 @@ import {
   interviewApi,
   interviewIdFrom,
   type ClientLanguage,
+  type InterviewKind,
 } from "../../infrastructure/interview-api";
 import {
   builtInInterviewTemplateForLanguage,
@@ -19,6 +20,12 @@ import {
   TextArea,
   TextInput,
 } from "../shared/form-controls";
+import {
+  InterviewTemplatePicker,
+  conceptsLabel,
+  resolveInterviewConfiguration,
+  type TemplateCardValue,
+} from "./interview-kind-picker";
 import { creatorCopy } from "./creator-copy";
 import { useCreatorLanguage } from "./creator-language";
 import { hasCompletePublicCreatorIdentity } from "./creator-profile-readiness";
@@ -51,6 +58,8 @@ export const InterviewForm = () => {
     useState<ClientLanguage>("en");
   const [instructions, setInstructions] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
+  const [interviewKind, setInterviewKind] = useState<InterviewKind>("custom");
+  const [includesVisualConcepts, setIncludesVisualConcepts] = useState(false);
   const [templateBaseline, setTemplateBaseline] = useState("");
   const [translating, setTranslating] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -64,6 +73,9 @@ export const InterviewForm = () => {
     setInterviewLanguage(interview.clientLanguage);
     setInstructions(interview.instructions);
     setTemplateBaseline(interview.instructions);
+    const configuration = resolveInterviewConfiguration(interview);
+    setInterviewKind(configuration.interviewKind);
+    setIncludesVisualConcepts(configuration.includesVisualConcepts);
   }, [editing, interview]);
 
   const selectedTemplate = useMemo(
@@ -79,6 +91,24 @@ export const InterviewForm = () => {
       ),
     [interviewLanguage, templates],
   );
+  const pickerTemplates = useMemo(
+    () =>
+      availableTemplates.map((template) => {
+        if (template.kind !== "built_in") return template;
+        const localized = builtInInterviewTemplateForLanguage(
+          template,
+          creatorLanguage,
+        );
+        return localized
+          ? {
+              ...template,
+              displayName: localized.name,
+              displayDescription: localized.description,
+            }
+          : template;
+      }) as unknown as TemplateCardValue[],
+    [availableTemplates, creatorLanguage],
+  );
   const editedSinceTemplate =
     Boolean(selectedTemplate) && instructions !== templateBaseline;
 
@@ -88,6 +118,7 @@ export const InterviewForm = () => {
       setSelectedTemplateId("");
       return;
     }
+    const configuration = resolveInterviewConfiguration(template);
     const next =
       builtInInterviewTemplateForLanguage(template, interviewLanguage)
         ?.instructions ?? template.instructions;
@@ -103,6 +134,8 @@ export const InterviewForm = () => {
     setSelectedTemplateId(templateId);
     setInstructions(next);
     setTemplateBaseline(next);
+    setInterviewKind(configuration.interviewKind);
+    setIncludesVisualConcepts(configuration.includesVisualConcepts);
     setTemplateNotice(
       text.form.copiedTemplate,
     );
@@ -123,9 +156,18 @@ export const InterviewForm = () => {
           language,
         );
         if (translatedTemplate) {
+          const translatedConfiguration = resolveInterviewConfiguration(
+            translatedTemplate,
+          );
           setSelectedTemplateId(translatedTemplate._id);
           setInstructions(translatedTemplate.instructions);
           setTemplateBaseline(translatedTemplate.instructions);
+          setInterviewKind(translatedConfiguration.interviewKind);
+          setIncludesVisualConcepts(
+            translatedConfiguration.interviewKind === "custom"
+              ? includesVisualConcepts
+              : translatedConfiguration.includesVisualConcepts,
+          );
           setTemplateNotice(
             text.form.builtInSwitched,
           );
@@ -181,6 +223,8 @@ export const InterviewForm = () => {
       projectName: projectName.trim(),
       clientLanguage: interviewLanguage,
       instructions: instructions.trim(),
+      interviewKind,
+      includesVisualConcepts,
     };
     try {
       if (interviewId) {
@@ -273,30 +317,46 @@ export const InterviewForm = () => {
             </Select>
           </Field>
         </div>
-          <Field
+        <InterviewTemplatePicker
           hint={text.form.templateHint}
-          label={text.form.templateLabel}
-        >
-          <Select
-            disabled={translating}
-            onChange={(event) => selectTemplate(event.target.value)}
-            value={selectedTemplateId}
-          >
-            <option value="">{text.form.noTemplate}</option>
-            {availableTemplates.map((template) => (
-              <option key={template._id} value={template._id}>
-                {template.kind === "built_in" ? text.form.builtIn : text.form.private} ·{" "}
-                {template.name} · {template.sourceLanguage.toUpperCase()}
-              </option>
-            ))}
-          </Select>
-        </Field>
+          language={creatorLanguage}
+          legend={text.form.templateLabel}
+          onSelect={selectTemplate}
+          disabled={translating}
+          selectedTemplateId={selectedTemplateId}
+          sourceLabels={{
+            builtIn: text.form.builtIn,
+            private: text.form.private,
+          }}
+          templates={pickerTemplates}
+        />
+        {interviewKind === "custom" ? (
+          <label className="flex items-start gap-3 rounded-box border border-line bg-panel p-4 text-sm">
+            <input
+              checked={includesVisualConcepts}
+              className="mt-1 size-4 accent-[var(--color-primary)]"
+              disabled={translating}
+              onChange={(event) => setIncludesVisualConcepts(event.target.checked)}
+              type="checkbox"
+            />
+            <span>
+              <strong className="block">{text.form.includeVisualConcepts}</strong>
+              <span className="mt-1 block leading-6 text-muted">
+                {text.form.includeVisualConceptsHint}
+              </span>
+            </span>
+          </label>
+        ) : (
+          <p className="text-sm font-bold text-primary">
+            {conceptsLabel(includesVisualConcepts, creatorLanguage)}
+          </p>
+        )}
         <Field
           hint={text.form.characters(instructions.length)}
           label={text.form.instructions}
         >
           <TextArea
-            className="min-h-80 font-sans text-base leading-7"
+            className="min-h-80 font-normal font-sans text-base leading-7"
             disabled={translating}
             maxLength={50_000}
             onChange={(event) => setInstructions(event.target.value)}
@@ -339,6 +399,8 @@ export const InterviewForm = () => {
                   name: name.trim(),
                   sourceLanguage: interviewLanguage,
                   instructions: instructions.trim(),
+                  interviewKind,
+                  includesVisualConcepts,
                 });
                 setTemplateNotice(text.form.templateSaved);
               }}

@@ -33,6 +33,7 @@ import {
   activityRetentionPatch,
   completedRetentionPatch,
 } from "./lib/retention";
+import { resolveInterviewConfiguration } from "./lib/interview_kind";
 
 const rateLimiter = new RateLimiter(rateLimiterComponent, {
   billableAi: {
@@ -115,6 +116,7 @@ export const getByLink = query({
     const access = await findByToken(ctx, args.token);
     if (!access) return null;
     const { interview } = access;
+    const interviewConfiguration = resolveInterviewConfiguration(interview);
     const creator = await ctx.db.get("creatorProfiles", interview.creatorId);
     if (!creator) throw new Error("Interview creator not found.");
     const publicCreator = publicCreatorIdentity(creator);
@@ -126,6 +128,7 @@ export const getByLink = query({
         creator: publicCreator,
         creatorIdentityReady: publicCreator !== null,
         clientLanguage: interview.clientLanguage,
+        ...interviewConfiguration,
         modelFamily: "GPT-5.6 Terra",
         temporaryConceptBatchRetriesEnabled:
           TEMPORARY_CONCEPT_BATCH_RETRIES_ENABLED,
@@ -302,6 +305,9 @@ export const continueToConcepts = mutation({
     ) {
       throw new Error("The Interview is not ready for Visual Concepts.");
     }
+    if (!resolveInterviewConfiguration(interview).includesVisualConcepts) {
+      throw new Error("This Interview does not include Visual Concepts.");
+    }
     if (interview.operation) {
       throw new Error("An Interview operation is already in progress.");
     }
@@ -335,6 +341,9 @@ export const requestMoreConcepts = mutation({
       !interview.projectDocument
     ) {
       throw new Error("The Interview is not ready for more Visual Concepts.");
+    }
+    if (!resolveInterviewConfiguration(interview).includesVisualConcepts) {
+      throw new Error("This Interview does not include Visual Concepts.");
     }
     if (
       interview.operation?.status === "pending" ||
@@ -385,6 +394,9 @@ export const retryAdditionalConcepts = mutation({
       !interview.projectDocument
     ) {
       throw new Error("The Interview is not ready to retry Visual Concepts.");
+    }
+    if (!resolveInterviewConfiguration(interview).includesVisualConcepts) {
+      throw new Error("This Interview does not include Visual Concepts.");
     }
     if (interview.concepts.length !== 6) {
       throw new Error("The second Visual Concept batch is not available.");
@@ -453,6 +465,9 @@ export const retryFirstConcepts = mutation({
     ) {
       throw new Error("The Interview is not ready to retry Visual Concepts.");
     }
+    if (!resolveInterviewConfiguration(interview).includesVisualConcepts) {
+      throw new Error("This Interview does not include Visual Concepts.");
+    }
     if (interview.concepts.length !== 6) {
       throw new Error("The second Visual Concept batch is not available.");
     }
@@ -500,6 +515,12 @@ export const retry = mutation({
       interview.operation.status !== "failed"
     ) {
       throw new Error("Interview has no failed operation to retry.");
+    }
+    if (
+      interview.operation.kind === "concept_generation" &&
+      !resolveInterviewConfiguration(interview).includesVisualConcepts
+    ) {
+      throw new Error("This Interview does not include Visual Concepts.");
     }
     await rateLimiter.limit(ctx, "billableAi", {
       key: linkHash,
@@ -591,6 +612,9 @@ export const setVisualDirection = mutation({
     if (interview.submission || interview.step !== "concepts") {
       throw new Error("Visual Direction is read-only.");
     }
+    if (!resolveInterviewConfiguration(interview).includesVisualConcepts) {
+      throw new Error("This Interview does not include Visual Concepts.");
+    }
     const direction = directionValue(args.direction, interview.concepts);
     await ctx.db.patch("interviews", interview._id, {
       visualDirection: direction,
@@ -610,32 +634,52 @@ export const submit = mutation({
     if (interview.submission) {
       return { created: false, submission: interview.submission };
     }
-    const expectedConceptCount = interview.concepts.length === 6 ? 6 : 3;
-    if (
-      interview.step !== "concepts" ||
-      !interview.projectDocument ||
-      interview.operation ||
-      interview.concepts.length !== expectedConceptCount ||
-      interview.concepts.some((concept) => concept.status !== "ready")
-    ) {
-      throw new Error("The Interview is not ready to submit.");
+    const { includesVisualConcepts } = resolveInterviewConfiguration(interview);
+    let direction: typeof interview.visualDirection;
+    if (!includesVisualConcepts) {
+      if (
+        interview.step !== "review" ||
+        !interview.projectDocument ||
+        interview.operation ||
+        interview.concepts.length > 0 ||
+        args.direction ||
+        interview.visualDirection
+      ) {
+        throw new Error("The Interview is not ready to submit.");
+      }
+      direction = undefined;
+    } else {
+      const expectedConceptCount = interview.concepts.length === 6 ? 6 : 3;
+      if (
+        interview.step !== "concepts" ||
+        !interview.projectDocument ||
+        interview.operation ||
+        interview.concepts.length !== expectedConceptCount ||
+        interview.concepts.some((concept) => concept.status !== "ready")
+      ) {
+        throw new Error("The Interview is not ready to submit.");
+      }
+      direction = args.direction
+        ? directionValue(args.direction, interview.concepts)
+        : interview.visualDirection;
+      if (!direction) {
+        throw new Error("Choose a Visual Direction before submitting.");
+      }
     }
-    const direction = args.direction
-      ? directionValue(args.direction, interview.concepts)
-      : interview.visualDirection;
-    if (!direction) throw new Error("Choose a Visual Direction before submitting.");
     const now = Date.now();
     const submission = {
       id: `submission_${crypto.randomUUID()}`,
       submittedAt: now,
       projectDocument: interview.projectDocument,
-      visualDirection: direction,
+      ...(direction ? { visualDirection: direction } : {}),
       emailDelivery: "pending" as const,
       emailAttempts: 0,
     };
     await ctx.db.patch("interviews", interview._id, {
       step: "submitted",
-      visualDirection: direction,
+      ...(direction
+        ? { visualDirection: direction }
+        : { visualDirection: undefined }),
       submission,
       operation: {
         kind: "email_notification",

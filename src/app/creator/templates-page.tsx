@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import {
   interviewApi,
   type ClientLanguage,
+  type InterviewKind,
   type PrivateInterviewTemplate,
 } from "../../infrastructure/interview-api";
 import {
@@ -21,6 +22,14 @@ import {
   TextInput,
 } from "../shared/form-controls";
 import { creatorCopy } from "./creator-copy";
+import {
+  InterviewKindPicker,
+  conceptsLabel,
+  fixedConceptSetting,
+  interviewKindLabel,
+  resolveInterviewConfiguration,
+  templateDescription,
+} from "./interview-kind-picker";
 import {
   type CreatorLanguage,
   useCreatorLanguage,
@@ -148,6 +157,14 @@ const TemplateGroup = <Template extends InterviewTemplate>({
                   {creatorCopy[language].templates.sourceLanguage}:{" "}
                   {creatorCopy[language].templates.language[template.sourceLanguage]}
                 </p>
+                <p className="mt-2 text-sm font-bold text-primary">
+                  {interviewKindLabel(template.interviewKind, language)} · {conceptsLabel(
+                    template.kind === "built_in" && template.interviewKind === "custom"
+                      ? undefined
+                      : template.includesVisualConcepts,
+                    language,
+                  )}
+                </p>
               </div>
               {onEdit && onDelete ? (
                 <div className="flex gap-1">
@@ -170,6 +187,9 @@ const TemplateGroup = <Template extends InterviewTemplate>({
                 </div>
               ) : null}
             </div>
+            <p className="mt-4 text-sm leading-6 text-muted">
+              {templateDescription(template, language)}
+            </p>
             <p className="mt-4 line-clamp-4 whitespace-pre-wrap text-sm leading-6 text-muted">
               {template.instructions}
             </p>
@@ -199,23 +219,41 @@ const TemplateForm = ({
     name: string;
     sourceLanguage: ClientLanguage;
     instructions: string;
+    interviewKind: InterviewKind;
+    includesVisualConcepts: boolean;
+    description?: string;
   }): Promise<void>;
 }) => {
   const text = creatorCopy[creatorLanguage];
   const [name, setName] = useState("");
   const [sourceLanguage, setSourceLanguage] = useState<ClientLanguage>("en");
   const [instructions, setInstructions] = useState("");
+  const [interviewKind, setInterviewKind] = useState<InterviewKind>("custom");
+  const [includesVisualConcepts, setIncludesVisualConcepts] = useState(false);
+  const [description, setDescription] = useState("");
   useEffect(() => {
     setName(template?.name ?? "");
     setSourceLanguage(template?.sourceLanguage ?? "en");
     setInstructions(template?.instructions ?? "");
+    const configuration = resolveInterviewConfiguration(template);
+    setInterviewKind(configuration.interviewKind);
+    setIncludesVisualConcepts(configuration.includesVisualConcepts);
+    setDescription(template?.description ?? "");
   }, [template]);
+  const changeInterviewKind = (nextKind: InterviewKind) => {
+    setInterviewKind(nextKind);
+    const fixed = fixedConceptSetting(nextKind);
+    setIncludesVisualConcepts(fixed ?? false);
+  };
   const submit = (event: FormEvent) => {
     event.preventDefault();
     void onSave({
       name: name.trim(),
       sourceLanguage,
       instructions: instructions.trim(),
+      interviewKind,
+      includesVisualConcepts,
+      ...(description.trim() ? { description: description.trim() } : {}),
     });
   };
   return (
@@ -244,9 +282,40 @@ const TemplateForm = ({
           </Select>
         </Field>
       </div>
+      <InterviewKindPicker
+        language={creatorLanguage}
+        legend={text.templates.interviewKind}
+        onChange={changeInterviewKind}
+        value={interviewKind}
+      >
+        {interviewKind === "custom" ? (
+          <label className="flex items-start gap-3 rounded-box border border-line bg-panel p-4 text-sm">
+            <input
+              checked={includesVisualConcepts}
+              className="mt-1 size-4 accent-[var(--color-primary)]"
+              onChange={(event) => setIncludesVisualConcepts(event.target.checked)}
+              type="checkbox"
+            />
+            <span>
+              <strong className="block">{text.templates.includeVisualConcepts}</strong>
+              <span className="mt-1 block leading-6 text-muted">
+                {text.templates.includeVisualConceptsHint}
+              </span>
+            </span>
+          </label>
+        ) : null}
+      </InterviewKindPicker>
+      <Field label={text.templates.description}>
+        <TextArea
+          maxLength={500}
+          onChange={(event) => setDescription(event.target.value)}
+          rows={3}
+          value={description}
+        />
+      </Field>
       <Field label={text.templates.instructions}>
         <TextArea
-          className="min-h-64"
+          className="min-h-64 font-normal"
           maxLength={50_000}
           onChange={(event) => setInstructions(event.target.value)}
           required
