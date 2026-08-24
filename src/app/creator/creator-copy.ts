@@ -83,6 +83,9 @@ export const creatorCopy = {
         privacyPolicyUrl: "Privacy-policy URL (optional)",
         privacyPolicyUrlHint:
           "Optional. Add a public HTTPS link if you want Clients to have it handy. You can add this later in Settings.",
+        improvement: "Help improve Interview (optional)",
+        improvementHint:
+          "Lets us analyze anonymized excerpts of your templates and Interview Instructions to make prompts and templates better. Used only for product improvement; Client answers are never analyzed.",
         save: "Save and continue",
         saving: "Saving…",
       },
@@ -247,6 +250,7 @@ export const creatorCopy = {
         "These are the instructions captured for this Interview. Copy them if you want to reuse or inspect them.",
       copyInstructions: "Copy instructions",
       regenerateLink: "Regenerate link",
+      moreActions: "More link actions",
       confirmRegenerate:
         "Regenerate this Interview Link? The current link will stop working immediately.",
       emailNotification: "Email notification",
@@ -261,11 +265,24 @@ export const creatorCopy = {
       handoffDescription:
         "The Interview Transcript remains secondary to the implementation direction.",
       exportEverything: "Export everything (ZIP)",
-      retentionTitle: "Data retention",
+      exportPending:
+        "Nothing to export yet. Exportable content appears as the Interview progresses.",
+      retentionSummary: (date: string) =>
+        `Data retention: permanent deletion on ${date}`,
       retentionDescription: (date: string) =>
         `This Interview is scheduled for permanent deletion on ${date}. Export everything you need before then; automatic deletion cannot be undone or restored.`,
       projectDocument: "Project Document",
       documentPending: "The Project Document will appear after the Interview is complete.",
+      documentFeedbackPrompt: "Was this Project Document helpful?",
+      feedbackHelpful: "Helpful",
+      feedbackNotHelpful: "Not helpful",
+      feedbackUp: "Yes",
+      feedbackDown: "Not really",
+      feedbackThanks: "Thanks — your feedback directly shapes prompt and template improvements.",
+      submissionFeedbackPrompt: "Did this Project Submission save you time?",
+      feedbackTitle: "Two quick questions",
+      feedbackNotePlaceholder: "What worked, what didn't? (optional)",
+      saveFeedbackNote: "Save note",
       visualConcepts: "Visual Concepts",
       generationFailed: "Generation failed",
       generating: "Generating…",
@@ -345,6 +362,9 @@ export const creatorCopy = {
       contactEmailHint: "Shown to Clients as the contact address for this Interview.",
       privacyPolicyUrl: "Creator privacy-policy URL (optional)",
       privacyPolicyUrlHint: "Optional. Clients can open this policy before starting and after submission when provided.",
+      improvement: "Help improve Interview",
+      improvementHint:
+        "Optional. Lets us analyze anonymized excerpts of your templates and Interview Instructions to make prompts and templates better. Used only for product improvement; Client answers are never analyzed.",
       emailHint: "Your OAuth sign-in email is private and is never shown to Clients automatically.",
       email: "Private OAuth sign-in email",
       language: "Language",
@@ -441,6 +461,9 @@ export const creatorCopy = {
         privacyPolicyUrl: "URL der Datenschutzerklärung (optional)",
         privacyPolicyUrlHint:
           "Optional. Hinterlegen Sie einen öffentlichen HTTPS-Link, wenn Clients ihn griffbereit haben sollen. Sie können ihn später in den Einstellungen ergänzen.",
+        improvement: "Interview verbessern helfen (optional)",
+        improvementHint:
+          "Ermöglicht uns die Auswertung anonymisierter Auszüge Ihrer Vorlagen und Interview Instructions, um Prompts und Vorlagen zu verbessern. Ausschließlich zur Produktverbesserung; Antworten von Clients werden nie ausgewertet.",
         save: "Speichern und fortfahren",
         saving: "Wird gespeichert…",
       },
@@ -606,6 +629,7 @@ export const creatorCopy = {
         "Diese Anweisungen wurden für dieses Interview gespeichert. Kopieren Sie sie, wenn Sie sie wiederverwenden oder prüfen möchten.",
       copyInstructions: "Anweisungen kopieren",
       regenerateLink: "Link erneuern",
+      moreActions: "Weitere Link-Aktionen",
       confirmRegenerate:
         "Diesen Interview-Link erneuern? Der aktuelle Link funktioniert danach sofort nicht mehr.",
       emailNotification: "E-Mail-Benachrichtigung",
@@ -620,11 +644,24 @@ export const creatorCopy = {
       handoffDescription:
         "Das Interview-Transkript bleibt gegenüber der Umsetzungsrichtung nachgeordnet.",
       exportEverything: "Alles exportieren (ZIP)",
-      retentionTitle: "Datenaufbewahrung",
+      exportPending:
+        "Noch nichts zu exportieren. Exportierbare Inhalte entstehen, während das Interview läuft.",
+      retentionSummary: (date: string) =>
+        `Datenaufbewahrung: endgültige Löschung am ${date}`,
       retentionDescription: (date: string) =>
         `Dieses Interview wird planmäßig am ${date} endgültig gelöscht. Exportieren Sie vorher alles, was Sie benötigen; die automatische Löschung kann weder rückgängig gemacht noch wiederhergestellt werden.`,
       projectDocument: "Projektdokument",
       documentPending: "Das Projektdokument erscheint nach Abschluss des Interviews.",
+      documentFeedbackPrompt: "War dieses Projektdokument hilfreich?",
+      feedbackHelpful: "Hilfreich",
+      feedbackNotHelpful: "Nicht hilfreich",
+      feedbackUp: "Ja",
+      feedbackDown: "Eher nicht",
+      feedbackThanks: "Danke – Ihr Feedback fließt direkt in Verbesserungen von Prompts und Vorlagen ein.",
+      submissionFeedbackPrompt: "Hat Ihnen diese Projektübergabe Zeit gespart?",
+      feedbackTitle: "Zwei kurze Fragen",
+      feedbackNotePlaceholder: "Was hat funktioniert, was nicht? (optional)",
+      saveFeedbackNote: "Notiz speichern",
       visualConcepts: "Visuelle Konzepte",
       generationFailed: "Erstellung fehlgeschlagen",
       generating: "Wird erstellt…",
@@ -704,6 +741,9 @@ export const creatorCopy = {
       contactEmailHint: "Wird Clients als Kontaktadresse für dieses Interview angezeigt.",
       privacyPolicyUrl: "URL der Datenschutzerklärung des Creators (optional)",
       privacyPolicyUrlHint: "Optional. Clients können diese Erklärung öffnen, wenn Sie eine URL hinterlegen.",
+      improvement: "Interview verbessern helfen",
+      improvementHint:
+        "Optional. Ermöglicht uns die Auswertung anonymisierter Auszüge Ihrer Vorlagen und Interview Instructions, um Prompts und Vorlagen zu verbessern. Ausschließlich zur Produktverbesserung; Antworten von Clients werden nie ausgewertet.",
       emailHint: "Ihre OAuth-Anmelde-E-Mail bleibt privat und wird Clients nicht automatisch angezeigt.",
       email: "Private OAuth-Anmelde-E-Mail",
       language: "Sprache",

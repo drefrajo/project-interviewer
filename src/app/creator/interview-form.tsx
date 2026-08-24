@@ -233,7 +233,12 @@ export const InterviewForm = () => {
         trackEvent("interview_updated");
         navigate(`/interviews/${interviewId}`);
       } else {
-        const created = await createInterview(input);
+        const created = await createInterview({
+          ...input,
+          ...(selectedTemplate?.kind === "built_in"
+            ? { builtInTemplateKey: selectedTemplate.builtInKey }
+            : {}),
+        });
         trackEvent("interview_created");
         navigate(`/interviews/${interviewIdFrom(created)}`);
       }

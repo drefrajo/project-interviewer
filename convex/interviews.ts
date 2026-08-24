@@ -25,6 +25,7 @@ import {
 } from "./lib/pass_accounting";
 import { clientLanguage, interviewKind } from "./schema";
 import { resolveInterviewConfiguration } from "./lib/interview_kind";
+import { PROMPT_VERSION } from "./lib/interview_prompts";
 import { internalRefs } from "./internal_refs";
 import { requirePublicCreatorIdentity } from "./lib/creator_identity";
 import { deleteInterviewData } from "./lib/delete_interview";
@@ -110,6 +111,7 @@ export const create = mutation({
     instructions: v.string(),
     interviewKind: v.optional(interviewKind),
     includesVisualConcepts: v.optional(v.boolean()),
+    builtInTemplateKey: v.optional(v.string()),
   },
   returns: v.object({
     interviewId: v.id("interviews"),
@@ -150,6 +152,16 @@ export const create = mutation({
       ...configuration,
       model: "gpt-5.6-terra",
       instructions,
+      ...(args.builtInTemplateKey?.trim()
+        ? {
+            builtInTemplateKey: assertLength(
+              "Built-in template key",
+              args.builtInTemplateKey.trim(),
+              40,
+            ),
+          }
+        : {}),
+      promptVersion: PROMPT_VERSION,
       passState: "unreserved",
       createdAt: now,
       updatedAt: now,

@@ -116,6 +116,7 @@ describe("Creator onboarding", () => {
         displayName: "Creator",
         contactEmail: "creator@example.com",
         language: "en",
+        contentAnalysisOptIn: false,
       }),
     );
     expect(

@@ -20,6 +20,7 @@ export const SettingsPage = () => {
   const [displayName, setDisplayName] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [privacyPolicyUrl, setPrivacyPolicyUrl] = useState("");
+  const [contentAnalysisOptIn, setContentAnalysisOptIn] = useState(false);
   const [selectedLanguage, setSelectedLanguage] =
     useState<CreatorLanguage>(language);
   const [status, setStatus] = useState("");
@@ -29,6 +30,7 @@ export const SettingsPage = () => {
       setDisplayName(profile.displayName);
       setContactEmail(profile.contactEmail ?? "");
       setPrivacyPolicyUrl(profile.privacyPolicyUrl ?? "");
+      setContentAnalysisOptIn(profile.contentAnalysisOptIn ?? false);
       const profileLanguage = profile.language ?? "en";
       setSelectedLanguage(profileLanguage);
       setCreatorLanguage(profileLanguage);
@@ -44,6 +46,7 @@ export const SettingsPage = () => {
         displayName: displayName.trim(),
         contactEmail: contactEmail.trim(),
         language: selectedLanguage,
+        contentAnalysisOptIn,
         ...(privacyPolicyUrl.trim()
           ? { privacyPolicyUrl: privacyPolicyUrl.trim() }
           : {}),
@@ -123,6 +126,20 @@ export const SettingsPage = () => {
               <option value="de">{text.settings.languageOptions.de}</option>
             </Select>
           </Field>
+          <label className="flex items-start gap-3 rounded-box border border-line bg-soft p-4 text-sm">
+            <input
+              checked={contentAnalysisOptIn}
+              className="mt-1 size-4 accent-[var(--color-primary)]"
+              onChange={(event) => setContentAnalysisOptIn(event.target.checked)}
+              type="checkbox"
+            />
+            <span>
+              <strong className="block">{text.settings.improvement}</strong>
+              <span className="mt-1 block leading-6 text-muted">
+                {text.settings.improvementHint}
+              </span>
+            </span>
+          </label>
           <div className="flex items-center gap-4">
             <button
               className={primaryButton}

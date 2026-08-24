@@ -35,6 +35,24 @@ export const deleteInterviewData = async (
     await ctx.db.delete("exportArchives", archive._id);
   }
 
+  const feedback = await ctx.db
+    .query("interviewFeedback")
+    .withIndex("by_interviewId_and_target", (q) =>
+      q.eq("interviewId", interview._id),
+    )
+    .take(4);
+  for (const row of feedback) {
+    await ctx.db.delete("interviewFeedback", row._id);
+  }
+
+  const revisions = await ctx.db
+    .query("documentRevisions")
+    .withIndex("by_interviewId", (q) => q.eq("interviewId", interview._id))
+    .take(100);
+  for (const row of revisions) {
+    await ctx.db.delete("documentRevisions", row._id);
+  }
+
   await ctx.runMutation(agentComponent.threads.deleteAllForThreadIdAsync, {
     threadId: interview.agentThreadId,
   });

@@ -6,6 +6,7 @@ import { primaryButton, textLink } from "../shared/form-controls";
 import { creatorCopy } from "./creator-copy";
 import { useCreatorLanguage } from "./creator-language";
 import { hasCompletePublicCreatorIdentity } from "./creator-profile-readiness";
+import { InterviewStatusBadge } from "./interview-status-badge";
 import {
   conceptsLabel,
   interviewKindLabel,
@@ -52,22 +53,6 @@ export const InterviewsPage = () => {
         <section className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {interviews.map((interview) => {
             const configuration = resolveInterviewConfiguration(interview);
-            const needsReservation =
-              interview.status === "not_started" &&
-              interview.passState === "unreserved";
-            const statusLabel = needsReservation
-              ? text.interviews.reservationRequired
-              : interview.status === "not_started"
-                ? text.interviews.ready
-                : text.interviews.status[interview.status];
-            const statusBadgeClass =
-              needsReservation || interview.status === "needs_attention"
-                ? "bg-error-surface text-error-text"
-                : interview.status === "not_started"
-                  ? "bg-soft text-muted"
-                  : interview.status === "in_progress"
-                    ? "bg-forest text-white dark:bg-forest-strong"
-                    : "bg-lime text-forest dark:text-forest-strong";
             return (
               <Link
                 className="group flex min-h-56 flex-col rounded-box border border-line bg-panel p-5 text-ink no-underline transition hover:-translate-y-0.5 hover:shadow-lg"
@@ -75,11 +60,11 @@ export const InterviewsPage = () => {
                 to={`/interviews/${interview._id}`}
               >
                 <div className="flex items-start justify-between gap-3">
-                  <span
-                    className={`rounded-full px-2.5 py-1 text-xs font-extrabold ${statusBadgeClass}`}
-                  >
-                    {statusLabel}
-                  </span>
+                  <InterviewStatusBadge
+                    language={language}
+                    passState={interview.passState}
+                    status={interview.status}
+                  />
                   {interview.updatedAt ? (
                     <time className="text-xs text-muted">
                       {new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en", {

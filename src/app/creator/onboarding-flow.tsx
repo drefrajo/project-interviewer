@@ -61,6 +61,8 @@ type OnboardingCopy = {
     contactEmailHint(email: string): string;
     privacyPolicyUrl: string;
     privacyPolicyUrlHint: string;
+    improvement: string;
+    improvementHint: string;
     save: string;
     saving: string;
   };
@@ -108,6 +110,7 @@ export const CreatorOnboarding = ({
   const [privacyPolicyUrl, setPrivacyPolicyUrl] = useState(
     profile.privacyPolicyUrl ?? "",
   );
+  const [contentAnalysisOptIn, setContentAnalysisOptIn] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -150,6 +153,7 @@ export const CreatorOnboarding = ({
         displayName: displayName.trim(),
         contactEmail: contactEmail.trim(),
         language,
+        contentAnalysisOptIn,
         ...(privacyPolicyUrl.trim()
           ? { privacyPolicyUrl: privacyPolicyUrl.trim() }
           : {}),
@@ -196,9 +200,11 @@ export const CreatorOnboarding = ({
             <ProfileScreen
               busy={busy}
               contactEmail={contactEmail}
+              contentAnalysisOptIn={contentAnalysisOptIn}
               displayName={displayName}
               onBack={goBack}
               onContactEmailChange={setContactEmail}
+              onContentAnalysisOptInChange={setContentAnalysisOptIn}
               onDisplayNameChange={setDisplayName}
               onPrivacyPolicyUrlChange={setPrivacyPolicyUrl}
               onSubmit={submitProfile}
@@ -384,9 +390,11 @@ const LegalDocumentCard = ({
 const ProfileScreen = ({
   busy,
   contactEmail,
+  contentAnalysisOptIn,
   displayName,
   onBack,
   onContactEmailChange,
+  onContentAnalysisOptInChange,
   onDisplayNameChange,
   onPrivacyPolicyUrlChange,
   onSubmit,
@@ -396,9 +404,11 @@ const ProfileScreen = ({
 }: {
   busy: boolean;
   contactEmail: string;
+  contentAnalysisOptIn: boolean;
   displayName: string;
   onBack(): void;
   onContactEmailChange(value: string): void;
+  onContentAnalysisOptInChange(checked: boolean): void;
   onDisplayNameChange(value: string): void;
   onPrivacyPolicyUrlChange(value: string): void;
   onSubmit(event: FormEvent<HTMLFormElement>): void;
@@ -444,6 +454,22 @@ const ProfileScreen = ({
           value={privacyPolicyUrl}
         />
       </Field>
+      <label className="flex items-start gap-3 rounded-box border border-line bg-panel p-4 text-sm">
+        <input
+          checked={contentAnalysisOptIn}
+          className="mt-1 size-4 accent-primary"
+          onChange={(event) =>
+            onContentAnalysisOptInChange(event.target.checked)
+          }
+          type="checkbox"
+        />
+        <span>
+          <strong className="block">{text.profile.improvement}</strong>
+          <span className="mt-1 block leading-6 text-muted">
+            {text.profile.improvementHint}
+          </span>
+        </span>
+      </label>
       <OnboardingActions>
         <button className={secondaryButton} onClick={onBack} type="button">
           <ArrowLeft aria-hidden="true" size={17} />

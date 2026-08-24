@@ -1,6 +1,11 @@
 import type { ProviderMessage } from "./provider_requests";
 import type { InterviewKind } from "./interview_kind";
 
+// Bump whenever any prompt text below changes; stored on Interviews and copied
+// into feedback entries so quality signals stay attributable to the exact
+// policy generation that produced the reviewed output.
+export const PROMPT_VERSION = 1;
+
 type ExistingConcept = Readonly<{
   name: string;
   rationale: string;

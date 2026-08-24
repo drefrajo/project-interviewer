@@ -21,6 +21,7 @@ import {
   buildVisualConceptImagePrompt,
 } from "./lib/interview_prompts";
 import { resolveInterviewTurn } from "./lib/interview_turn";
+import { PROMPT_VERSION } from "./lib/interview_prompts";
 import {
   buildCloudflareEmailRequest,
   buildOpenRouterImageRequest,
@@ -179,6 +180,7 @@ export const completeText = internalMutation({
             }
           : {}),
       operation: undefined,
+      promptVersion: PROMPT_VERSION,
       usage: usagePatch(interview.usage, {
         prompt_tokens: args.inputTokens,
         completion_tokens: args.outputTokens,
@@ -268,6 +270,7 @@ export const completeConcepts = internalMutation({
     }
     await ctx.db.patch("interviews", interview._id, {
       concepts: args.concepts,
+      promptVersion: PROMPT_VERSION,
       operation: args.hasFailure
         ? {
             ...interview.operation,
