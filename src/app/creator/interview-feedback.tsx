@@ -105,7 +105,7 @@ export const DocumentFeedback = ({
         value={value}
       />
       {value ? (
-        <p className="m-0 text-sm font-bold text-forest" role="status">
+        <p className="m-0 text-sm font-bold text-muted" role="status">
           {text.detail.feedbackThanks}
         </p>
       ) : null}
@@ -187,7 +187,7 @@ export const SubmissionFeedback = ({
           </button>
         </span>
         {value ? (
-          <p className="m-0 text-sm font-bold text-forest" role="status">
+          <p className="m-0 text-sm font-bold text-muted" role="status">
             {text.detail.feedbackThanks}
           </p>
         ) : null}

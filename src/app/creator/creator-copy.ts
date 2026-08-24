@@ -250,6 +250,7 @@ export const creatorCopy = {
         "These are the instructions captured for this Interview. Copy them if you want to reuse or inspect them.",
       copyInstructions: "Copy instructions",
       regenerateLink: "Regenerate link",
+      moreActions: "More link actions",
       confirmRegenerate:
         "Regenerate this Interview Link? The current link will stop working immediately.",
       emailNotification: "Email notification",
@@ -264,7 +265,10 @@ export const creatorCopy = {
       handoffDescription:
         "The Interview Transcript remains secondary to the implementation direction.",
       exportEverything: "Export everything (ZIP)",
-      retentionTitle: "Data retention",
+      exportPending:
+        "Nothing to export yet. Exportable content appears as the Interview progresses.",
+      retentionSummary: (date: string) =>
+        `Data retention: permanent deletion on ${date}`,
       retentionDescription: (date: string) =>
         `This Interview is scheduled for permanent deletion on ${date}. Export everything you need before then; automatic deletion cannot be undone or restored.`,
       projectDocument: "Project Document",
@@ -625,6 +629,7 @@ export const creatorCopy = {
         "Diese Anweisungen wurden für dieses Interview gespeichert. Kopieren Sie sie, wenn Sie sie wiederverwenden oder prüfen möchten.",
       copyInstructions: "Anweisungen kopieren",
       regenerateLink: "Link erneuern",
+      moreActions: "Weitere Link-Aktionen",
       confirmRegenerate:
         "Diesen Interview-Link erneuern? Der aktuelle Link funktioniert danach sofort nicht mehr.",
       emailNotification: "E-Mail-Benachrichtigung",
@@ -639,7 +644,10 @@ export const creatorCopy = {
       handoffDescription:
         "Das Interview-Transkript bleibt gegenüber der Umsetzungsrichtung nachgeordnet.",
       exportEverything: "Alles exportieren (ZIP)",
-      retentionTitle: "Datenaufbewahrung",
+      exportPending:
+        "Noch nichts zu exportieren. Exportierbare Inhalte entstehen, während das Interview läuft.",
+      retentionSummary: (date: string) =>
+        `Datenaufbewahrung: endgültige Löschung am ${date}`,
       retentionDescription: (date: string) =>
         `Dieses Interview wird planmäßig am ${date} endgültig gelöscht. Exportieren Sie vorher alles, was Sie benötigen; die automatische Löschung kann weder rückgängig gemacht noch wiederhergestellt werden.`,
       projectDocument: "Projektdokument",
