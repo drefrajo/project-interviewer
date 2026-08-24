@@ -2,6 +2,7 @@ import { useAction, useQuery } from "convex/react";
 import { CreditCard } from "lucide-react";
 import { useState } from "react";
 import { interviewApi, type PassCatalogItem } from "../../infrastructure/interview-api";
+import { trackEvent } from "../../infrastructure/analytics";
 import { primaryButton } from "../shared/form-controls";
 import { creatorCopy } from "./creator-copy";
 import { useCreatorLanguage } from "./creator-language";
@@ -43,6 +44,7 @@ export const PassPackages = () => {
     if (busyPack) return;
     setBusyPack(packId);
     setError("");
+    trackEvent("passes_checkout_started", { pack: packId });
     try {
       const result = await createCheckout({ packId });
       window.location.assign(result.url);

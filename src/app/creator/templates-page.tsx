@@ -12,6 +12,7 @@ import {
   privateInterviewTemplates,
   type InterviewTemplate,
 } from "../../domain/interview-templates";
+import { trackEvent } from "../../infrastructure/analytics";
 import { ConfirmDialog } from "../shared/confirm-dialog";
 import {
   Field,
@@ -55,6 +56,7 @@ export const TemplatesPage = () => {
     setBusy(true);
     try {
       await remove({ templateId: deleting._id });
+      trackEvent("template_deleted");
       setDeleting(null);
     } finally {
       setBusy(false);
@@ -87,8 +89,10 @@ export const TemplatesPage = () => {
             try {
               if (editing === "new") {
                 await create(input);
+                trackEvent("template_created");
               } else {
                 await update({ templateId: editing._id, ...input });
+                trackEvent("template_updated");
               }
               setEditing(null);
             } finally {

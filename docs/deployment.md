@@ -140,6 +140,32 @@ production Vite build mode so its emitted CSP contains exact development
 origins; its deployment target still comes from the development environment
 variables and Wrangler environment.
 
+## Analytics
+
+The hosted frontends use a self-hosted Umami instance at `data.drefrajo.dev` for
+privacy-friendly analytics. `src/infrastructure/analytics.ts` injects the
+tracker script only in the hosted environments; local development never loads
+it. The same Umami website (`4eae153d-6e6b-4d01-bbc6-482422a8fa89`) receives
+traffic from both hosted environments, and Umami records the `hostname` with
+every event, so development and production traffic is separated by subdomain
+(use the domain filter in the dashboard to split them).
+
+The tracker is installed with `data-exclude-search="true"` (query strings are
+never stored, including OAuth codes and one-time tokens) and
+`data-do-not-track="true"` (visitors with Do Not Track enabled are not
+tracked). Umami sets no cookies. The integration sends no personal data:
+pageviews carry only path, hostname, title, language, referrer, and screen
+size, and custom events are fixed interaction names without user input. All
+event names live in `src/infrastructure/analytics.ts`.
+
+The CSP in `public/_headers` allows the analytics origin:
+
+- `script-src`: `https://data.drefrajo.dev` for the tracker script
+- `connect-src`: `https://data.drefrajo.dev` for the tracking requests
+
+IP handling (masking) is configured on the Umami server, not in this
+repository.
+
 ## Data migrations
 
 Convex function and schema deployment is automatic. Application data migration

@@ -12,6 +12,7 @@ import {
   builtInInterviewTemplateForLanguage,
   interviewTemplates,
 } from "../../domain/interview-templates";
+import { trackEvent } from "../../infrastructure/analytics";
 import {
   Field,
   primaryButton,
@@ -229,9 +230,11 @@ export const InterviewForm = () => {
     try {
       if (interviewId) {
         await updateInterview({ interviewId, ...input });
+        trackEvent("interview_updated");
         navigate(`/interviews/${interviewId}`);
       } else {
         const created = await createInterview(input);
+        trackEvent("interview_created");
         navigate(`/interviews/${interviewIdFrom(created)}`);
       }
     } catch (cause) {

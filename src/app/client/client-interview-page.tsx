@@ -6,6 +6,7 @@ import {
   type InterviewStep,
   type VisualDirection,
 } from "../../infrastructure/interview-api";
+import { trackEvent } from "../../infrastructure/analytics";
 import { OperationFeedback } from "../shared/operation-feedback";
 import { BrandMark } from "../shared/brand-mark";
 import { LegalFooter } from "../shared/legal-footer";
@@ -236,6 +237,7 @@ export const ClientInterviewPage = () => {
               void perform(async () => {
                 await start({ token: interviewToken });
                 setEntered(true);
+                trackEvent("interview_started");
               })
             }
             pending={pending}
@@ -262,8 +264,12 @@ export const ClientInterviewPage = () => {
             onContinue={() =>
               void perform(() =>
                 includesVisualConcepts
-                  ? continueToConcepts({ token: interviewToken })
-                  : submit({ token: interviewToken }),
+                  ? continueToConcepts({ token: interviewToken }).then(() => {
+                      trackEvent("interview_document_approved");
+                    })
+                  : submit({ token: interviewToken }).then(() => {
+                      trackEvent("interview_submitted");
+                    }),
               )
             }
             onRequestChanges={(changes) =>
@@ -295,6 +301,7 @@ export const ClientInterviewPage = () => {
             onSubmit={(direction: VisualDirection) =>
               perform(async () => {
                 await submit({ token: interviewToken, direction });
+                trackEvent("interview_submitted");
               }).then(() => undefined)
             }
             pending={pending}

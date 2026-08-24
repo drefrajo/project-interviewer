@@ -5,6 +5,7 @@ import {
   type CreatorProfile,
 } from "../../infrastructure/interview-api";
 import type { ProductionAuthClient } from "../../infrastructure/auth-client";
+import { trackEvent } from "../../infrastructure/analytics";
 import { secondaryButton } from "../shared/form-controls";
 import { BrandMark } from "../shared/brand-mark";
 import { LegalFooter, privacyPolicyHrefs } from "../shared/legal-footer";
@@ -112,6 +113,7 @@ const AuthenticatedCreatorAuthGate = ({
   }, [session.data]);
 
   const signIn = (provider: OAuthProviderId) => {
+    trackEvent("creator_signin_attempted", { provider });
     const callbackURL = new URL(window.location.href);
     callbackURL.searchParams.delete("auth_provider");
     callbackURL.searchParams.delete("error");

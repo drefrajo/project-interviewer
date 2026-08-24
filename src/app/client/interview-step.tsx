@@ -9,6 +9,7 @@ import type {
   ClientLanguage,
   TranscriptMessage,
 } from "../../infrastructure/interview-api";
+import { trackEvent } from "../../infrastructure/analytics";
 import { primaryButton, softButton, TextArea } from "../shared/form-controls";
 import { SafeMarkdown } from "../shared/safe-markdown";
 import { CLIENT_COPY } from "./client-copy";
@@ -177,7 +178,10 @@ export const InterviewStepView = ({
     event.preventDefault();
     const content = draft.trim();
     if (!content || pending) return;
-    if (await onSend(content)) setDraft("");
+    if (await onSend(content)) {
+      setDraft("");
+      trackEvent("interview_message_sent");
+    }
   };
 
   const suggestedReplies =

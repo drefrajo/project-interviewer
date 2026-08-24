@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState, type FormEvent } from "react";
 import { interviewApi } from "../../infrastructure/interview-api";
+import { trackEvent } from "../../infrastructure/analytics";
 import { Field, primaryButton, Select, TextInput } from "../shared/form-controls";
 import { creatorCopy } from "./creator-copy";
 import {
@@ -49,6 +50,7 @@ export const SettingsPage = () => {
       });
       setCreatorLanguage(selectedLanguage);
       setStatus(creatorCopy[selectedLanguage].settings.saved);
+      trackEvent("settings_updated");
     } catch (cause) {
       setStatus(cause instanceof Error ? cause.message : String(cause));
     } finally {
