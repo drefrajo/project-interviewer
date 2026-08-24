@@ -1,5 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { installAnalytics } from "./infrastructure/analytics";
 import {
   isLocalConvexSiteUrl,
   readApplicationEnvironment,
@@ -14,6 +15,7 @@ import "./styles.css";
 
 const rootElement = document.getElementById("root");
 const environment = readApplicationEnvironment(import.meta.env);
+installAnalytics(environment.mode);
 const runtime = createHostedRuntime({
   ...environment.public,
   deploymentMode: environment.mode,

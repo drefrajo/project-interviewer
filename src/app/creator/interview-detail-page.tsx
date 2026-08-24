@@ -22,6 +22,7 @@ import {
 import { OperationFeedback } from "../shared/operation-feedback";
 import { ImageLightbox } from "../shared/image-lightbox";
 import { SafeMarkdown } from "../shared/safe-markdown";
+import { trackEvent } from "../../infrastructure/analytics";
 import { VisualDirectionSummary } from "../shared/visual-direction-summary";
 import { creatorCopy } from "./creator-copy";
 import { useCreatorLanguage } from "./creator-language";
@@ -245,6 +246,7 @@ export const InterviewDetailPage = () => {
             onClick={async () => {
               await navigator.clipboard.writeText(interviewUrl);
               setCopied(true);
+              trackEvent("interview_link_copied");
             }}
             type="button"
           >
@@ -265,6 +267,7 @@ export const InterviewDetailPage = () => {
                 const result = await rotate({ interviewId });
                 setRotatedUrl(linkFrom(result) ?? "");
                 setCopied(false);
+                trackEvent("interview_link_regenerated");
               })
             }
             type="button"
@@ -358,6 +361,7 @@ export const InterviewDetailPage = () => {
                 anchor.href = manifest.url;
                 anchor.download = manifest.filename;
                 anchor.click();
+                trackEvent("interview_exported");
               })
             }
             type="button"
@@ -459,6 +463,7 @@ export const InterviewDetailPage = () => {
               confirmation: interview.projectName,
             });
             navigate("/interviews");
+            trackEvent("interview_deleted");
           })
         }
         open={confirmDelete}
@@ -482,6 +487,7 @@ export const InterviewDetailPage = () => {
               setCopied(true);
             }
             setConfirmReservation(false);
+            trackEvent("interview_reserved");
           })
         }
         open={confirmReservation}
@@ -503,6 +509,7 @@ export const InterviewDetailPage = () => {
             setRotatedUrl("");
             setCopied(false);
             setConfirmDeactivation(false);
+            trackEvent("interview_deactivated");
           })
         }
         open={confirmDeactivation}

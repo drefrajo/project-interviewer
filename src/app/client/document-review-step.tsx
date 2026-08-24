@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import type { ClientLanguage } from "../../infrastructure/interview-api";
+import { trackEvent } from "../../infrastructure/analytics";
 import { ConfirmDialog } from "../shared/confirm-dialog";
 import { primaryButton, secondaryButton, TextArea } from "../shared/form-controls";
 import { SafeMarkdown } from "../shared/safe-markdown";
@@ -55,7 +56,10 @@ export const DocumentReviewStep = ({
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (!changes.trim()) return;
-    if (await onRequestChanges(changes.trim())) setChanges("");
+    if (await onRequestChanges(changes.trim())) {
+      setChanges("");
+      trackEvent("interview_changes_requested");
+    }
   };
   return (
     <section className="mx-auto w-full max-w-4xl">
