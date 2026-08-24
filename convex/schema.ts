@@ -327,6 +327,16 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_interviewId_and_target", ["interviewId", "target"]),
 
+  // Persisted Client change requests from Document Review. The transient
+  // operation input is cleared once a revision completes; this row keeps the
+  // quality signal until the Interview is deleted.
+  documentRevisions: defineTable({
+    interviewId: v.id("interviews"),
+    requestedChanges: v.string(),
+    promptVersion: v.optional(v.number()),
+    createdAt: v.number(),
+  }).index("by_interviewId", ["interviewId"]),
+
   passAccounts: defineTable({
     creatorId: v.id("creatorProfiles"),
     balance: v.number(),

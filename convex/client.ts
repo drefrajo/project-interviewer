@@ -277,6 +277,14 @@ export const requestDocumentChanges = mutation({
       args.changes,
       MAX_CLIENT_MESSAGE_LENGTH,
     );
+    await ctx.db.insert("documentRevisions", {
+      interviewId: interview._id,
+      requestedChanges: changes,
+      ...(interview.promptVersion === undefined
+        ? {}
+        : { promptVersion: interview.promptVersion }),
+      createdAt: Date.now(),
+    });
     await ctx.db.patch("interviews", interview._id, {
       documentRevisionCount: interview.documentRevisionCount + 1,
       operation: {
