@@ -9,6 +9,7 @@ import type * as client from "./client";
 import type * as creatorProfiles from "./creator_profiles";
 import type * as downloads from "./downloads";
 import type * as downloadsData from "./downloads_data";
+import type * as feedback from "./feedback";
 import type * as interviews from "./interviews";
 import type * as jobs from "./jobs";
 import type * as legal from "./legal";
@@ -22,6 +23,7 @@ type FullApi = ApiFromModules<{
   "creator_profiles": typeof creatorProfiles;
   downloads: typeof downloads;
   "downloads_data": typeof downloadsData;
+  feedback: typeof feedback;
   interviews: typeof interviews;
   jobs: typeof jobs;
   legal: typeof legal;

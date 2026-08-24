@@ -193,6 +193,10 @@ export default defineSchema({
     emailLanguage: v.optional(creatorLanguage),
     provider: v.optional(v.union(v.literal("google"), v.literal("github"))),
     stripeCustomerId: v.optional(v.string()),
+    // Creator opt-in to analyze anonymized excerpts of their Creator-authored
+    // content (templates, instructions) for product improvement.
+    // Client content is never analyzed regardless of this flag.
+    contentAnalysisOptIn: v.optional(v.boolean()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -241,6 +245,11 @@ export default defineSchema({
     projectName: v.string(),
     localDevSampleKey: v.optional(v.string()),
     clientLanguage,
+    // Built-in Interview Template that seeded these Instructions, if any.
+    builtInTemplateKey: v.optional(v.string()),
+    // Interview Policy generation that produced the stored AI outputs; bumped
+    // whenever prompt text changes and refreshed when new outputs are written.
+    promptVersion: v.optional(v.number()),
     // Widened for legacy website Interviews. See resolveInterviewConfiguration.
     interviewKind: v.optional(interviewKind),
     includesVisualConcepts: v.optional(v.boolean()),
@@ -302,6 +311,21 @@ export default defineSchema({
   })
     .index("by_interviewId", ["interviewId"])
     .index("by_expiresAt", ["expiresAt"]),
+
+  // One Creator-recorded quality signal per target per Interview. Deleted with
+  // the Interview; never contains Client content.
+  interviewFeedback: defineTable({
+    interviewId: v.id("interviews"),
+    creatorId: v.id("creatorProfiles"),
+    target: v.union(
+      v.literal("project_document"),
+      v.literal("project_submission"),
+    ),
+    rating: v.union(v.literal("up"), v.literal("down")),
+    comment: v.optional(v.string()),
+    promptVersion: v.optional(v.number()),
+    createdAt: v.number(),
+  }).index("by_interviewId_and_target", ["interviewId", "target"]),
 
   passAccounts: defineTable({
     creatorId: v.id("creatorProfiles"),

@@ -58,7 +58,19 @@ export interface CreatorProfile {
   contactEmail?: string;
   privacyPolicyUrl?: string;
   language?: "en" | "de";
+  contentAnalysisOptIn?: boolean;
   provider?: "google" | "github" | null;
+}
+
+export type InterviewFeedbackTarget =
+  | "project_document"
+  | "project_submission";
+export type InterviewFeedbackRating = "up" | "down";
+export interface InterviewFeedbackEntry {
+  target: InterviewFeedbackTarget;
+  rating: InterviewFeedbackRating;
+  comment?: string;
+  createdAt: number;
 }
 
 export interface PublicCreatorIdentity {
@@ -210,8 +222,23 @@ interface InterviewApi {
         contactEmail: string;
         privacyPolicyUrl?: string;
         language: "en" | "de";
+        contentAnalysisOptIn?: boolean;
       },
       CreatorProfile
+    >;
+  };
+  feedback: {
+    getForInterview: Query<
+      { interviewId: string },
+      InterviewFeedbackEntry[]
+    >;
+    record: Mutation<
+      {
+        interviewId: string;
+        target: InterviewFeedbackTarget;
+        rating: InterviewFeedbackRating;
+        comment?: string;
+      }
     >;
   };
   templates: {
@@ -254,6 +281,7 @@ interface InterviewApi {
         instructions: string;
         interviewKind: InterviewKind;
         includesVisualConcepts: boolean;
+        builtInTemplateKey?: string;
       },
       { interviewId: string; interviewUrl?: string; linkToken?: string } | string
     >;

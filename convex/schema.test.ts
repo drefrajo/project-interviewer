@@ -9,6 +9,7 @@ describe("application schema", () => {
     expect(exported.tables.map(({ tableName }) => tableName).sort()).toEqual([
       "creatorProfiles",
       "exportArchives",
+      "interviewFeedback",
       "interviewTemplates",
       "interviews",
       "legalAcceptances",

@@ -15,6 +15,7 @@ import type * as creator_profiles from "../creator_profiles.js";
 import type * as crons from "../crons.js";
 import type * as downloads from "../downloads.js";
 import type * as downloads_data from "../downloads_data.js";
+import type * as feedback from "../feedback.js";
 import type * as http from "../http.js";
 import type * as internal_refs from "../internal_refs.js";
 import type * as interviews from "../interviews.js";
@@ -63,6 +64,7 @@ declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   downloads: typeof downloads;
   downloads_data: typeof downloads_data;
+  feedback: typeof feedback;
   http: typeof http;
   internal_refs: typeof internal_refs;
   interviews: typeof interviews;

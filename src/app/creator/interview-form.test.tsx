@@ -264,4 +264,26 @@ describe("Create Interview template language", () => {
       includesVisualConcepts: true,
     });
   });
+
+  it("records the built-in template origin when creating from a built-in", async () => {
+    const user = userEvent.setup();
+    const createInterview = vi.fn(async () => "interview_9");
+    convex.useMutation.mockImplementation((reference) =>
+      getFunctionName(reference) === "interviews:create"
+        ? createInterview
+        : vi.fn(async () => null),
+    );
+    renderForm();
+
+    await user.click(screen.getByDisplayValue(websiteEnglish._id));
+    await user.type(screen.getByRole("textbox", { name: "Project name" }), "New site");
+    await user.click(screen.getByRole("button", { name: "Create Interview" }));
+
+    expect(createInterview).toHaveBeenCalledWith(
+      expect.objectContaining({
+        projectName: "New site",
+        builtInTemplateKey: "website",
+      }),
+    );
+  });
 });

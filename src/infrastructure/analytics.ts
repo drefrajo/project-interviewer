@@ -19,6 +19,8 @@ export type AnalyticsEventName =
   | "interview_deactivated"
   | "interview_deleted"
   | "interview_exported"
+  | "document_feedback_recorded"
+  | "submission_feedback_recorded"
   | "template_created"
   | "template_updated"
   | "template_deleted"

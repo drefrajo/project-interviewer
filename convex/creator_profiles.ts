@@ -20,6 +20,7 @@ const creatorProfileView = v.object({
   contactEmail: v.optional(v.string()),
   privacyPolicyUrl: v.optional(v.string()),
   language: creatorLanguage,
+  contentAnalysisOptIn: v.optional(v.boolean()),
   provider,
 });
 
@@ -31,6 +32,7 @@ const profileView = (profile: {
   privacyPolicyUrl?: string | undefined;
   language?: "en" | "de";
   emailLanguage?: "en" | "de";
+  contentAnalysisOptIn?: boolean | undefined;
   provider?: "google" | "github";
 }) => ({
   id: profile._id,
@@ -40,6 +42,9 @@ const profileView = (profile: {
   ...(profile.privacyPolicyUrl
     ? { privacyPolicyUrl: profile.privacyPolicyUrl }
     : {}),
+  ...(profile.contentAnalysisOptIn === undefined
+    ? {}
+    : { contentAnalysisOptIn: profile.contentAnalysisOptIn }),
   language: profile.language ?? profile.emailLanguage ?? "en",
   provider: profile.provider ?? null,
 });
@@ -135,6 +140,7 @@ export const updateSettings = mutation({
     contactEmail: v.string(),
     privacyPolicyUrl: v.optional(v.string()),
     language: creatorLanguage,
+    contentAnalysisOptIn: v.optional(v.boolean()),
   },
   returns: creatorProfileView,
   handler: async (ctx, args) => {
@@ -154,6 +160,9 @@ export const updateSettings = mutation({
       ...(privacyPolicyUrl
         ? { privacyPolicyUrl }
         : { privacyPolicyUrl: undefined }),
+      ...(args.contentAnalysisOptIn !== undefined
+        ? { contentAnalysisOptIn: args.contentAnalysisOptIn }
+        : {}),
       language: args.language,
       updatedAt: Date.now(),
     });
@@ -162,6 +171,8 @@ export const updateSettings = mutation({
       displayName,
       contactEmail,
       language: args.language,
+      contentAnalysisOptIn:
+        args.contentAnalysisOptIn ?? profile.contentAnalysisOptIn,
       ...(privacyPolicyUrl
         ? { privacyPolicyUrl }
         : { privacyPolicyUrl: undefined }),

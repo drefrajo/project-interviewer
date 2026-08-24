@@ -24,6 +24,10 @@ import { ImageLightbox } from "../shared/image-lightbox";
 import { SafeMarkdown } from "../shared/safe-markdown";
 import { trackEvent } from "../../infrastructure/analytics";
 import { VisualDirectionSummary } from "../shared/visual-direction-summary";
+import {
+  DocumentFeedback,
+  SubmissionFeedback,
+} from "./interview-feedback";
 import { creatorCopy } from "./creator-copy";
 import { useCreatorLanguage } from "./creator-language";
 import {
@@ -341,6 +345,11 @@ export const InterviewDetailPage = () => {
           />
         )}
       </div>
+      {interview.status === "submitted" ? (
+        <div className="mt-7">
+          <SubmissionFeedback interviewId={interviewId} language={language} />
+        </div>
+      ) : null}
       <section className="mt-9">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -374,7 +383,12 @@ export const InterviewDetailPage = () => {
             <h3 className="mb-3 font-display text-2xl font-extrabold">
               {text.detail.projectDocument}
             </h3>
-            <SafeMarkdown markdown={interview.projectDocument} />
+            {interview.status !== "submitted" ? (
+              <DocumentFeedback interviewId={interviewId} language={language} />
+            ) : null}
+            <div className="mt-3">
+              <SafeMarkdown markdown={interview.projectDocument} />
+            </div>
           </div>
         ) : (
           <p className="mt-6 rounded-box border border-dashed border-line p-5 text-muted">
