@@ -41,7 +41,7 @@ describe("Built-in Interview Templates", () => {
       includesVisualConcepts: false,
     });
     expect(byId("built-in:custom:en")).toMatchObject({
-      description: expect.stringContaining("Creator Interview Instructions"),
+      description: expect.stringContaining("outside Website and Privacy"),
       visualConceptsMode: "configurable",
       includesVisualConcepts: false,
     });
@@ -50,11 +50,11 @@ describe("Built-in Interview Templates", () => {
     );
     expect(byId("built-in:privacy:de")?.description).toContain("Datenflüssen");
     expect(byId("built-in:custom:de")?.description).toContain(
-      "Interview Instructions",
+      "außerhalb von Website und Datenschutz",
     );
   });
 
-  it("keeps the Website template's defining interaction model central", () => {
+  it("keeps Website discovery concise and preserves defining concepts", () => {
     const template = BUILT_IN_INTERVIEW_TEMPLATES.find(
       ({ _id }) => _id === "built-in:website:en",
     );
@@ -62,15 +62,17 @@ describe("Built-in Interview Templates", () => {
       ({ _id }) => _id === "built-in:website:de",
     );
 
-    expect(template?.instructions).toContain("defining interaction model");
-    expect(template?.instructions).toContain("conventional marketing page");
-    expect(template?.instructions).toContain("low-level implementation details");
+    expect(template?.instructions).toContain("website’s goal");
+    expect(template?.instructions).toContain("current and desired experience");
+    expect(template?.instructions).toContain("defining concepts and references");
+    expect(template?.instructions).toContain("conventional solutions");
+    expect(template?.instructions).toContain("scope and priorities");
+    expect(germanTemplate?.instructions).toContain("Kläre Ziel");
     expect(germanTemplate?.instructions).toContain(
-      "prägende Interaktionsmodell",
+      "aktuelle und gewünschte Experience",
     );
-    expect(germanTemplate?.instructions).toContain(
-      "konventionelle Marketingseite",
-    );
+    expect(germanTemplate?.instructions).toContain("definierende Konzepte");
+    expect(germanTemplate?.instructions).toContain("Standardlösungen");
   });
 
   it("keeps Privacy instructions safe and explicit about uncertainty", () => {
@@ -82,17 +84,17 @@ describe("Built-in Interview Templates", () => {
     )?.instructions;
 
     expect(english).toContain("not legal advice");
-    expect(english).toContain("actual personal data");
+    expect(english).toContain("personal data");
     expect(english).toContain("credentials");
     expect(english).toContain("secrets");
-    expect(english).toContain("unknowns");
+    expect(english).toContain("uncertain flows");
     expect(english).toContain("evidence gaps");
     expect(german).toContain("keine Rechtsberatung");
-    expect(german).toContain("echte personenbezogene Daten");
-    expect(german).toContain("Beleglücken");
+    expect(german).toContain("personenbezogene Daten");
+    expect(german).toContain("Nachweislücken");
   });
 
-  it("keeps Custom instructions generic and Creator-governed", () => {
+  it("keeps Custom instructions generic", () => {
     const english = BUILT_IN_INTERVIEW_TEMPLATES.find(
       ({ _id }) => _id === "built-in:custom:en",
     )?.instructions;
@@ -100,12 +102,15 @@ describe("Built-in Interview Templates", () => {
       ({ _id }) => _id === "built-in:custom:de",
     )?.instructions;
 
-    expect(english).toContain("Creator Interview Instructions");
-    expect(english).toContain("primary scope");
-    expect(english).toContain("do not invent facts");
+    expect(english).toContain("desired outcome");
+    expect(english).toContain("Skip irrelevant questions");
+    expect(english).toContain("acceptance criteria");
+    expect(english).toContain("unknown");
     expect(english?.toLowerCase()).not.toContain("website");
-    expect(german).toContain("Interview Instructions des Creators");
-    expect(german).toContain("erfinde keine Fakten");
+    expect(german).toContain("gewünschte Ergebnis");
+    expect(german).toContain("Überspringe irrelevante Fragen");
+    expect(german).toContain("Abnahmekriterien");
+    expect(german).toContain("unbekannt");
   });
 
   it("merges private templates after built-ins and resolves language pairs", () => {

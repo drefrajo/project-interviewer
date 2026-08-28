@@ -402,7 +402,6 @@ const runInterview = async (
       messages: buildInterviewPlanMessages({
         instructions: interview.instructions,
         transcript: transcriptMessages,
-        interviewKind,
       }),
     });
     const generatedPlan = await (async () => {
@@ -435,7 +434,6 @@ const runInterview = async (
       buildInterviewPolicy({
         clientLanguage: interview.clientLanguage,
         instructions: interview.instructions,
-        interviewKind,
         alignmentAsked:
           interview.alignmentAskedAtClientMessageCount !== undefined,
         ...(interviewPlan ? { interviewPlan } : {}),

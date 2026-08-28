@@ -136,6 +136,7 @@ export const InterviewTemplatePicker = ({
   language,
   legend,
   hint,
+  compact = false,
   disabled = false,
   sourceLabels,
   onSelect,
@@ -145,6 +146,7 @@ export const InterviewTemplatePicker = ({
   language: "en" | "de";
   legend: string;
   hint?: string;
+  compact?: boolean;
   disabled?: boolean;
   sourceLabels: { builtIn: string; private: string };
   onSelect(templateId: string): void;
@@ -152,7 +154,7 @@ export const InterviewTemplatePicker = ({
   <fieldset className="grid gap-3">
     <legend className="text-sm font-bold text-ink">{legend}</legend>
     {hint ? <p className="text-sm leading-6 text-muted">{hint}</p> : null}
-    <div className="grid gap-3 md:grid-cols-2">
+    <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
       {templates.map((template) => {
         const configuration = resolveInterviewConfiguration(template);
         const checked = selectedTemplateId === template._id;
@@ -161,7 +163,9 @@ export const InterviewTemplatePicker = ({
         const descriptionId = `${inputId}-description`;
         return (
           <label
-            className={`group relative grid cursor-pointer gap-3 rounded-box border p-4 transition hover:border-primary hover:shadow-md has-[:checked]:border-primary has-[:checked]:bg-soft ${
+            className={`group relative grid cursor-pointer rounded-box border transition hover:border-primary hover:shadow-md has-[:checked]:border-primary has-[:checked]:bg-soft ${
+              compact ? "gap-2 p-3" : "gap-3 p-4"
+            } ${
               checked
                 ? "border-primary bg-soft"
                 : "border-line bg-panel"
@@ -189,7 +193,7 @@ export const InterviewTemplatePicker = ({
                 ? ` · ${template.sourceLanguage.toUpperCase()}`
                 : ""}
             </span>
-            <span className="font-display text-xl font-extrabold">
+            <span className={`font-display font-extrabold ${compact ? "text-lg" : "text-xl"}`}>
               {template.displayName ?? template.name}
             </span>
             <span className="text-sm leading-6 text-muted" id={descriptionId}>

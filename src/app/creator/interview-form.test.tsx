@@ -14,8 +14,12 @@ const convex = vi.hoisted(() => ({
   useMutation: vi.fn(),
   useQuery: vi.fn(),
 }));
+const creatorLanguage = vi.hoisted(() => ({
+  useCreatorLanguage: vi.fn((): "en" | "de" => "en"),
+}));
 
 vi.mock("convex/react", () => convex);
+vi.mock("./creator-language", () => creatorLanguage);
 
 const privateTemplates: PrivateInterviewTemplate[] = [
   {
@@ -63,6 +67,7 @@ const renderForm = () =>
 
 describe("Create Interview template language", () => {
   beforeEach(() => {
+    creatorLanguage.useCreatorLanguage.mockReturnValue("en");
     convex.useQuery.mockImplementation((reference, args) =>
       args === "skip"
         ? undefined
@@ -74,9 +79,19 @@ describe("Create Interview template language", () => {
     convex.useAction.mockReturnValue(vi.fn(async () => ""));
   });
 
+  it("defaults the Interview language to the Creator UI language", () => {
+    creatorLanguage.useCreatorLanguage.mockReturnValue("de");
+    renderForm();
+
+    expect(
+      screen.getByRole("combobox", { name: "Interview-Sprache" }),
+    ).toHaveValue("de");
+  });
+
   it("shows matching built-ins and every private template", async () => {
     const user = userEvent.setup();
     renderForm();
+    await user.click(screen.getByText("Start with a template"));
     const templatePicker = screen.getByRole("group", {
       name: "Optional Interview Template",
     });
@@ -116,6 +131,24 @@ describe("Create Interview template language", () => {
     expect(
       screen.getByRole("textbox", { name: /^Interview Instructions/ }),
     ).toHaveClass("font-normal");
+  });
+
+  it("uses a scroll-free, non-resizable editor that grows with its content", async () => {
+    const user = userEvent.setup();
+    renderForm();
+    const instructions = screen.getByRole("textbox", {
+      name: /^Interview Instructions/,
+    });
+    Object.defineProperty(instructions, "scrollHeight", {
+      configurable: true,
+      value: 640,
+    });
+
+    expect(instructions).toHaveClass("overflow-hidden", "resize-none");
+
+    await user.type(instructions, "A longer brief.");
+
+    expect(instructions).toHaveStyle({ height: "640px" });
   });
 
   it("translates into the currently selected interview language", async () => {
