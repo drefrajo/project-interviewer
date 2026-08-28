@@ -77,6 +77,7 @@ describe("Create Interview template language", () => {
   it("shows matching built-ins and every private template", async () => {
     const user = userEvent.setup();
     renderForm();
+    await user.click(screen.getByText("Start with a template"));
     const templatePicker = screen.getByRole("group", {
       name: "Optional Interview Template",
     });
@@ -116,6 +117,24 @@ describe("Create Interview template language", () => {
     expect(
       screen.getByRole("textbox", { name: /^Interview Instructions/ }),
     ).toHaveClass("font-normal");
+  });
+
+  it("uses a scroll-free, non-resizable editor that grows with its content", async () => {
+    const user = userEvent.setup();
+    renderForm();
+    const instructions = screen.getByRole("textbox", {
+      name: /^Interview Instructions/,
+    });
+    Object.defineProperty(instructions, "scrollHeight", {
+      configurable: true,
+      value: 640,
+    });
+
+    expect(instructions).toHaveClass("overflow-hidden", "resize-none");
+
+    await user.type(instructions, "A longer brief.");
+
+    expect(instructions).toHaveStyle({ height: "640px" });
   });
 
   it("translates into the currently selected interview language", async () => {

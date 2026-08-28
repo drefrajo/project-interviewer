@@ -207,7 +207,19 @@ export const creatorCopy = {
       includeVisualConcepts: "Include Visual Concepts",
       includeVisualConceptsHint:
         "Website Interviews always include concepts. Privacy Interviews never do. Custom Interviews can choose.",
+      instructionsEyebrow: "The main brief",
       instructions: "Interview Instructions",
+      instructionsHint:
+        "Write the scope, questions, constraints, and desired outcome for this Interview. Make the brief as specific as the work requires.",
+      instructionsPlaceholder:
+        "What should the Client clarify? What decisions should this Interview support? What should the final Project Document contain?",
+      instructionsGuidance:
+        "Use paragraphs, headings, or bullet points to structure a longer brief. The editor grows with your content.",
+      editorHint: "Templates are optional starting points.",
+      templateStart: "Start with a template",
+      templateStartHint: "Optional — choose a template to prefill this brief.",
+      detailsTitle: "Interview details",
+      detailsHint: "Set the project label, language, and any visual-concept preference.",
       translating: "Translating Interview Instructions…",
       translateTo: (language: string) => `Translate to ${language}`,
       saveAsTemplate: "Save as template",
@@ -585,7 +597,19 @@ export const creatorCopy = {
       includeVisualConcepts: "Visuelle Konzepte einschließen",
       includeVisualConceptsHint:
         "Website-Interviews enthalten immer Konzepte. Datenschutz-Interviews enthalten keine. Bei individuellen Interviews ist die Wahl frei.",
+      instructionsEyebrow: "Der zentrale Brief",
       instructions: "Interview Instructions",
+      instructionsHint:
+        "Beschreiben Sie Umfang, Fragen, Einschränkungen und gewünschtes Ergebnis dieses Interviews. Der Brief darf so konkret sein, wie es die Aufgabe erfordert.",
+      instructionsPlaceholder:
+        "Was soll der Client klären? Welche Entscheidungen soll dieses Interview unterstützen? Was soll das abschließende Project Document enthalten?",
+      instructionsGuidance:
+        "Strukturieren Sie einen längeren Brief bei Bedarf mit Absätzen, Überschriften oder Aufzählungen. Der Editor wächst mit Ihrem Inhalt.",
+      editorHint: "Vorlagen sind optionale Ausgangspunkte.",
+      templateStart: "Mit einer Vorlage starten",
+      templateStartHint: "Optional – wählen Sie eine Vorlage, um diesen Brief vorauszufüllen.",
+      detailsTitle: "Interview-Details",
+      detailsHint: "Legen Sie Projektbezeichnung, Sprache und die Einstellung für visuelle Konzepte fest.",
       translating: "Interview Instructions werden übersetzt…",
       translateTo: (language: string) => `Ins ${language} übersetzen`,
       saveAsTemplate: "Als Vorlage speichern",

@@ -1,6 +1,13 @@
 import { useAction, useMutation, useQuery } from "convex/react";
-import { Languages, Save } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { ChevronDown, Languages, Save } from "lucide-react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   interviewApi,
@@ -66,6 +73,16 @@ export const InterviewForm = () => {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [templateNotice, setTemplateNotice] = useState("");
+  const instructionsRef = useRef<HTMLTextAreaElement>(null);
+
+  useLayoutEffect(() => {
+    const textarea = instructionsRef.current;
+    if (!textarea) return;
+
+    textarea.style.height = "auto";
+    const contentHeight = Math.max(textarea.scrollHeight, textarea.offsetHeight);
+    if (contentHeight > 0) textarea.style.height = `${contentHeight}px`;
+  }, [instructions]);
 
   useEffect(() => {
     if (!editing || !interview || initialized.current) return;
@@ -83,6 +100,12 @@ export const InterviewForm = () => {
     () => templates?.find((template) => template._id === selectedTemplateId),
     [selectedTemplateId, templates],
   );
+  const selectedTemplateName = selectedTemplate
+    ? selectedTemplate.kind === "built_in"
+      ? builtInInterviewTemplateForLanguage(selectedTemplate, creatorLanguage)
+          ?.name ?? selectedTemplate.name
+      : selectedTemplate.name
+    : undefined;
   const availableTemplates = useMemo(
     () =>
       (templates ?? []).filter(
@@ -290,7 +313,7 @@ export const InterviewForm = () => {
   }
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8 sm:px-8 lg:py-12" id="main-content">
+    <main className="mx-auto max-w-5xl px-4 py-8 sm:px-8 lg:py-12" id="main-content">
       <p className="text-xs font-extrabold tracking-[0.14em] text-forest uppercase">
         {editing ? text.form.editPreparation : text.form.newInterview}
       </p>
@@ -300,126 +323,219 @@ export const InterviewForm = () => {
       <p className="mt-3 max-w-2xl leading-7 text-muted">
         {text.form.description}
       </p>
-      <form className="mt-8 grid gap-6 rounded-box border border-line bg-panel p-6 sm:p-8" onSubmit={submit}>
-        <Field label={text.form.projectName}>
-          <TextInput
-            maxLength={160}
-            onChange={(event) => setProjectName(event.target.value)}
-            required
-            value={projectName}
-          />
-        </Field>
-        <div className="max-w-md">
-          <Field label={text.form.interviewLanguage}>
-            <Select
-              disabled={translating}
-              onChange={(event) =>
-                changeInterviewLanguage(
-                  event.target.value as ClientLanguage,
-                )
-              }
-              value={interviewLanguage}
-            >
-              <option value="en">{text.interviews.language.en}</option>
-              <option value="de">{text.interviews.language.de}</option>
-            </Select>
-          </Field>
-        </div>
-        <InterviewTemplatePicker
-          hint={text.form.templateHint}
-          language={creatorLanguage}
-          legend={text.form.templateLabel}
-          onSelect={selectTemplate}
-          disabled={translating}
-          selectedTemplateId={selectedTemplateId}
-          sourceLabels={{
-            builtIn: text.form.builtIn,
-            private: text.form.private,
-          }}
-          templates={pickerTemplates}
-        />
-        {interviewKind === "custom" ? (
-          <label className="flex items-start gap-3 rounded-box border border-line bg-panel p-4 text-sm">
-            <input
-              checked={includesVisualConcepts}
-              className="mt-1 size-4 accent-[var(--color-primary)]"
-              disabled={translating}
-              onChange={(event) => setIncludesVisualConcepts(event.target.checked)}
-              type="checkbox"
-            />
-            <span>
-              <strong className="block">{text.form.includeVisualConcepts}</strong>
-              <span className="mt-1 block leading-6 text-muted">
-                {text.form.includeVisualConceptsHint}
-              </span>
-            </span>
-          </label>
-        ) : (
-          <p className="text-sm font-bold text-primary">
-            {conceptsLabel(includesVisualConcepts, creatorLanguage)}
-          </p>
-        )}
-        <Field
-          hint={text.form.characters(instructions.length)}
-          label={text.form.instructions}
+      <form className="mt-8 grid gap-4" onSubmit={submit}>
+        <section
+          aria-labelledby="interview-instructions-heading"
+          className="grid gap-5 rounded-box border-2 border-primary/30 bg-panel p-5 shadow-lg sm:gap-6 sm:p-7"
         >
-          <TextArea
-            className="min-h-80 font-normal font-sans text-base leading-7"
-            disabled={translating}
-            maxLength={50_000}
-            onChange={(event) => setInstructions(event.target.value)}
-            required
-            value={instructions}
-          />
-        </Field>
-        {templateNotice ? (
-          <p className="rounded-lg bg-soft p-3 text-sm font-bold text-forest" role="status">
-            {templateNotice}
-          </p>
-        ) : null}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+            <div>
+              <p className="text-xs font-extrabold tracking-[0.14em] text-forest uppercase">
+                {text.form.instructionsEyebrow}
+              </p>
+              <h2
+                className="mt-2 font-display text-2xl font-extrabold sm:text-3xl"
+                id="interview-instructions-heading"
+              >
+                {text.form.instructions}
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
+                {text.form.instructionsHint}
+              </p>
+            </div>
+            <span
+              aria-live="polite"
+              className="self-start rounded-full bg-soft px-3 py-1.5 text-xs font-semibold text-muted"
+            >
+              {text.form.characters(instructions.length)}
+            </span>
+          </div>
+
+          <details className="group rounded-box border border-line bg-surface">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-4 transition hover:bg-soft [&::-webkit-details-marker]:hidden">
+              <span className="min-w-0">
+                <span className="block text-sm font-bold text-ink">
+                  {text.form.templateStart}
+                </span>
+                <span className="mt-1 block truncate text-sm text-muted">
+                  {selectedTemplateName ?? text.form.templateStartHint}
+                </span>
+              </span>
+              <ChevronDown
+                aria-hidden="true"
+                className="shrink-0 text-muted transition-transform group-open:rotate-180"
+                size={18}
+              />
+            </summary>
+            <div className="border-t border-line p-4 sm:p-5">
+              <InterviewTemplatePicker
+                compact
+                hint={text.form.templateHint}
+                language={creatorLanguage}
+                legend={text.form.templateLabel}
+                onSelect={selectTemplate}
+                disabled={translating}
+                selectedTemplateId={selectedTemplateId}
+                sourceLabels={{
+                  builtIn: text.form.builtIn,
+                  private: text.form.private,
+                }}
+                templates={pickerTemplates}
+              />
+            </div>
+          </details>
+
+          <div className="grid gap-2">
+            <label className="sr-only" htmlFor="interview-instructions">
+              {text.form.instructions}
+            </label>
+            <TextArea
+              aria-describedby="interview-instructions-guidance"
+              className="min-h-[24rem] resize-none overflow-hidden bg-canvas px-4 py-4 font-normal font-sans text-base leading-7 shadow-inner sm:min-h-[28rem]"
+              disabled={translating}
+              id="interview-instructions"
+              maxLength={50_000}
+              onChange={(event) => setInstructions(event.target.value)}
+              placeholder={text.form.instructionsPlaceholder}
+              ref={instructionsRef}
+              required
+              value={instructions}
+            />
+            <p
+              className="text-sm leading-6 text-muted"
+              id="interview-instructions-guidance"
+            >
+              {text.form.instructionsGuidance}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              <button
+                className={`${secondaryButton} min-h-10`}
+                disabled={translating || !instructions.trim()}
+                onClick={() => void translateInstructions()}
+                type="button"
+              >
+                <Languages aria-hidden="true" size={17} />
+                {translating
+                  ? text.form.translating
+                  : text.form.translateTo(
+                      text.interviews.language[interviewLanguage],
+                    )}
+              </button>
+              <button
+                className={`${secondaryButton} min-h-10`}
+                disabled={!instructions.trim()}
+                onClick={async () => {
+                  const name = window.prompt(text.form.saveTemplatePrompt);
+                  if (!name?.trim()) return;
+                  await createTemplate({
+                    name: name.trim(),
+                    sourceLanguage: interviewLanguage,
+                    instructions: instructions.trim(),
+                    interviewKind,
+                    includesVisualConcepts,
+                  });
+                  setTemplateNotice(text.form.templateSaved);
+                }}
+                type="button"
+              >
+                <Save aria-hidden="true" size={17} />
+                {text.form.saveAsTemplate}
+              </button>
+            </div>
+            <span className="hidden text-xs text-muted sm:block">
+              {text.form.editorHint}
+            </span>
+          </div>
+          {templateNotice ? (
+            <p
+              className="rounded-lg bg-soft p-3 text-sm font-bold text-forest"
+              role="status"
+            >
+              {templateNotice}
+            </p>
+          ) : null}
+        </section>
+
+        <section
+          aria-labelledby="interview-details-heading"
+          className="grid gap-4 rounded-box border border-line bg-soft/45 p-4 sm:p-5"
+        >
+          <div>
+            <h2
+              className="font-display text-lg font-extrabold"
+              id="interview-details-heading"
+            >
+              {text.form.detailsTitle}
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-muted">
+              {text.form.detailsHint}
+            </p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-[minmax(0,1.5fr)_minmax(12rem,0.75fr)]">
+            <Field label={text.form.projectName}>
+              <TextInput
+                maxLength={160}
+                onChange={(event) => setProjectName(event.target.value)}
+                required
+                value={projectName}
+              />
+            </Field>
+            <Field label={text.form.interviewLanguage}>
+              <Select
+                disabled={translating}
+                onChange={(event) =>
+                  changeInterviewLanguage(
+                    event.target.value as ClientLanguage,
+                  )
+                }
+                value={interviewLanguage}
+              >
+                <option value="en">{text.interviews.language.en}</option>
+                <option value="de">{text.interviews.language.de}</option>
+              </Select>
+            </Field>
+          </div>
+          {interviewKind === "custom" ? (
+            <label className="flex items-start gap-3 rounded-lg border border-line bg-panel p-3 text-sm">
+              <input
+                checked={includesVisualConcepts}
+                className="mt-1 size-4 accent-[var(--color-primary)]"
+                disabled={translating}
+                onChange={(event) =>
+                  setIncludesVisualConcepts(event.target.checked)
+                }
+                type="checkbox"
+              />
+              <span>
+                <strong className="block">
+                  {text.form.includeVisualConcepts}
+                </strong>
+                <span className="mt-1 block leading-6 text-muted">
+                  {text.form.includeVisualConceptsHint}
+                </span>
+              </span>
+            </label>
+          ) : (
+            <p className="text-sm font-bold text-primary">
+              {conceptsLabel(includesVisualConcepts, creatorLanguage)}
+            </p>
+          )}
+        </section>
+
         {error ? (
-          <p className="rounded-lg border border-error-border bg-error-surface p-4 font-bold text-error-text" role="alert">
+          <p
+            className="rounded-lg border border-error-border bg-error-surface p-4 font-bold text-error-text"
+            role="alert"
+          >
             {error}
           </p>
         ) : null}
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-between">
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <button
-              className={secondaryButton}
-              disabled={translating || !instructions.trim()}
-              onClick={() => void translateInstructions()}
-              type="button"
-            >
-              <Languages aria-hidden="true" size={17} />
-              {translating
-                ? text.form.translating
-                : text.form.translateTo(
-                    text.interviews.language[interviewLanguage],
-                  )}
-            </button>
-            <button
-              className={secondaryButton}
-              disabled={!instructions.trim()}
-              onClick={async () => {
-                const name = window.prompt(text.form.saveTemplatePrompt);
-                if (!name?.trim()) return;
-                await createTemplate({
-                  name: name.trim(),
-                  sourceLanguage: interviewLanguage,
-                  instructions: instructions.trim(),
-                  interviewKind,
-                  includesVisualConcepts,
-                });
-                setTemplateNotice(text.form.templateSaved);
-              }}
-              type="button"
-            >
-              <Save aria-hidden="true" size={17} />
-              {text.form.saveAsTemplate}
-            </button>
-          </div>
+        <div className="flex flex-col gap-3 border-t border-line pt-4 sm:flex-row sm:flex-wrap sm:justify-end">
           <button
-            className={primaryButton}
+            className={`${primaryButton} w-full sm:w-auto`}
             disabled={
               busy ||
               translating ||
