@@ -104,14 +104,14 @@ const definitions: readonly BuiltInInterviewTemplateDefinition[] = [
         description:
           "Use for new websites, redesigns, landing pages, and other web experiences.",
         instructions:
-          "Interview the Client about the website or web experience they want. Discover the desired outcome, audience, content, structure, interaction model, visual direction, and important facts. Preserve any defining interaction model, content metaphor, or structural reference as the organizing principle instead of falling back to a conventional marketing page. Produce an implementation-ready Project Document with complete first-draft copy where appropriate. Keep recommendations at the product, content, and visual-direction level; omit low-level implementation details unless the Creator Interview Instructions or Client explicitly request them. Mark unknown legal or factual claims clearly and never invent business facts.",
+          "Clarify the website’s goal, audience, current and desired experience, key interactions and structure, content and assets, scope and priorities, approver, constraints, dependencies, and success criteria. Preserve defining concepts and references rather than defaulting to conventional solutions. Mark unclear points as unknown. Summarize confirmed decisions, priorities, needs, constraints, and open questions.",
       },
       de: {
         name: "Website",
         description:
           "Für neue Websites, Überarbeitungen, Landingpages und andere Web-Erlebnisse.",
         instructions:
-          "Führe ein Interview über die gewünschte Website oder das Web-Erlebnis. Kläre gewünschtes Ergebnis, Zielgruppe, Inhalte, Struktur, Interaktionsmodell, visuelle Richtung und wichtige Fakten. Bewahre jedes prägende Interaktionsmodell, jede Inhaltsmetapher und jede strukturelle Referenz als Ordnungsprinzip, statt auf eine konventionelle Marketingseite zurückzufallen. Erstelle ein umsetzungsreifes Project Document und, wo passend, vollständige Erstentwürfe der Texte. Halte Empfehlungen auf der Ebene von Produkt, Inhalt und visueller Richtung; lasse technische Detailvorgaben weg, sofern sie nicht in den Interview Instructions des Creators oder vom Client ausdrücklich verlangt werden. Kennzeichne unbekannte rechtliche oder sachliche Aussagen deutlich und erfinde keine Unternehmensfakten.",
+          "Kläre Ziel, Zielgruppe, aktuelle und gewünschte Experience, wichtige Interaktionen und Strukturen, Inhalte und Assets, Umfang und Prioritäten, Freigabe, Rahmenbedingungen, Abhängigkeiten und Erfolgskriterien. Bewahre definierende Konzepte und Referenzen, statt auf konventionelle Standardlösungen auszuweichen. Halte Unklares als unbekannt fest. Fasse bestätigte Entscheidungen, Prioritäten, Anforderungen, Rahmenbedingungen und offene Fragen zusammen.",
       },
     },
   },
@@ -124,14 +124,14 @@ const definitions: readonly BuiltInInterviewTemplateDefinition[] = [
         description:
           "Use to map an organization's data flows and prepare privacy-policy material for qualified review.",
         instructions:
-          "Conduct a privacy data-mapping interview to prepare privacy-policy material, not legal advice or a compliant policy. Identify categories of personal data, data subjects, purposes, collection points, systems and processors, recipients, sharing, storage, retention, security safeguards, international transfers, rights, and responsible contacts. Ask for evidence or documentation references where useful. Explicitly record unknowns, unresolved decisions, and evidence gaps; never infer or invent a data flow. Do not ask the Client to provide actual personal data, credentials, API keys, or other secrets. Ask for categories, fictionalized examples, system names, and documentation references instead. Produce a structured privacy data map and preparation notes for qualified legal or privacy review.",
+          "Map how personal data is collected, used, shared, stored, retained, and deleted, including systems, vendors, recipients, purposes, owners, and available evidence. Mark uncertain flows, missing documentation, and unanswered questions without making assumptions. Do not request personal data, credentials, secrets, or other sensitive values. This is preparation, not legal advice. Summarize confirmed facts, ownership, evidence gaps, and items requiring review.",
       },
       de: {
         name: "Datenschutz-Datenmapping",
         description:
           "Für die Erfassung von Datenflüssen und die Vorbereitung von Datenschutzmaterial zur qualifizierten Prüfung.",
         instructions:
-          "Führe ein Interview zur Erfassung von Datenschutz-Datenflüssen, um Material für eine Datenschutzrichtlinie vorzubereiten; dies ist keine Rechtsberatung und keine Zusicherung einer rechtskonformen Richtlinie. Erfasse Kategorien personenbezogener Daten, betroffene Personen, Zwecke, Erhebungsstellen, Systeme und Auftragsverarbeiter, Empfänger, Weitergaben, Speicherung, Aufbewahrung, Sicherheitsmaßnahmen, internationale Übermittlungen, Rechte und zuständige Kontakte. Bitte bei Bedarf um Nachweise oder Dokumentationsverweise. Halte Unbekanntes, offene Entscheidungen und Beleglücken ausdrücklich fest; leite keinen Datenfluss her und erfinde keinen. Bitte den Client nicht um echte personenbezogene Daten, Zugangsdaten, API-Schlüssel oder andere Geheimnisse. Frage stattdessen nach Kategorien, fingierten Beispielen, Systemnamen und Dokumentationsverweisen. Erstelle ein strukturiertes Datenschutz-Datenmapping und Vorbereitungsnotizen für die qualifizierte rechtliche oder datenschutzbezogene Prüfung.",
+          "Erfasse, wie personenbezogene Daten erhoben, genutzt, weitergegeben, gespeichert, aufbewahrt und gelöscht werden, einschließlich Systemen, Dienstleistern, Empfängern, Zwecken, Verantwortlichen und vorhandenen Nachweisen. Kennzeichne unsichere Datenflüsse, fehlende Dokumentation und offene Fragen, ohne Annahmen zu treffen. Frage keine personenbezogenen Daten, Zugangsdaten, Geheimnisse oder andere sensible Werte ab. Dies dient der Vorbereitung und ist keine Rechtsberatung. Fasse bestätigte Fakten, Verantwortlichkeiten, Nachweislücken und Prüfbedarf zusammen.",
       },
     },
   },
@@ -142,16 +142,16 @@ const definitions: readonly BuiltInInterviewTemplateDefinition[] = [
       en: {
         name: "Custom interview",
         description:
-          "Use when the interview does not fit Website or Privacy; define the scope and output in the Creator Interview Instructions.",
+          "Use for interviews outside Website and Privacy.",
         instructions:
-          "Conduct a focused interview according to the Creator Interview Instructions. Treat those instructions as the primary scope, audience, constraints, and desired Project Document outline. Ask concise questions, surface assumptions and unknowns, preserve corrections, and recommend the next decisions. Produce the requested implementation-ready Project Document. Do not assume a particular domain or workflow; do not invent facts. Clearly mark missing information and evidence gaps.",
+          "Clarify the desired outcome, participants, current situation, intended change, scope and priorities, required inputs, constraints, dependencies, decision-makers, and acceptance criteria where relevant. Skip irrelevant questions and mark assumptions, conflicts, and undecided points as unknown. Summarize the confirmed direction, priorities, responsibilities, dependencies, acceptance criteria, and open questions in terms appropriate to the project.",
       },
       de: {
         name: "Individuelles Interview",
         description:
-          "Für Interviews außerhalb von Website oder Datenschutz; Umfang und Ergebnis werden in den Interview Instructions des Creators festgelegt.",
+          "Für Interviews außerhalb von Website und Datenschutz.",
         instructions:
-          "Führe ein fokussiertes Interview gemäß den Interview Instructions des Creators. Behandle diese Instructions als maßgeblichen Rahmen für Umfang, Zielgruppe, Einschränkungen und die gewünschte Gliederung des Project Documents. Stelle präzise Fragen, mache Annahmen und Unbekanntes sichtbar, berücksichtige Korrekturen und empfehle die nächsten Entscheidungen. Erstelle das gewünschte umsetzungsreife Project Document. Gehe nicht von einer bestimmten Domäne oder einem bestimmten Ablauf aus; erfinde keine Fakten. Kennzeichne fehlende Informationen und Beleglücken deutlich.",
+          "Kläre, soweit relevant, das gewünschte Ergebnis, beteiligte Personen, die aktuelle Situation, die angestrebte Veränderung, Umfang und Prioritäten, benötigte Inputs, Rahmenbedingungen, Abhängigkeiten, Entscheidungsträger und Abnahmekriterien. Überspringe irrelevante Fragen und halte Annahmen, Widersprüche und offene Entscheidungen als unbekannt fest. Fasse die bestätigte Richtung, Prioritäten, Verantwortlichkeiten, Abhängigkeiten, Abnahmekriterien und offenen Fragen passend zum Projekt zusammen.",
       },
     },
   },

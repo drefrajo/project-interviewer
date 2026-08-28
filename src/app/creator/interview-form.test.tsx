@@ -14,8 +14,12 @@ const convex = vi.hoisted(() => ({
   useMutation: vi.fn(),
   useQuery: vi.fn(),
 }));
+const creatorLanguage = vi.hoisted(() => ({
+  useCreatorLanguage: vi.fn((): "en" | "de" => "en"),
+}));
 
 vi.mock("convex/react", () => convex);
+vi.mock("./creator-language", () => creatorLanguage);
 
 const privateTemplates: PrivateInterviewTemplate[] = [
   {
@@ -63,6 +67,7 @@ const renderForm = () =>
 
 describe("Create Interview template language", () => {
   beforeEach(() => {
+    creatorLanguage.useCreatorLanguage.mockReturnValue("en");
     convex.useQuery.mockImplementation((reference, args) =>
       args === "skip"
         ? undefined
@@ -72,6 +77,15 @@ describe("Create Interview template language", () => {
     );
     convex.useMutation.mockReturnValue(vi.fn(async () => null));
     convex.useAction.mockReturnValue(vi.fn(async () => ""));
+  });
+
+  it("defaults the Interview language to the Creator UI language", () => {
+    creatorLanguage.useCreatorLanguage.mockReturnValue("de");
+    renderForm();
+
+    expect(
+      screen.getByRole("combobox", { name: "Interview-Sprache" }),
+    ).toHaveValue("de");
   });
 
   it("shows matching built-ins and every private template", async () => {

@@ -14,7 +14,7 @@ Client galleries are presented as stories and the photographer's works as posts.
 `;
 
 describe("Interview prompt contracts", () => {
-  it("tells the Interview Model to preserve a defining interaction model and avoid unsolicited technical prescriptions", () => {
+  it("keeps project-specific direction in Creator Instructions", () => {
     const policy = buildInterviewPolicy({
       clientLanguage: "en",
       instructions: instagramLikeInstructions,
@@ -22,10 +22,13 @@ describe("Interview prompt contracts", () => {
     });
     const normalized = policy.replace(/\s+/g, " ");
 
-    expect(normalized).toContain("organizing principle");
-    expect(normalized).toContain("Do not replace it with a conventional website");
-    expect(normalized).toContain("Do not add low-level technical specifications");
-    expect(normalized).toContain("numerical asset budgets");
+    expect(normalized).toContain("Creator's Interview Instructions");
+    expect(normalized).toContain("Instagram-like interface");
+    expect(normalized).toContain("Do not assume a project type");
+    expect(normalized).toContain(
+      "Do not add low-level technical or other implementation details",
+    );
+    expect(normalized).not.toContain("conventional website");
   });
 
   it("makes the Interview consultative and requires alignment before completion", () => {
@@ -74,6 +77,8 @@ describe("Interview prompt contracts", () => {
     const planningPrompt = JSON.stringify(planningMessages);
 
     expect(planningPrompt).toContain("private adaptive Interview Plan");
+    expect(planningPrompt).toContain("Creator");
+    expect(planningPrompt).toContain("Interview Instructions");
     expect(planningPrompt).toContain("Return only the plan");
     expect(planningPrompt).toContain("Present my photography");
     expect(planningPrompt).not.toContain("suggestedReplies");
@@ -419,32 +424,29 @@ describe("Interview prompt contracts", () => {
     expect(custom).not.toContain("website");
   });
 
-  it("branches the Interview Policy for privacy data mapping without legal claims", () => {
+  it("keeps the Interview Policy project-agnostic and delegates scope to Instructions", () => {
     const policy = buildInterviewPolicy({
       clientLanguage: "en",
       instructions: "Map the company's customer data flows.",
       alignmentAsked: false,
-      interviewKind: "privacy",
     }).replace(/\s+/g, " ");
 
-    expect(policy).toContain("privacy data-mapping Interview");
-    expect(policy).toContain("not legal advice");
-    expect(policy).toContain("actual personal data");
-    expect(policy).toContain("credentials");
-    expect(policy).toContain("evidence gaps");
-    expect(policy).toContain("data is collected");
-    expect(policy).not.toContain("conventional website");
+    expect(policy).toContain("Creator's Interview Instructions");
+    expect(policy).toContain("Do not assume a project type");
+    expect(policy).toContain("consequential requirement or decision");
+    expect(policy).toContain("required now, later, optional, or outside");
+    expect(policy).not.toContain("privacy data-mapping Interview");
+    expect(policy).not.toContain("website project Interview");
   });
 
-  it("keeps custom Interview prompts generic and permits generic concepts", () => {
+  it("keeps generic Interview prompts independent of the project type", () => {
     const policy = buildInterviewPolicy({
       clientLanguage: "en",
       instructions: "Interview a team about its internal operating model.",
       alignmentAsked: false,
-      interviewKind: "custom",
     }).replace(/\s+/g, " ");
-    expect(policy).toContain("Creator-defined Interview");
-    expect(policy).toContain("Do not assume a conventional domain");
+    expect(policy).toContain("Creator's Interview Instructions");
+    expect(policy).toContain("Do not assume a project type");
     expect(policy).not.toContain("website project Interview");
 
     const concepts = buildConceptSeedMessages({

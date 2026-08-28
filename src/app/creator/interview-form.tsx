@@ -63,7 +63,7 @@ export const InterviewForm = () => {
   const initialized = useRef(false);
   const [projectName, setProjectName] = useState("");
   const [interviewLanguage, setInterviewLanguage] =
-    useState<ClientLanguage>("en");
+    useState<ClientLanguage>(creatorLanguage);
   const [instructions, setInstructions] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [interviewKind, setInterviewKind] = useState<InterviewKind>("custom");
