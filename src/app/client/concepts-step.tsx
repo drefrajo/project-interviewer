@@ -13,6 +13,7 @@ import {
 } from "../shared/form-controls";
 import { ImageLightbox } from "../shared/image-lightbox";
 import { CLIENT_COPY } from "./client-copy";
+import { visualDirectionConfirmationSummary } from "../../domain/visual-direction";
 
 const isHttpUrl = (value: string) => {
   try {
@@ -70,7 +71,8 @@ export const ConceptsStep = ({
   const [mode, setMode] = useState<"concept" | "links">("concept");
   const [selected, setSelected] = useState("");
   const [links, setLinks] = useState([""]);
-  const [note, setNote] = useState("");
+  const [keep, setKeep] = useState("");
+  const [avoid, setAvoid] = useState("");
   const [confirming, setConfirming] = useState(false);
   const [showLongWaitNotice, setShowLongWaitNotice] = useState(false);
   const creatingConcepts =
@@ -97,28 +99,35 @@ export const ConceptsStep = ({
   const normalizedLinks = links.map((link) => link.trim()).filter(Boolean);
   const valid = useMemo(
     () =>
-      mode === "concept"
-        ? Boolean(selected)
+      concepts.length >= 3 && concepts.every((concept) => concept.state === "ready") &&
+      Boolean(keep.trim()) && Boolean(avoid.trim()) &&
+      (mode === "concept"
+        ? concepts.some((concept) => concept.id === selected && concept.state === "ready")
         : normalizedLinks.length > 0 &&
           normalizedLinks.length <= 3 &&
-          normalizedLinks.every(isHttpUrl) &&
-          Boolean(note.trim()),
-    [mode, normalizedLinks, note, selected],
+          normalizedLinks.every(isHttpUrl)),
+    [concepts, mode, normalizedLinks, keep, avoid, selected],
   );
   const direction: VisualDirection =
     mode === "concept"
-      ? { kind: "concept", conceptId: selected, ...(note.trim() ? { note: note.trim() } : {}) }
+      ? { kind: "concept", conceptId: selected, preferences: { keep: keep.trim(), avoid: avoid.trim() } }
       : {
           kind: "inspiration_links",
           inspirationLinks: normalizedLinks,
-          ...(note.trim() ? { note: note.trim() } : {}),
+          preferences: { keep: keep.trim(), avoid: avoid.trim() },
         };
   const requestMoreOptions = async () => {
     if (await onMoreOptions()) {
       setMode("concept");
       setSelected("");
+      setKeep("");
+      setAvoid("");
     }
   };
+
+  const selectedConcept = concepts.find((concept) => concept.id === selected);
+  const reviewKey = JSON.stringify({ direction, basis: selectedConcept, mode });
+  useEffect(() => { setConfirming(false); }, [reviewKey, pending]);
 
   return (
     <section className="mx-auto w-full max-w-6xl">
@@ -180,9 +189,13 @@ export const ConceptsStep = ({
                     <input
                       checked={selected === concept.id && mode === "concept"}
                       className="mt-1 size-5"
-                      disabled={concept.state !== "ready" && !concept.imageUrl}
+                      disabled={pending || concept.state !== "ready"}
                       name="visual-concept"
                       onChange={() => {
+                        if (mode !== "concept" || selected !== concept.id) {
+                          setKeep("");
+                          setAvoid("");
+                        }
                         setMode("concept");
                         setSelected(concept.id);
                       }}
@@ -210,9 +223,7 @@ export const ConceptsStep = ({
       </div>
       {!pending &&
       concepts.length === 3 &&
-      concepts.every((concept) => concept.state === "ready") &&
-      mode === "concept" &&
-      !selected ? (
+      concepts.every((concept) => concept.state === "ready") ? (
         <div className="mt-4 flex justify-center">
           <button
             className={`${textLink} text-sm`}
@@ -250,13 +261,19 @@ export const ConceptsStep = ({
             checked={mode === "links"}
             className="size-5"
             name="visual-concept"
-            onChange={() => setMode("links")}
+            disabled={pending}
+            onChange={() => {
+              setMode("links");
+              setKeep("");
+              setAvoid("");
+            }}
             type="radio"
           />
           {text.inspiration}
         </label>
         {mode === "links" ? (
           <div className="mt-4 grid gap-3">
+            <p className="rounded-lg bg-soft p-3 font-normal leading-6 text-muted" role="status">{text.noStyleAgreed}</p>
             {links.map((link, index) => (
               <TextInput
                 aria-label={`${language === "de" ? "Inspirationslink" : "Inspiration link"} ${index + 1}`}
@@ -271,12 +288,14 @@ export const ConceptsStep = ({
                 placeholder="https://example.com"
                 type="url"
                 value={link}
+                disabled={pending}
               />
             ))}
             {links.length < 3 ? (
               <button
                 className={`${textLink} w-fit`}
                 onClick={() => setLinks((current) => [...current, ""])}
+                disabled={pending}
                 type="button"
               >
                 {language === "de" ? "+ Weiteren Link hinzufügen" : "+ Add another link"}
@@ -285,17 +304,25 @@ export const ConceptsStep = ({
           </div>
         ) : null}
       </section>
-      <section className="mt-4 rounded-box border border-line bg-panel p-5">
+      {selected || mode === "links" ? <section className="mt-4 rounded-box border border-line bg-panel p-5">
         <label className="grid gap-2 font-bold">
-          {mode === "links" ? text.requiredNote : text.note}
+          {text.keepStyle}
           <TextArea
-            aria-required={mode === "links"}
+            required
             maxLength={2_000}
-            onChange={(event) => setNote(event.target.value)}
+            onChange={(event) => setKeep(event.target.value)}
             rows={3}
-            value={note}
+            value={keep}
+            disabled={pending}
           />
         </label>
+        <p className="mt-2 text-sm leading-6 text-muted">{text.keepStyleHint}</p>
+        <label className="mt-5 grid gap-2 font-bold">
+          {text.avoidStyle}
+          <TextArea required maxLength={2_000} rows={3} value={avoid} disabled={pending} onChange={(event) => setAvoid(event.target.value)} />
+        </label>
+        <p className="mt-2 text-sm leading-6 text-muted">{text.avoidStyleHint}</p>
+        <button className={`${textLink} mt-2 text-sm`} disabled={pending} type="button" onClick={() => setAvoid(text.nothingToAvoid)}>{text.nothingToAvoid}</button>
         {mode === "links" &&
         normalizedLinks.some((link) => !isHttpUrl(link)) ? (
           <p className="mt-2 text-sm font-bold text-error-text" role="alert">
@@ -311,21 +338,29 @@ export const ConceptsStep = ({
             onClick={() => setConfirming(true)}
             type="button"
           >
-            {text.submit}
+            {text.reviewDirection}
           </button>
         </div>
-      </section>
+      </section> : null}
       <ConfirmDialog
-        confirmLabel={text.submit}
+        confirmLabel={text.confirmStyleSubmit}
+        cancelLabel={text.adjustDirection}
         onCancel={() => setConfirming(false)}
         onConfirm={() => {
           setConfirming(false);
           void onSubmit(direction);
         }}
-        open={confirming}
-        title={text.submit}
+        open={confirming && valid && !pending}
+        title={text.confirmStyleTitle}
       >
-        <p>{text.finalWarning}</p>
+        {valid ? <>
+          {mode === "concept" && selectedConcept?.imageUrl ? (
+            <img className="mb-4 max-h-56 w-full object-contain" src={selectedConcept.imageUrl} alt={selectedConcept.name} />
+          ) : null}
+          <p className="font-bold text-ink">{text.styleAgreement}</p>
+          <p className="mt-3 whitespace-pre-wrap">{visualDirectionConfirmationSummary(direction, concepts, language)}</p>
+          <p className="mt-4 text-sm">{text.finalWarning}</p>
+        </> : null}
       </ConfirmDialog>
     </section>
   );

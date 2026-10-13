@@ -15,6 +15,10 @@ const copy = {
     rough: "rough visual direction",
     viewImage: "View larger",
     closeImage: "Close image",
+    confirmedStyle: "Confirmed visual style",
+    preferences: "Style preferences awaiting confirmation",
+    keep: "Carry into my website",
+    avoid: "Leave out or adjust",
   },
   de: {
     selected: "Ausgewähltes Konzept",
@@ -24,6 +28,10 @@ const copy = {
     rough: "grobe visuelle Richtung",
     viewImage: "Bild vergrößern",
     closeImage: "Bild schließen",
+    confirmedStyle: "Bestätigter visueller Stil",
+    preferences: "Stilwünsche vor der Bestätigung",
+    keep: "Für meine Website übernehmen",
+    avoid: "Weglassen oder anpassen",
   },
 } satisfies Record<ClientLanguage, Record<string, string>>;
 
@@ -31,6 +39,11 @@ export const visualDirectionMarkdown = (
   direction: VisualDirection,
   concepts: readonly VisualConcept[],
 ) => {
+  const style = direction.confirmation
+    ? ["", "## Confirmed visual style", "", direction.confirmation.summary, "", `Confirmed: ${new Date(direction.confirmation.confirmedAt).toISOString()}`]
+    : direction.preferences
+      ? ["", "## Style preferences awaiting confirmation", "", `Carry into my website: ${direction.preferences.keep}`, "", `Leave out or adjust: ${direction.preferences.avoid}`]
+      : [];
   if (direction.kind === "concept") {
     const concept = concepts.find((item) => item.id === direction.conceptId);
     return [
@@ -39,6 +52,7 @@ export const visualDirectionMarkdown = (
       `## Selected concept: ${concept?.name ?? "Unavailable"}`,
       ...(concept?.description ? ["", concept.description] : []),
       ...(direction.note ? ["", "## Additional note", "", direction.note] : []),
+      ...style,
       "",
     ].join("\n");
   }
@@ -49,6 +63,7 @@ export const visualDirectionMarkdown = (
     "",
     ...direction.inspirationLinks.map((link) => `- ${link}`),
     ...(direction.note ? ["", "## Additional note", "", direction.note] : []),
+    ...style,
     "",
   ].join("\n");
 };
@@ -63,6 +78,21 @@ export const VisualDirectionSummary = ({
   language: ClientLanguage;
 }) => {
   const text = copy[language];
+  const preferences = direction.confirmation ? (
+    <section className="mt-4 border-l-4 border-forest pl-4">
+      <h4 className="font-bold">{text.confirmedStyle}</h4>
+      <p className="mt-2 whitespace-pre-wrap leading-7">{direction.confirmation.summary}</p>
+      <time className="mt-2 block text-sm text-muted" dateTime={new Date(direction.confirmation.confirmedAt).toISOString()}>
+        {new Intl.DateTimeFormat(language, { dateStyle: "medium", timeStyle: "short" }).format(direction.confirmation.confirmedAt)}
+      </time>
+    </section>
+  ) : direction.preferences ? (
+    <section className="mt-4 border-l-4 border-line pl-4">
+      <h4 className="font-bold">{text.preferences}</h4>
+      <p className="mt-2 leading-7"><strong>{text.keep}:</strong> {direction.preferences.keep}</p>
+      <p className="mt-2 leading-7"><strong>{text.avoid}:</strong> {direction.preferences.avoid}</p>
+    </section>
+  ) : null;
   if (direction.kind === "concept") {
     const concept = concepts.find((item) => item.id === direction.conceptId);
     if (!concept) {
@@ -103,6 +133,7 @@ export const VisualDirectionSummary = ({
               <p className="mt-1 leading-7">{direction.note}</p>
             </div>
           ) : null}
+          {preferences}
         </div>
       </article>
     );
@@ -135,6 +166,7 @@ export const VisualDirectionSummary = ({
           <p className="mt-1 leading-7">{direction.note}</p>
         </div>
       ) : null}
+      {preferences}
     </div>
   );
 };

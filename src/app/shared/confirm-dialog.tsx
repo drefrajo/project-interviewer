@@ -32,7 +32,7 @@ export const ConfirmDialog = ({
       className="fixed inset-0 z-30 grid place-items-center bg-overlay p-4"
       role="dialog"
     >
-      <section className="w-full max-w-lg rounded-box border border-line bg-surface p-6 shadow-2xl">
+      <section className="max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-box border border-line bg-surface p-6 shadow-2xl">
         <h2 className="font-display text-2xl font-extrabold" id="confirmation-title">
           {title}
         </h2>

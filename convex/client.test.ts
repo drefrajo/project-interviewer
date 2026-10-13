@@ -81,7 +81,7 @@ describe("Client Visual Concept controls", () => {
       operation: {
         kind: "concept_generation",
         status: "pending",
-        imageModel: "gpt-image-2",
+        imageModel: "gpt-image-2.5-flare",
         additionalConcepts: true,
       },
     });
@@ -219,7 +219,7 @@ describe("Client Visual Concept controls", () => {
     ).rejects.toThrow("Temporary Visual Concept batch retries are disabled.");
   });
 
-  it("requires a note when submitting inspiration links", async () => {
+  it("requires style preferences when submitting inspiration links", async () => {
     const t = convexTest(schema, modules);
     registerRateLimiter(t);
     const token = "temporary-required-inspiration-note-token";
@@ -270,7 +270,7 @@ describe("Client Visual Concept controls", () => {
           inspirationLinks: ["https://example.com"],
         },
       }),
-    ).rejects.toThrow("Visual Direction note is required.");
+    ).rejects.toThrow("What to carry into the website is required.");
   });
 
   it("submits a document-only Interview directly from Document Review", async () => {

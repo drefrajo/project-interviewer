@@ -527,7 +527,7 @@ export const InterviewDetailPage = () => {
             {text.detail.language[interview.clientLanguage]} · {interviewKindLabel(
               configuration.interviewKind,
               language,
-            )} · {conceptsLabel(configuration.includesVisualConcepts, language)} · GPT-5.6 Terra
+            )} · {conceptsLabel(configuration.includesVisualConcepts, language)} · GPT-6.1 Sol
           </p>
         </div>
         <div className="flex flex-wrap gap-3">

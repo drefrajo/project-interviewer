@@ -23,7 +23,8 @@ import {
   isInterviewPassBacked,
   reservationKeyFor,
 } from "./lib/pass_accounting";
-import { visualDirection } from "./schema";
+import { visualDirectionSelection } from "./schema";
+import { visualDirectionConfirmationSummary } from "../src/domain/visual-direction";
 import { internalRefs } from "./internal_refs";
 import {
   publicCreatorIdentity,
@@ -47,7 +48,7 @@ const rateLimiter = new RateLimiter(rateLimiterComponent, {
 // Development-only controls. Flip this single flag to re-enable the temporary
 // retry mutations and expose their UI to a Client.
 const TEMPORARY_CONCEPT_BATCH_RETRIES_ENABLED = false;
-const DEFAULT_CONCEPT_IMAGE_MODEL = "gpt-image-2" as const;
+const DEFAULT_CONCEPT_IMAGE_MODEL = "gpt-image-2.5-flare" as const;
 
 const activityUpdatePatch = () => {
   const now = Date.now();
@@ -73,9 +74,13 @@ const byToken = async (ctx: QueryCtx | MutationCtx, token: string) => {
 };
 
 const directionValue = (
-  direction: typeof visualDirection.type,
+  direction: typeof visualDirectionSelection.type,
   concepts: ReadonlyArray<{ id: string; status: string }>,
 ) => {
+  const preferences = {
+    keep: assertLength("What to carry into the website", direction.preferences?.keep ?? "", MAX_VISUAL_NOTE_LENGTH),
+    avoid: assertLength("What to leave out or adjust", direction.preferences?.avoid ?? "", MAX_VISUAL_NOTE_LENGTH),
+  };
   if (direction.kind === "concept") {
     const note = direction.note
       ? assertLength(
@@ -95,18 +100,18 @@ const directionValue = (
     return {
       kind: "concept" as const,
       conceptId: direction.conceptId,
+      preferences,
       ...(note ? { note } : {}),
     };
   }
-  const note = assertLength(
-    "Visual Direction note",
-    direction.note ?? "",
-    MAX_VISUAL_NOTE_LENGTH,
-  );
+  const note = direction.note?.trim()
+    ? assertLength("Visual Direction note", direction.note, MAX_VISUAL_NOTE_LENGTH)
+    : undefined;
   return {
     kind: "inspiration_links" as const,
     inspirationLinks: assertHttpUrls(direction.inspirationLinks),
-    note,
+    preferences,
+    ...(note ? { note } : {}),
   };
 };
 
@@ -129,7 +134,7 @@ export const getByLink = query({
         creatorIdentityReady: publicCreator !== null,
         clientLanguage: interview.clientLanguage,
         ...interviewConfiguration,
-        modelFamily: "GPT-5.6 Terra",
+        modelFamily: "GPT-6.1 Sol",
         temporaryConceptBatchRetriesEnabled:
           TEMPORARY_CONCEPT_BATCH_RETRIES_ENABLED,
         step: "interview" as const,
@@ -144,12 +149,12 @@ export const getByLink = query({
       started: Boolean(interview.startedAt ?? interview.frozenAt),
       reservationRequired: false,
       passState: interviewPassState(interview),
-      modelFamily: "GPT-5.6 Terra",
+      modelFamily: "GPT-6.1 Sol",
       creator: publicCreator,
       creatorIdentityReady: publicCreator !== null,
       disclosure: {
         approximateMinutes: 10,
-        modelFamily: "GPT-5.6 Terra",
+        modelFamily: "GPT-6.1 Sol",
       },
       temporaryConceptBatchRetriesEnabled:
         TEMPORARY_CONCEPT_BATCH_RETRIES_ENABLED,
@@ -614,10 +619,10 @@ export const retryMalformedResponse = mutation({
 });
 
 export const setVisualDirection = mutation({
-  args: { token: v.string(), direction: visualDirection },
+  args: { token: v.string(), direction: visualDirectionSelection },
   handler: async (ctx, args) => {
     const { interview } = await byToken(ctx, args.token);
-    if (interview.submission || interview.step !== "concepts") {
+    if (interview.submission || interview.step !== "concepts" || interview.operation) {
       throw new Error("Visual Direction is read-only.");
     }
     if (!resolveInterviewConfiguration(interview).includesVisualConcepts) {
@@ -635,7 +640,8 @@ export const setVisualDirection = mutation({
 export const submit = mutation({
   args: {
     token: v.string(),
-    direction: v.optional(visualDirection),
+    direction: v.optional(visualDirectionSelection),
+    confirmVisualDirection: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const { interview } = await byToken(ctx, args.token);
@@ -651,7 +657,8 @@ export const submit = mutation({
         interview.operation ||
         interview.concepts.length > 0 ||
         args.direction ||
-        interview.visualDirection
+        interview.visualDirection ||
+        args.confirmVisualDirection
       ) {
         throw new Error("The Interview is not ready to submit.");
       }
@@ -667,12 +674,25 @@ export const submit = mutation({
       ) {
         throw new Error("The Interview is not ready to submit.");
       }
-      direction = args.direction
-        ? directionValue(args.direction, interview.concepts)
-        : interview.visualDirection;
-      if (!direction) {
+      const selectedDirection = args.direction ?? interview.visualDirection;
+      if (!selectedDirection) {
         throw new Error("Choose a Visual Direction before submitting.");
       }
+      const selection = directionValue(selectedDirection, interview.concepts);
+      if (args.confirmVisualDirection !== true) {
+        throw new Error("Confirm the visual style and your preferences before submitting.");
+      }
+      direction = {
+        ...selection,
+        confirmation: {
+          summary: visualDirectionConfirmationSummary(
+            selection,
+            interview.concepts.map((concept) => ({ id: concept.id, name: concept.name, description: concept.rationale })),
+            interview.clientLanguage,
+          ),
+          confirmedAt: Date.now(),
+        },
+      };
     }
     const now = Date.now();
     const submission = {

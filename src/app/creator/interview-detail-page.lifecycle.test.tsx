@@ -26,7 +26,7 @@ const baseInterview = {
   clientLanguage: "en",
   interviewKind: "website",
   includesVisualConcepts: true,
-  interviewModel: "gpt-5.6-terra",
+  interviewModel: "gpt-6.1-sol",
   status: "not_started",
   step: "interview",
   passState: "reserved",

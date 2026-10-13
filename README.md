@@ -16,7 +16,7 @@ Document, revisions, Visual Concepts, submission, storage, and downloads.
 Additional one-time packs are €29 for one pass or €99 for five, plus applicable
 taxes, through Stripe Managed Payments.
 
-The application is a React/Vite SPA backed by Convex. Better Auth provides Google and GitHub sign-in, OpenRouter provides GPT-5.6 Terra and image generation, and Cloudflare Email Service sends submission notifications.
+The application is a React/Vite SPA backed by Convex. Better Auth provides Google and GitHub sign-in, OpenRouter provides GPT-6.1 Sol and image generation, and Cloudflare Email Service sends submission notifications.
 
 ## Local development
 

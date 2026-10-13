@@ -10,13 +10,13 @@ describe("provider request privacy contract", () => {
   it("pins text and image models and refuses retention or fallback", () => {
     const text = buildOpenRouterTextRequest({
       apiKey: "secret",
-      model: "gpt-5.6-terra",
+      model: "gpt-6.1-sol",
       operation: "interview",
       messages: [{ role: "user", content: "private" }],
     });
     const translation = buildOpenRouterTextRequest({
       apiKey: "secret",
-      model: "gpt-5.6-terra",
+      model: "gpt-6.1-sol",
       operation: "translation",
       messages: [{ role: "user", content: "private" }],
     });
@@ -25,7 +25,7 @@ describe("provider request privacy contract", () => {
       prompt: "rough visual direction",
     });
     expect(JSON.parse(String(text.init.body))).toMatchObject({
-      model: "openai/gpt-5.6-terra",
+      model: "openai/gpt-6.1-sol",
       reasoning: { effort: "low" },
       provider: {
         data_collection: "deny",
@@ -35,8 +35,8 @@ describe("provider request privacy contract", () => {
       },
     });
     expect(JSON.parse(String(translation.init.body))).toMatchObject({
-      model: "openai/gpt-5.6-terra",
-      reasoning: { effort: "medium" },
+      model: "openai/gpt-6.1-sol",
+      reasoning: { effort: "low" },
       provider: {
         data_collection: "deny",
         zdr: false,
@@ -45,7 +45,7 @@ describe("provider request privacy contract", () => {
       },
     });
     expect(JSON.parse(String(gptImage.init.body))).toMatchObject({
-      model: "openai/gpt-image-2",
+      model: "openai/gpt-image-2.5-flare",
       quality: "medium",
       aspect_ratio: "3:2",
       provider: {
@@ -62,7 +62,7 @@ describe("provider request privacy contract", () => {
   it("leaves reasoning and JSON output headroom for concept seeds", () => {
     const request = buildOpenRouterTextRequest({
       apiKey: "secret",
-      model: "gpt-5.6-terra",
+      model: "gpt-6.1-sol",
       operation: "concept_prompt",
       messages: [{ role: "user", content: "private" }],
     });
@@ -70,14 +70,14 @@ describe("provider request privacy contract", () => {
     expect(JSON.parse(String(request.init.body))).toMatchObject({
       max_tokens: 8192,
       response_format: { type: "json_object" },
-      reasoning: { effort: "medium" },
+      reasoning: { effort: "low" },
     });
   });
 
   it("enables provider-compatible JSON mode for Interview answers", () => {
     const request = buildOpenRouterTextRequest({
       apiKey: "secret",
-      model: "gpt-5.6-terra",
+      model: "gpt-6.1-sol",
       operation: "interview",
       messages: [{ role: "user", content: "unexpected input" }],
     });
@@ -89,26 +89,26 @@ describe("provider request privacy contract", () => {
     });
   });
 
-  it("uses medium reasoning for document generation", () => {
+  it("uses low reasoning for document generation", () => {
     const request = buildOpenRouterTextRequest({
       apiKey: "secret",
-      model: "gpt-5.6-terra",
+      model: "gpt-6.1-sol",
       operation: "document",
       messages: [{ role: "user", content: "project context" }],
     });
     const body = JSON.parse(String(request.init.body));
 
     expect(body).toMatchObject({
-      reasoning: { effort: "medium" },
+      reasoning: { effort: "low" },
     });
     expect(body).not.toHaveProperty("max_tokens");
     expect(body).not.toHaveProperty("response_format");
   });
 
-  it("uses one bounded medium-effort request for initial Interview planning", () => {
+  it("uses one bounded low-effort request for initial Interview planning", () => {
     const request = buildOpenRouterTextRequest({
       apiKey: "secret",
-      model: "gpt-5.6-terra",
+      model: "gpt-6.1-sol",
       operation: "interview_plan",
       messages: [{ role: "user", content: "first Client reply" }],
     });
@@ -116,7 +116,7 @@ describe("provider request privacy contract", () => {
     const body = JSON.parse(String(request.init.body));
     expect(body).toMatchObject({
       max_tokens: 1200,
-      reasoning: { effort: "medium" },
+      reasoning: { effort: "low" },
     });
     expect(body).not.toHaveProperty("response_format");
   });

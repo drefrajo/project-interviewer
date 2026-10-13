@@ -150,7 +150,7 @@ export const create = mutation({
       projectName,
       clientLanguage: args.clientLanguage,
       ...configuration,
-      model: "gpt-5.6-terra",
+      model: "gpt-6.1-sol",
       instructions,
       ...(args.builtInTemplateKey?.trim()
         ? {
@@ -264,7 +264,7 @@ export const updateBeforeStart = mutation({
       projectName: assertLength("Project name", args.projectName, 160),
       clientLanguage: args.clientLanguage,
       ...configuration,
-      model: "gpt-5.6-terra",
+      model: "gpt-6.1-sol",
       instructions: assertLength(
         "Interview Instructions",
         args.instructions,

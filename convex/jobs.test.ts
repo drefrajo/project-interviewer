@@ -1,12 +1,16 @@
 /// <reference types="vite/client" />
 
 import { convexTest } from "convex-test";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { createThread } from "@convex-dev/agent";
+import { register as registerAgent } from "@convex-dev/agent/test";
+import { agentComponent } from "./lib/components";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.ts");
+afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
 const insertRunningInterview = async (
   t: ReturnType<typeof convexTest>,
@@ -48,6 +52,26 @@ const insertRunningInterview = async (
   });
 
 describe("Interview completion state", () => {
+  it("passes the actual visual workflow into discovery so unseen style does not block concepts", async () => {
+    vi.stubEnv("OPENROUTER_API_KEY", "test-only-key");
+    const t = convexTest(schema, modules);
+    registerAgent(t);
+    const interviewId = await insertRunningInterview(t);
+    const threadId = await t.run((ctx) => createThread(ctx, agentComponent, { title: "Unsure client" }));
+    await t.run((ctx) => ctx.db.patch("interviews", interviewId, { agentThreadId: threadId, clientMessageCount: 0, operation: { kind: "interview_response", status: "pending", attempt: 0 } }));
+    const provider = vi.fn(async (_url: string, init: RequestInit) => {
+      const body = JSON.parse(String(init.body));
+      expect(body.messages[0].content).toContain("VISUAL WORKFLOW");
+      expect(body.messages[0].content).toContain("not a blocker to creating the Project Document");
+      expect(body.messages[0].content).toContain("automatically renders Visual Concepts");
+      return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ kind: "question", content: "What should the project achieve?", suggestedReplies: ["Explain my services", "Help visitors contact me"] }) } }] }));
+    });
+    vi.stubGlobal("fetch", provider);
+    await t.action(internal.jobs.runPending, { interviewId });
+    expect(provider).toHaveBeenCalledOnce();
+    expect((await t.run((ctx) => ctx.db.get("interviews", interviewId)))?.operation).toBeUndefined();
+  });
+
   it("rejects internal concept mutations for document-only Interviews", async () => {
     const t = convexTest(schema, modules);
     const interviewId = await t.run(async (ctx) => {

@@ -46,7 +46,7 @@ describe("Client Interview reservation gate", () => {
             },
             creatorIdentityReady: true,
             clientLanguage: language,
-            modelFamily: "GPT-5.6 Terra",
+            modelFamily: "GPT-6.1 Sol",
             temporaryConceptBatchRetriesEnabled: false,
             step: "interview",
             started: false,
@@ -72,7 +72,7 @@ describe("Client Interview reservation gate", () => {
       },
       creatorIdentityReady: true,
       clientLanguage: "en" as const,
-      modelFamily: "GPT-5.6 Terra",
+      modelFamily: "GPT-6.1 Sol",
       temporaryConceptBatchRetriesEnabled: false,
       interviewKind: "privacy" as const,
       includesVisualConcepts: false,
@@ -99,5 +99,25 @@ describe("Client Interview reservation gate", () => {
     );
 
     expect(submit).toHaveBeenCalledWith({ token: "unactivated-token" });
+  });
+
+  it("sends the explicit visual confirmation only after reviewing the style", async () => {
+    const user = userEvent.setup();
+    const submit = vi.fn(async () => null);
+    mocks.useQuery.mockImplementation((_reference, args) => args === "skip" ? undefined : {
+      interviewId: "interview_1", projectName: "Site", creator: { displayName: "Creator", contactEmail: "creator@example.test" },
+      creatorIdentityReady: true, clientLanguage: "en", modelFamily: "GPT-6.1 Sol", temporaryConceptBatchRetriesEnabled: false,
+      interviewKind: "website", includesVisualConcepts: true, step: "concepts", started: true, reservationRequired: false,
+      passState: "consumed", projectDocument: "# Content", concepts: [1, 2, 3].map((index) => ({ id: `concept_${index}`, name: `Style ${index}`, state: "ready" })),
+    });
+    mocks.useMutation.mockImplementation((reference) => getFunctionName(reference) === "client:submit" ? submit : vi.fn());
+    render(<ClientInterviewPage />);
+    await user.click(screen.getAllByRole("radio")[0]!);
+    await user.type(screen.getByLabelText("What do you like and want to keep?"), "Clear type and generous space");
+    await user.click(screen.getByRole("button", { name: "Nothing specific to change" }));
+    await user.click(screen.getByRole("button", { name: "Review my visual direction" }));
+    expect(submit).not.toHaveBeenCalled();
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Confirm this style and submit" }));
+    expect(submit).toHaveBeenCalledWith({ token: "unactivated-token", confirmVisualDirection: true, direction: { kind: "concept", conceptId: "concept_1", preferences: { keep: "Clear type and generous space", avoid: "Nothing specific to change" } } });
   });
 });

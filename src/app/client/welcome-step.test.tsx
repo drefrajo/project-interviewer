@@ -16,7 +16,7 @@ describe("WelcomeStep", () => {
           },
           creatorIdentityReady: true,
           clientLanguage: "en",
-          modelFamily: "GPT-5.6 Terra",
+          modelFamily: "GPT-6.1 Sol",
         temporaryConceptBatchRetriesEnabled: false,
         step: "interview",
         started: false,
@@ -28,7 +28,7 @@ describe("WelcomeStep", () => {
       />,
     );
 
-    expect(screen.getByText("GPT-5.6 Terra")).toBeInTheDocument();
+    expect(screen.getByText("GPT-6.1 Sol")).toBeInTheDocument();
     expect(screen.getByText("You were invited by")).toBeInTheDocument();
     expect(screen.getByText("Creator")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "creator@example.test" })).toHaveAttribute(
@@ -60,7 +60,7 @@ describe("WelcomeStep", () => {
           creator: null,
           creatorIdentityReady: false,
           clientLanguage,
-          modelFamily: "GPT-5.6 Terra",
+          modelFamily: "GPT-6.1 Sol",
           temporaryConceptBatchRetriesEnabled: false,
           step: "interview",
           started: false,
@@ -88,7 +88,7 @@ describe("WelcomeStep", () => {
           },
           creatorIdentityReady: true,
           clientLanguage: "en",
-          modelFamily: "GPT-5.6 Terra",
+          modelFamily: "GPT-6.1 Sol",
           temporaryConceptBatchRetriesEnabled: false,
           step: "interview",
           started: false,
@@ -116,7 +116,7 @@ describe("WelcomeStep", () => {
           },
           creatorIdentityReady: true,
           clientLanguage: "en",
-          modelFamily: "GPT-5.6 Terra",
+          modelFamily: "GPT-6.1 Sol",
           temporaryConceptBatchRetriesEnabled: false,
           interviewKind: "privacy",
           includesVisualConcepts: false,

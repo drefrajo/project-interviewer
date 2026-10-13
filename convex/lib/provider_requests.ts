@@ -18,7 +18,7 @@ const requireSecret = (
 
 export const buildOpenRouterTextRequest = (args: {
   apiKey: string | undefined;
-  model: "gpt-5.6-terra";
+  model: "gpt-6.1-sol";
   messages: ProviderMessage[];
   operation:
     | "interview"
@@ -35,7 +35,7 @@ export const buildOpenRouterTextRequest = (args: {
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      model: "openai/gpt-5.6-terra",
+      model: "openai/gpt-6.1-sol",
       messages: args.messages,
       provider: {
         data_collection: "deny",
@@ -55,7 +55,7 @@ export const buildOpenRouterTextRequest = (args: {
         ? { response_format: { type: "json_object" as const } }
         : {}),
       reasoning: {
-        effort: args.operation === "interview" ? "low" : "medium",
+        effort: "low",
       },
     }),
   } satisfies RequestInit,
@@ -73,7 +73,7 @@ export const buildOpenRouterImageRequest = (args: {
       "content-type": "application/json",
     },
     body: JSON.stringify({
-      model: "openai/gpt-image-2",
+      model: "openai/gpt-image-2.5-flare",
       prompt: args.prompt,
       aspect_ratio: "3:2",
       n: 1,

@@ -11,11 +11,12 @@ export const interviewKind = v.union(
   v.literal("privacy"),
   v.literal("custom"),
 );
-export const interviewModel = v.literal("gpt-5.6-terra");
+export const interviewModel = v.literal("gpt-6.1-sol");
 // Existing operation documents may still contain retired image-model values.
-// They are accepted only for validation; generation always uses GPT Image 2
+// They are accepted only for validation; generation always uses GPT Image 2.5 Flare
 // medium and never forwards these values to a provider.
 const storedConceptImageModel = v.union(
+  v.literal("gpt-image-2.5-flare"),
   v.literal("gpt-image-2"),
   v.literal("gpt-image-2-low"),
   v.literal("nano-banana-2"),
@@ -28,6 +29,7 @@ const storedConceptImageModel = v.union(
 // Existing documents may still contain the retired interview model. New writes
 // and all active provider calls use the current model above.
 const storedInterviewModel = v.union(
+  interviewModel,
   v.literal("gpt-5.6-terra"),
   v.literal("deepseek-v4-flash"),
 );
@@ -124,17 +126,28 @@ export const visualConcept = v.object({
   ),
   errorCode: v.optional(v.string()),
 });
-export const visualDirection = v.union(
-  v.object({
+const visualPreferences = v.object({ keep: v.string(), avoid: v.string() });
+const conceptDirection = v.object({
     kind: v.literal("concept"),
     conceptId: v.string(),
     note: v.optional(v.string()),
-  }),
-  v.object({
+    preferences: v.optional(visualPreferences),
+  });
+const inspirationDirection = v.object({
     kind: v.literal("inspiration_links"),
     inspirationLinks: v.array(v.string()),
     note: v.optional(v.string()),
-  }),
+    preferences: v.optional(visualPreferences),
+  });
+// Selection inputs cannot supply a forged server confirmation.
+export const visualDirectionSelection = v.union(conceptDirection, inspirationDirection);
+const confirmationFields = {
+  confirmation: v.optional(v.object({ summary: v.string(), confirmedAt: v.number() })),
+};
+// Historical submissions remain readable without preferences/confirmation.
+export const visualDirection = v.union(
+  conceptDirection.extend(confirmationFields),
+  inspirationDirection.extend(confirmationFields),
 );
 export const operation = v.object({
   kind: v.union(

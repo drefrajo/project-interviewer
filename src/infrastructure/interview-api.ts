@@ -13,7 +13,7 @@ export type {
   PrivateInterviewTemplate,
   VisualConceptsMode,
 } from "../domain/interview-templates";
-export type InterviewModel = "gpt-5.6-terra";
+export type InterviewModel = "gpt-6.1-sol";
 export type InterviewStep = "interview" | "review" | "concepts" | "submitted";
 export type InterviewStatus =
   | "not_started"
@@ -87,17 +87,8 @@ export interface VisualConcept {
   state?: "pending" | "ready" | "failed";
 }
 
-export type VisualDirection =
-  | {
-      kind: "concept";
-      conceptId: string;
-      note?: string;
-    }
-  | {
-      kind: "inspiration_links";
-      inspirationLinks: string[];
-      note?: string;
-    };
+import type { VisualDirection } from "../domain/visual-direction";
+export type { VisualDirection } from "../domain/visual-direction";
 
 export interface TranscriptMessage {
   id: string;
@@ -345,7 +336,7 @@ interface InterviewApi {
       token: string;
       direction: VisualDirection;
     }>;
-    submit: Mutation<{ token: string; direction?: VisualDirection }>;
+    submit: Mutation<{ token: string; direction?: VisualDirection; confirmVisualDirection?: boolean }>;
   };
   transcripts: {
     listForCreator: Query<{ interviewId: string }, TranscriptMessage[]>;

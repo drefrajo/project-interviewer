@@ -109,7 +109,7 @@ export const get = internalQuery({
             projectName: interview.projectName,
             clientLanguage: interview.clientLanguage,
             ...interviewConfiguration,
-            model: "gpt-5.6-terra",
+            model: "gpt-6.1-sol",
             status: dashboardStatus(interview),
             step: interview.step,
             instructions: interview.instructions,
