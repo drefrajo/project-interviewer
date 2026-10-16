@@ -413,7 +413,7 @@ export const InterviewDetailPage = () => {
                 <figcaption className="p-4">
                   <strong>{concept.name}</strong>
                   {concept.description ? (
-                    <p className="mt-1 text-sm leading-6 text-muted">{concept.description}</p>
+                    <p className="mt-1 text-sm leading-6 text-muted"><span className="block font-semibold">{text.detail.conceptPlanningNote}</span>{concept.description}</p>
                   ) : null}
                   {concept.imageUrl ? (
                     <a

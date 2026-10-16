@@ -30,6 +30,7 @@ _Avoid_: User prompt, shared template
 
 **Interview Instructions**:
 The non-empty, editable scope, limits, expected Project Document outline, and other project-specific direction applied to one Interview. A template may prefill them, but the resulting text belongs to that Interview.
+They also determine discovery depth and handoff detail: a short factual briefing can accept explicit design delegation, while other Creators can request thorough discovery. They do not change the product's review or submission safeguards.
 _Avoid_: Project prompt, Freelancer Guidance
 
 **Client Language**:

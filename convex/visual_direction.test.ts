@@ -60,7 +60,9 @@ describe("Visual Direction confirmation", () => {
     const result = await t.mutation(api.client.submit, { token, direction: selection, confirmVisualDirection: true });
     const confirmed = result.submission.visualDirection;
     expect(confirmed?.preferences).toEqual(selection.preferences);
-    expect(confirmed?.confirmation?.summary).toContain("Direction 2\n\nDescription 2");
+    expect(confirmed?.confirmation?.summary).toContain("Direction 2");
+    expect(confirmed?.confirmation?.summary).toContain("displayed image");
+    expect(confirmed?.confirmation?.summary).not.toContain("Description 2");
     expect(confirmed?.confirmation?.summary).toContain(selection.preferences.keep);
     expect(confirmed?.confirmation?.summary).toContain(selection.preferences.avoid);
     expect(confirmed?.confirmation?.summary).toContain("scope");

@@ -82,6 +82,8 @@ describe("VisualDirectionSummary", () => {
     expect(screen.getByText(/Keep clear service cards/)).toHaveTextContent("Avoid neon colours");
     const markdown = visualDirectionMarkdown(direction, concepts);
     expect(markdown).toContain(direction.confirmation.summary);
+    expect(markdown).not.toContain(concepts[0]!.description);
+    expect(screen.queryByText(concepts[0]!.description)).not.toBeInTheDocument();
     expect(markdown).toContain("2026-10-13T00:00:00.000Z");
   });
 });

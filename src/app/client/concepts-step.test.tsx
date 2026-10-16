@@ -298,7 +298,8 @@ describe("ConceptsStep", () => {
     await user.click(review);
     const dialog = screen.getByRole("dialog", { name: "Confirm your visual style" });
     expect(within(dialog).getByRole("img", { name: "Two" })).toHaveAttribute("src", "https://example.test/concept_2.png");
-    expect(dialog).toHaveTextContent("Style Two");
+    expect(dialog).not.toHaveTextContent("Style Two");
+    expect(dialog).toHaveTextContent("displayed image and my preferences");
     expect(dialog).toHaveTextContent("Warm colours and clear headings");
     expect(dialog).toHaveTextContent("Avoid the sample photos");
     expect(dialog).toHaveTextContent("project scope");

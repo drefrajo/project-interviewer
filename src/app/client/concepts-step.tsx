@@ -205,11 +205,6 @@ export const ConceptsStep = ({
                       <strong className="block font-display text-xl">
                         {concept.name}
                       </strong>
-                      {concept.description ? (
-                        <span className="mt-1 block text-sm leading-6 text-muted">
-                          {concept.description}
-                        </span>
-                      ) : null}
                     </span>
                   </span>
                 </label>

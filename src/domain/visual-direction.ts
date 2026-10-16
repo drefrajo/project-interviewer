@@ -27,6 +27,7 @@ export const VISUAL_CONFIRMATION_COPY = {
     avoid: "Leave out or adjust",
     scope: "My keep/avoid preferences explain how to adapt this rough direction. The project scope and Creator's requirements still apply. This confirms the visual style, not additional features.",
     illustrative: "The image shows a rough style direction. Example photos and wording are illustrative; the agreed content and supplied assets will be used.",
+    imageBasis: "The displayed image and my preferences below define the direction. A description written before image generation is not part of this confirmation.",
     references: "Direction based on my inspiration links and the preferences below. The linked pages have not been inspected by the interviewer.",
     referenceUse: "These references guide the style through my descriptions; they do not promise an exact copy or new functionality.",
   },
@@ -35,6 +36,7 @@ export const VISUAL_CONFIRMATION_COPY = {
     avoid: "Weglassen oder anpassen",
     scope: "Meine Wünsche beschreiben, wie diese grobe Richtung angepasst werden soll. Der Projektumfang und die Vorgaben des Creators gelten weiterhin. Bestätigt wird der visuelle Stil, keine zusätzliche Funktionalität.",
     illustrative: "Das Bild zeigt eine grobe Stilrichtung. Beispielbilder und Texte dienen der Veranschaulichung; verwendet werden die vereinbarten Inhalte und gelieferten Assets.",
+    imageBasis: "Grundlage sind das gezeigte Bild und meine folgenden Wünsche. Eine vor der Bilderstellung verfasste Beschreibung ist nicht Teil dieser Bestätigung.",
     references: "Richtung auf Grundlage meiner Inspirationslinks und der folgenden Wünsche. Der Interviewer hat die verlinkten Seiten nicht besichtigt.",
     referenceUse: "Meine Beschreibungen bestimmen, wie die Referenzen den Stil prägen. Eine exakte Kopie oder zusätzliche Funktionalität wird nicht zugesagt.",
   },
@@ -58,7 +60,7 @@ export const visualDirectionConfirmationSummary = (
   }
   return [
     ...(concept
-      ? [concept.name, ...(concept.description ? [concept.description] : [])]
+      ? [concept.name, text.imageBasis]
       : [text.references, ...(direction.kind === "inspiration_links" ? direction.inspirationLinks : [])]),
     `${text.keep}: ${direction.preferences.keep.trim()}`,
     `${text.avoid}: ${direction.preferences.avoid.trim()}`,

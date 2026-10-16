@@ -50,7 +50,7 @@ export const visualDirectionMarkdown = (
       "# Visual Direction",
       "",
       `## Selected concept: ${concept?.name ?? "Unavailable"}`,
-      ...(concept?.description ? ["", concept.description] : []),
+      ...(!direction.confirmation && concept?.description ? ["", concept.description] : []),
       ...(direction.note ? ["", "## Additional note", "", direction.note] : []),
       ...style,
       "",
@@ -122,7 +122,7 @@ export const VisualDirectionSummary = ({
           <h3 className="mt-2 font-display text-2xl font-extrabold">
             {concept.name}
           </h3>
-          {concept.description ? (
+          {!direction.confirmation && concept.description ? (
             <p className="mt-2 leading-7 text-muted">{concept.description}</p>
           ) : null}
           {direction.note ? (

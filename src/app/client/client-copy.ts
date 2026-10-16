@@ -30,7 +30,7 @@ export const CLIENT_COPY = {
     submitDocument: "Submit Project Document",
     conceptsTitle: "Choose a visual direction",
     conceptsIntro:
-      "Compare the overall styles, then choose one you actually like. Tell us what to keep and what to change before confirming your direction.",
+      "Compare the images and choose a style you actually like. The image and your keep/change preferences define the direction; the concept name is only a label. You will review both before confirming.",
     keepStyle: "What do you like and want to keep?",
     avoidStyle: "What should we leave out or adjust?",
     keepStyleHint: "For example: the colours, readable headings, spacious layout or use of photos. Everyday words are enough.",
@@ -93,7 +93,7 @@ export const CLIENT_COPY = {
     submitDocument: "Projektdokument übermitteln",
     conceptsTitle: "Visuelle Richtung wählen",
     conceptsIntro:
-      "Vergleichen Sie die Stile und wählen Sie einen, der Ihnen wirklich gefällt. Halten Sie fest, was übernommen oder geändert werden soll, bevor Sie die Richtung bestätigen.",
+      "Vergleichen Sie die Bilder und wählen Sie einen Stil, der Ihnen wirklich gefällt. Das Bild und Ihre Übernahme-/Änderungswünsche bestimmen die Richtung; der Konzeptname ist nur eine Bezeichnung. Vor der Bestätigung prüfen Sie beides.",
     keepStyle: "Was gefällt Ihnen und soll übernommen werden?",
     avoidStyle: "Was soll weggelassen oder angepasst werden?",
     keepStyleHint: "Zum Beispiel: Farben, gut lesbare Überschriften, großzügige Anordnung oder Bildnutzung. Einfache Worte reichen.",

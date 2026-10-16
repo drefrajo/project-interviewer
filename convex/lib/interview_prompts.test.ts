@@ -206,7 +206,8 @@ describe("Interview prompt contracts", () => {
     });
     const serialized = JSON.stringify(messages);
 
-    expect(serialized).toContain("name and rationale are shown directly to the Client");
+    expect(serialized).toContain("name is shown to the Client");
+    expect(serialized).toContain("not a verified");
     expect(serialized).toContain("German");
     expect(serialized).toContain("image-generation prompt and must always be written in English");
   });
@@ -317,7 +318,8 @@ describe("Interview prompt contracts", () => {
       .replace(/\s+/g, " ");
 
     expect(normalized).toContain("Instagram-like interface");
-    expect(normalized).toContain("complete first-draft copy");
+    expect(normalized).toContain("preserve supplied finished copy");
+    expect(normalized).toContain("draft complete copy from supplied facts when writing is included");
     expect(normalized).toContain("UNKNOWN");
     expect(normalized).toContain("I want a portfolio that feels like a feed.");
     expect(normalized).toContain("Return only the complete Markdown");
