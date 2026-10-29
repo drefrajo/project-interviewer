@@ -9,13 +9,6 @@ A Creator configures an Interview, sends its account-free Interview Link, and re
 - the Client's selected Visual Direction or inspiration links; and
 - the Interview Transcript.
 
-Creating and editing an Interview is free. A Creator receives one non-expiring
-Introductory Pass; sharing an Interview Link reserves one pass, and the
-Client's deliberate Start consumes it for the complete conversation, Project
-Document, revisions, Visual Concepts, submission, storage, and downloads.
-Additional one-time packs are €29 for one pass or €99 for five, plus applicable
-taxes, through Stripe Managed Payments.
-
 The application is a React/Vite SPA backed by Convex. Better Auth provides Google and GitHub sign-in, OpenRouter provides GPT-6.1 Sol and image generation, and Cloudflare Email Service sends submission notifications.
 
 ## Local development
@@ -52,3 +45,12 @@ production build/security-header validation. It does not contact paid AI,
 image, or email providers and does not deploy hosted state.
 
 See [setup](docs/setup.md), [deployment](docs/deployment.md), [launch readiness](docs/launch-readiness.md), the [feedback loop](docs/feedback-loop.md), the [domain glossary](CONTEXT.md), and the [product specification](.scratch/template-driven-interviews/spec.md).
+
+## Contributing
+
+Issues and pull requests are welcome. Direct write access and merging are
+reserved for maintainers. See [contribution guidelines](CONTRIBUTING.md).
+
+## License
+
+Licensed under the [MIT License](LICENSE).
