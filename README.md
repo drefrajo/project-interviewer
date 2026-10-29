@@ -1,5 +1,9 @@
 # Interview
 
+> **AI experiment:** This entire repository was created purely using AI, with
+> very little attention paid to technical details, software architecture, or
+> engineering best practices. It is an experiment in AI-driven development.
+
 Interview turns a short AI conversation with a Client into an implementation-ready website Project Submission.
 
 A Creator configures an Interview, sends its account-free Interview Link, and receives:
