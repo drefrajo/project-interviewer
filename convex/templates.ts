@@ -166,7 +166,7 @@ export const translate = action({
     );
     const request = buildOpenRouterTextRequest({
       apiKey: env.OPENROUTER_API_KEY,
-      model: "gpt-5.6-terra",
+      model: "gpt-6.1-sol",
       messages: [
         {
           role: "system",

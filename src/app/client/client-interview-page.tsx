@@ -300,7 +300,7 @@ export const ClientInterviewPage = () => {
             }
             onSubmit={(direction: VisualDirection) =>
               perform(async () => {
-                await submit({ token: interviewToken, direction });
+                await submit({ token: interviewToken, direction, confirmVisualDirection: true });
                 trackEvent("interview_submitted");
               }).then(() => undefined)
             }

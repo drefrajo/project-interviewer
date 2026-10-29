@@ -46,7 +46,7 @@ export const getManifest = action({
     for (const concept of manifest.concepts) {
       zip.file(
         `${concept.id}.md`,
-        `# ${concept.name}\n\n${concept.rationale}\n`,
+        `# ${concept.name}\n\n## Planning note (not a verified image description)\n\n${concept.rationale}\n\nThe selected image and the Client's stored confirmation/preferences govern the visual direction, not this pre-render planning note.\n`,
       );
       if (concept.imageId) {
         const image = await ctx.storage.get(concept.imageId);

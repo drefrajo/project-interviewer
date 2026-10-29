@@ -1,5 +1,9 @@
 # Interview
 
+> **AI experiment:** This entire repository was created purely using AI, with
+> very little attention paid to technical details, software architecture, or
+> engineering best practices. It is an experiment in AI-driven development.
+
 Interview turns a short AI conversation with a Client into an implementation-ready website Project Submission.
 
 A Creator configures an Interview, sends its account-free Interview Link, and receives:
@@ -9,7 +13,7 @@ A Creator configures an Interview, sends its account-free Interview Link, and re
 - the Client's selected Visual Direction or inspiration links; and
 - the Interview Transcript.
 
-The application is a React/Vite SPA backed by Convex. Better Auth provides Google and GitHub sign-in, OpenRouter provides GPT-5.6 Terra and image generation, and Cloudflare Email Service sends submission notifications.
+The application is a React/Vite SPA backed by Convex. Better Auth provides Google and GitHub sign-in, OpenRouter provides GPT-6.1 Sol and image generation, and Cloudflare Email Service sends submission notifications.
 
 ## Local development
 

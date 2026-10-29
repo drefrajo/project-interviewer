@@ -6,7 +6,7 @@ Interview uses:
 
 - Convex for application data, generated-image storage, scheduled operations, Agent transcripts, rate limiting, and Better Auth integration;
 - Google and GitHub OAuth for Creator authentication;
-- OpenRouter for GPT-5.6 Terra and GPT Image 2;
+- OpenRouter for GPT-6.1 Sol and GPT Image 2.5 Flare;
 - Cloudflare Email Service for Project Submission notifications; and
 - Cloudflare static asset hosting for the React/Vite SPA.
 
@@ -213,11 +213,11 @@ The first provider used for a verified email owns that Creator account. An attem
 
 ## OpenRouter
 
-Configure GPT-5.6 Terra as the sole Interview Model. Interactive Interview
-turns use low reasoning effort; planning, documents, revisions, concept
-planning, and Template Translation use medium effort.
+Configure GPT-6.1 Sol as the sole Interview Model. Interactive Interview
+turns, planning, documents, revisions, concept planning, and Template
+Translation use low reasoning effort.
 
-All Interviews use GPT Image 2 at medium quality for Visual Concepts. It renders
+All Interviews use GPT Image 2.5 Flare at medium quality for Visual Concepts. It renders
 the three Visual Concepts at the configured 3:2 aspect ratio.
 
 Every request denies data collection, disables zero-data-retention routing, and disables model/provider fallback. The OpenRouter account and guardrails must not enforce ZDR, since request-level `zdr: false` cannot override those higher-level restrictions. A request fails when no route matching the remaining policy is available. OpenRouter's account-level spend limit is authoritative; the application does not maintain a second spend counter. Per-Interview-Link rate limits remain active to prevent abuse.

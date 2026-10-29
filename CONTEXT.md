@@ -30,6 +30,7 @@ _Avoid_: User prompt, shared template
 
 **Interview Instructions**:
 The non-empty, editable scope, limits, expected Project Document outline, and other project-specific direction applied to one Interview. A template may prefill them, but the resulting text belongs to that Interview.
+They also determine discovery depth and handoff detail: a short factual briefing can accept explicit design delegation, while other Creators can request thorough discovery. They do not change the product's review or submission safeguards.
 _Avoid_: Project prompt, Freelancer Guidance
 
 **Client Language**:
@@ -37,11 +38,11 @@ The language selected for one Interview's Client UI, conversation, Project Docum
 _Avoid_: UI language, interview language, document language
 
 **Interview Model**:
-The GPT-5.6 Terra language model used for an Interview's conversation, reasoning, Project Document, and image prompts.
+The GPT-6.1 Sol language model used for an Interview's conversation, reasoning, Project Document, and image prompts.
 _Avoid_: AI role, provider
 
 **Template Translation**:
-A Creator-triggered translation of the current Interview Instructions into a different Client Language using GPT-5.6 Terra. It translates the current input text, is private preparation for an Interview, and is never shown to the Client.
+A Creator-triggered translation of the current Interview Instructions into a different Client Language using GPT-6.1 Sol. It translates the current input text, is private preparation for an Interview, and is never shown to the Client.
 _Avoid_: Automatic localization, Client translation
 
 **Interview**:
@@ -85,7 +86,7 @@ One of up to six deliberately distinct, AI-generated images offered to the Clien
 _Avoid_: Mockup, final design, website design
 
 **Visual Direction**:
-The Client's selected Visual Concept with an optional explanatory note, or, when none fits, up to three inspiration links with a required explanatory note. It exists only for an Interview that includes Visual Concepts.
+The Client's selected Visual Concept, or up to three inspiration links when none fits, with explicit preferences describing what to keep and what to leave out or adjust. Before Project Submission, the Client reviews and confirms the displayed style basis and preferences; the server records that exact summary and confirmation time. The Creator's scope and requirements remain authoritative, and the direction is a rough style agreement rather than a final design. Historical submissions may contain only a selection and note. It exists only for an Interview that includes Visual Concepts.
 _Avoid_: Approval, final design
 
 **Project Submission**:

@@ -70,4 +70,20 @@ describe("VisualDirectionSummary", () => {
     );
     expect(markdown).not.toContain("conceptId");
   });
+
+  it("shows and exports the exact confirmed summary, including keep and avoid preferences", () => {
+    const direction = {
+      kind: "concept" as const, conceptId: "concept_3",
+      preferences: { keep: "Clear service cards", avoid: "No neon colours" },
+      confirmation: { summary: "Selected visual basis.\n\nKeep clear service cards.\n\nAvoid neon colours.\n\nAgreed scope still applies.", confirmedAt: Date.UTC(2026, 9, 13) },
+    };
+    render(<VisualDirectionSummary concepts={concepts} direction={direction} language="en" />);
+    expect(screen.getByRole("heading", { name: "Confirmed visual style" })).toBeInTheDocument();
+    expect(screen.getByText(/Keep clear service cards/)).toHaveTextContent("Avoid neon colours");
+    const markdown = visualDirectionMarkdown(direction, concepts);
+    expect(markdown).toContain(direction.confirmation.summary);
+    expect(markdown).not.toContain(concepts[0]!.description);
+    expect(screen.queryByText(concepts[0]!.description)).not.toBeInTheDocument();
+    expect(markdown).toContain("2026-10-13T00:00:00.000Z");
+  });
 });

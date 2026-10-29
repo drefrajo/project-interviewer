@@ -41,7 +41,7 @@ type Completion = {
   };
 };
 
-const INTERVIEW_TEXT_MODEL = "gpt-5.6-terra" as const;
+const INTERVIEW_TEXT_MODEL = "gpt-6.1-sol" as const;
 
 const responseText = async (response: Response) => {
   if (!response.ok) {
@@ -378,7 +378,7 @@ const runInterview = async (
   ctx: ActionCtx,
   interview: Doc<"interviews">,
 ) => {
-  const { interviewKind } = resolveInterviewConfiguration(interview);
+  const { interviewKind, includesVisualConcepts } = resolveInterviewConfiguration(interview);
   const transcript = await listMessages(ctx, agentComponent, {
     threadId: interview.agentThreadId,
     paginationOpts: { numItems: 120, cursor: null },
@@ -401,6 +401,7 @@ const runInterview = async (
       operation: "interview_plan",
       messages: buildInterviewPlanMessages({
         instructions: interview.instructions,
+        includesVisualConcepts,
         transcript: transcriptMessages,
       }),
     });
@@ -434,6 +435,7 @@ const runInterview = async (
       buildInterviewPolicy({
         clientLanguage: interview.clientLanguage,
         instructions: interview.instructions,
+        includesVisualConcepts,
         alignmentAsked:
           interview.alignmentAskedAtClientMessageCount !== undefined,
         ...(interviewPlan ? { interviewPlan } : {}),
